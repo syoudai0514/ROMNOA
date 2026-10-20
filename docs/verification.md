@@ -15,6 +15,7 @@
 | 検証 | 結果 | 証拠・範囲 |
 |---|---|---|
 | TypeScript + Vite本番ビルド | 成功 | `npm run build`、manifest/SW/PNGアイコン生成 |
+| Native Node.js ESM | ビルド時に検証 | `check:server`: NodeNextでAPIのモジュール群をコンパイルし、実際のNode.jsでimportしてクエリ拒否を確認。Vite/Vitest固有の解決に依存しない |
 | Vitest | 23件成功 | security 15、feed-service 4、personalization 4 |
 | Playwright Chromium | 14件成功 | iPhone 13相当7件 + desktop 1440px 7件 |
 | Playwright WebKit | 7シナリオ成功 | iPhone 13相当。6件成功後、長い操作シナリオ1件の30秒制限を60秒に調整し当該1件成功。アサーションの緩和なし |
@@ -61,3 +62,5 @@ WebKitの実行環境ではroot権限がなくOS依存ライブラリが不足�
 ## デプロイとCIの確認方法
 
 Vercelの `romnoa` プロジェクト（Node24、hnd1、Preview認証保護）を作成。GitHub連携はVercel側で未設定のため自動接続は失敗し、同一コミットのソースを直接アップロードする方法を選択。デプロイURL・状態・実際のSHAとGitHub CIの実行結果は最終作業報告に記載する。ローカル成功とクラウド上での成功を混同しない。
+
+最初のクラウド検証で画面200/API500を検出。Runtime Logsの `ERR_MODULE_NOT_FOUND: /var/task/server/handler` を根拠に、サーバー実行経路のimportを`.js`指定へ修正し、ビルド時にNative Node ESMのチェックを追加した。

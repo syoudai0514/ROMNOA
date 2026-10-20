@@ -4,10 +4,10 @@ import {
   newest,
   type Article,
   type FeedResponse,
-} from "../src/lib/model";
+} from "../src/lib/model.js";
 import { z } from "zod";
-import { MAX_BYTES, parseFeed } from "./parser";
-import { sources, type Source } from "./sources";
+import { MAX_BYTES, parseFeed } from "./parser.js";
+import { sources, type Source } from "./sources.js";
 
 export const INTERVAL = 600_000;
 const MAX_AGE = 86_400_000;

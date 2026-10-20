@@ -8,12 +8,13 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && npm run check:server && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:pwa": "tsx scripts/test-pwa.ts",
-    "check:feeds": "tsx scripts/check-feeds.ts"
+    "check:feeds": "tsx scripts/check-feeds.ts",
+    "check:server": "node scripts/check-server.mjs"
   },
   "dependencies": {
     "@vercel/functions": "^3.7.0",

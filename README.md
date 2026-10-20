@@ -30,6 +30,7 @@ Viteの開発サーバーがUIと `/api/articles` の両方を提供します。
 
 ```sh
 npm run build
+npm run check:server
 npm test
 npx playwright install --with-deps chromium webkit
 npm run test:e2e

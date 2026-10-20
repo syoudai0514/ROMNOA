@@ -1,4 +1,4 @@
-import { feedService, type FeedService } from "./feed-service";
+import { feedService, type FeedService } from "./feed-service.js";
 
 export async function handleArticles(
   req: Request,

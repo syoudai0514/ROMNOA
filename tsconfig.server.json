@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "rootDir": ".",
+    "outDir": "node_modules/.cache/romnoa-server"
+  },
+  "include": ["api/**/*.ts", "server/**/*.ts", "src/lib/model.ts"]
+}

@@ -1,7 +1,7 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import sanitizeHtml from "sanitize-html";
-import { classify, newest, type Article } from "../src/lib/model";
-import type { Source } from "./sources";
+import { classify, newest, type Article } from "../src/lib/model.js";
+import type { Source } from "./sources.js";
 
 export const MAX_BYTES = 1_000_000;
 type Node = Record<string, unknown>;
