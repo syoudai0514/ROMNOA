@@ -1,5 +1,5 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
-import sanitizeHtml from "sanitize-html";
+import { Parser } from "htmlparser2";
 import { classify, newest, type Article } from "../src/lib/model.js";
 import type { Source } from "./sources.js";
 
@@ -16,14 +16,26 @@ function string(x: unknown): string {
     : "";
 }
 function plain(x: unknown) {
-  return sanitizeHtml(string(x), { allowedTags: [], allowedAttributes: {} })
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
+  const parts: string[] = [];
+  const nonText = new Set(["script", "style", "textarea", "option"]);
+  let ignored = 0;
+  const parser = new Parser(
+    {
+      onopentag(name) {
+        if (nonText.has(name)) ignored++;
+      },
+      ontext(text) {
+        if (!ignored) parts.push(text);
+      },
+      onclosetag(name) {
+        if (nonText.has(name)) ignored = Math.max(0, ignored - 1);
+      },
+    },
+    { decodeEntities: true },
+  );
+  parser.end(string(x));
+  // This is text extraction, not an HTML reader: all output is rendered by React as text.
+  return parts.join("").replace(/\s+/g, " ").trim();
 }
 
 export function normalizeUrl(raw: string, source: Source): string | null {

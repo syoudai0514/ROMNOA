@@ -64,3 +64,5 @@ WebKitの実行環境ではroot権限がなくOS依存ライブラリが不足�
 Vercelの `romnoa` プロジェクト（Node24、hnd1、Preview認証保護）を作成。GitHub連携はVercel側で未設定のため自動接続は失敗し、同一コミットのソースを直接アップロードする方法を選択。デプロイURL・状態・実際のSHAとGitHub CIの実行結果は最終作業報告に記載する。ローカル成功とクラウド上での成功を混同しない。
 
 最初のクラウド検証で画面200/API500を検出。Runtime Logsの `ERR_MODULE_NOT_FOUND: /var/task/server/handler` を根拠に、サーバー実行経路のimportを`.js`指定へ修正し、ビルド時にNative Node ESMのチェックを追加した。
+
+続くクラウド検証ではsanitize-htmlのCommonJSからESM専用htmlparser2へのrequireがランタイムで拒否された。初期版ではHTMLを描画せずタイトル文字列のみ扱う設計に合わせ、htmlparser2をESMで直接importしてテキスト抽出する構成に変更。Native Nodeチェックも `--no-experimental-require-module` で実行し同じ制約を検証する。

@@ -14,15 +14,15 @@
     "test:e2e": "playwright test",
     "test:pwa": "tsx scripts/test-pwa.ts",
     "check:feeds": "tsx scripts/check-feeds.ts",
-    "check:server": "node scripts/check-server.mjs"
+    "check:server": "node --no-experimental-require-module scripts/check-server.mjs"
   },
   "dependencies": {
     "@vercel/functions": "^3.7.0",
     "fast-xml-parser": "^5.3.0",
+    "htmlparser2": "12.0.0",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "sanitize-html": "^2.17.0",
     "zod": "^4.1.0"
   },
   "devDependencies": {
@@ -31,7 +31,6 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@types/sanitize-html": "^2.16.0",
     "@vitejs/plugin-react": "^5.0.0",
     "sharp": "^0.34.0",
     "tailwindcss": "^4.1.0",

@@ -18,7 +18,7 @@ Article: id（正規化URL）、url、sourceId、title、publishedAt（不明は
 
 - URLは固定のHTTPSフィードのみ。リクエストのクエリを拒否し任意URL取得を許可しない。リダイレクトは拒否。ホスト・パスは設定だけが指定。
 - 6秒タイムアウト、展開後1MB上限をstreamで強制。DOCTYPE/ENTITY拒否、XML構文検証、entity展開無効。フィードからのリンクも配信元ホストに限定。
-- sanitize-htmlでタイトルをプレーンテキスト化しReact文字列で表示。dangerouslySetInnerHTMLなし。
+- htmlparser2でタイトルをトークナイズし、script/style等を除くテキストだけ抽出してReact文字列で表示。HTMLは返さず、dangerouslySetInnerHTMLも使わない。将来の本文HTML表示には別途サニタイズ設計が必要。
 - 正常/失敗とも次回アクセスを10分抑制。Vercel Runtime Cacheに最終正常データを24時間保持。ローカル開発だけメモリを利用。同一プロセスの同時取得はまとめる。Runtime Cacheは分散ロックではないため複数インスタンスの同時cold missは発生し得る。
 - CDNは成功/部分成功を10分キャッシュ、最大1日stale。全件失敗は503/no-storeにして最後のブラウザキャッシュを利用。
 - 検索・配信元選択はブラウザ処理。同じAPIパスを共有してキャッシュ分断を防ぐ。
