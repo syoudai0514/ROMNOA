@@ -1,0 +1,1022 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
+import {
+  ArrowDownUp,
+  ArrowRight,
+  Bookmark,
+  BookOpen,
+  Check,
+  ChevronRight,
+  Clock3,
+  Grid2X2,
+  Home,
+  Leaf,
+  Moon,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  WifiOff,
+  X,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { ArticleRow } from "./components/ArticleRow";
+import { Reader } from "./components/Reader";
+import {
+  articleDate,
+  categories,
+  filterArticles,
+  groupArticles,
+  sourceInfo,
+  type Article,
+  type Category,
+  type Sort,
+} from "./lib/model";
+import {
+  loadPreferences,
+  markRead,
+  persistPreferences,
+  type Preferences,
+} from "./lib/storage";
+import { useFeed } from "./lib/use-feed";
+
+type Tab = "home" | "categories" | "saved" | "settings";
+const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
+  { id: "home", label: "ホーム", icon: Home },
+  { id: "categories", label: "カテゴリ", icon: Grid2X2 },
+  { id: "saved", label: "保存", icon: Bookmark },
+  { id: "settings", label: "設定", icon: Settings2 },
+];
+const categoryDescriptions: Record<string, string> = {
+  ニュース: "世の中の、いまを知る",
+  暮らし: "毎日のこと、気になること",
+  エンタメ: "好きな作品、新しい楽しみ",
+  ゲーム: "遊びの話を、もっと",
+  テクノロジー: "ちょっと先の、あたりまえ",
+  話題: "思わず誰かに話したい",
+};
+
+export default function App() {
+  const [initial] = useState(loadPreferences);
+  const [prefs, setPrefs] = useState<Preferences>(initial.value);
+  const prefsRef = useRef(prefs);
+  const [notice, setNotice] = useState(initial.warning);
+  const [tab, setTab] = useState<Tab>("home");
+  const [category, setCategory] = useState<Category>("すべて");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<Sort>("newest");
+  const [savedView, setSavedView] = useState<"saved" | "history">("saved");
+  const [ngInput, setNgInput] = useState("");
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [selection, setSelection] = useState<{
+    articles: Article[];
+    index: number;
+  } | null>(null);
+  const [systemDark, setSystemDark] = useState(
+    () => matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+  const { feed, loading, error, offline, cached, storageError, refresh } =
+    useFeed();
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
+  const scrollPositions = useRef<Record<string, number>>({});
+  const viewKey = `${tab}:${category}:${savedView}`;
+  const previousView = useRef(viewKey);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const dark =
+    prefs.theme === "dark" || (prefs.theme === "system" && systemDark);
+  function update(next: Preferences | ((prev: Preferences) => Preferences)) {
+    const value = typeof next === "function" ? next(prefsRef.current) : next;
+    prefsRef.current = value;
+    setPrefs(value);
+    if (!persistPreferences(value))
+      setNotice(
+        "端末に保存できませんでした。容量やブラウザの設定をご確認ください。この変更は再起動すると失われます。",
+      );
+  }
+  useEffect(() => {
+    const media = matchMedia("(prefers-color-scheme: dark)");
+    const change = () => setSystemDark(media.matches);
+    media.addEventListener("change", change);
+    return () => media.removeEventListener("change", change);
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    document.documentElement.dataset.font = prefs.fontSize;
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", dark ? "#151d19" : "#f7f8f4");
+  }, [dark, prefs.fontSize]);
+  useEffect(() => {
+    const listener = (e: StorageEvent) => {
+      if (e.key === "romnoa:preferences:v1") {
+        const result = loadPreferences();
+        prefsRef.current = result.value;
+        setPrefs(result.value);
+        if (result.warning) setNotice(result.warning);
+      }
+    };
+    window.addEventListener("storage", listener);
+    return () => window.removeEventListener("storage", listener);
+  }, []);
+  useLayoutEffect(() => {
+    if (previousView.current !== viewKey) {
+      previousView.current = viewKey;
+      window.scrollTo(0, scrollPositions.current[viewKey] || 0);
+    }
+  }, [viewKey]);
+  useEffect(() => {
+    const key = `romnoa:scroll:${viewKey}`;
+    try {
+      const saved = Number(sessionStorage.getItem(key));
+      if (saved) requestAnimationFrame(() => window.scrollTo(0, saved));
+    } catch {
+      /* best effort */
+    }
+    const save = () => {
+      scrollPositions.current[viewKey] = window.scrollY;
+      try {
+        sessionStorage.setItem(key, String(window.scrollY));
+      } catch {
+        /* best effort */
+      }
+    };
+    window.addEventListener("scroll", save, { passive: true });
+    return () => window.removeEventListener("scroll", save);
+  }, [viewKey]);
+  // Restore after asynchronous feed loading makes the list tall enough.
+  useEffect(() => {
+    if (feed && tab === "home") {
+      try {
+        const y = Number(sessionStorage.getItem(`romnoa:scroll:${viewKey}`));
+        if (y) requestAnimationFrame(() => window.scrollTo(0, y));
+      } catch {
+        /* best effort */
+      }
+    }
+  }, [feed]);
+
+  const all = feed?.articles || [];
+  const base =
+    tab === "saved"
+      ? savedView === "saved"
+        ? prefs.saved
+        : prefs.history.map((h) => h.article)
+      : all;
+  const articles = useMemo(() => {
+    const filtered = filterArticles(base, {
+      category,
+      query,
+      sort,
+      read: prefs.read,
+      hiddenSources: prefs.hiddenSources,
+      ngWords: prefs.ngWords,
+    });
+    if (tab === "saved" && savedView === "history")
+      return filtered.sort(
+        (a, b) =>
+          prefs.history.find((h) => h.article.id === b.id)!.at -
+          prefs.history.find((h) => h.article.id === a.id)!.at,
+      );
+    return filtered;
+  }, [base, category, query, sort, prefs, tab, savedView]);
+  const groups = useMemo(
+    () => groupArticles(articles, prefs.groupSimilar),
+    [articles, prefs.groupSimilar],
+  );
+  const savedIds = new Set(prefs.saved.map((a) => a.id));
+  const selected = selection?.articles[selection.index];
+  const filteredCount = filterArticles(all, {
+    category: "すべて",
+    query: "",
+    hiddenSources: prefs.hiddenSources,
+    ngWords: prefs.ngWords,
+    sort: "newest",
+    read: prefs.read,
+  });
+
+  function navigate(next: Tab) {
+    scrollPositions.current[viewKey] = window.scrollY;
+    setTab(next);
+    setQuery("");
+    setCategory("すべて");
+  }
+  function chooseCategory(next: Category) {
+    scrollPositions.current[viewKey] = window.scrollY;
+    setCategory(next);
+    setTab("home");
+    setQuery("");
+  }
+  function toggleSaved(article: Article) {
+    if (!savedIds.has(article.id) && prefs.saved.length >= 200) {
+      setNotice(
+        "保存は200件までです。不要な記事の保存を解除してから追加してください。",
+      );
+      return;
+    }
+    update((p) => ({
+      ...p,
+      saved: p.saved.some((a) => a.id === article.id)
+        ? p.saved.filter((a) => a.id !== article.id)
+        : [article, ...p.saved],
+    }));
+  }
+  function open(article: Article, sequence = articles) {
+    update((p) => markRead(p, article));
+    setSelection({
+      articles: sequence,
+      index: sequence.findIndex((a) => a.id === article.id),
+    });
+  }
+  function toggleRead(article: Article) {
+    update((p) => {
+      if (!p.read[article.id]) return markRead(p, article);
+      const read = { ...p.read };
+      delete read[article.id];
+      return { ...p, read };
+    });
+  }
+  function addNg() {
+    const word = ngInput.trim();
+    if (!word || prefs.ngWords.includes(word)) return;
+    if (prefs.ngWords.length >= 50) {
+      setNotice("NGワードは50件まで登録できます。");
+      return;
+    }
+    update((p) => ({ ...p, ngWords: [...p.ngWords, word] }));
+    setNgInput("");
+  }
+  const showList = tab === "home" || tab === "saved";
+  return (
+    <>
+      <a className="skip-link" href="#main">
+        本文へ移動
+      </a>
+      <div className="app-shell">
+        <aside className="sidebar">
+          <a className="brand" href="/" aria-label="ROMNOA ホーム">
+            <img src="/icon.svg" alt="" />
+            <span>
+              ROMNOA<small>Read freely.</small>
+            </span>
+          </a>
+          <nav className="desktop-nav" aria-label="メインナビゲーション">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => navigate(id)}
+                className={tab === id ? "active" : ""}
+                aria-current={tab === id ? "page" : undefined}
+              >
+                <Icon size={20} strokeWidth={1.7} />
+                {label}
+                {id === "saved" && prefs.saved.length > 0 && (
+                  <span className="nav-count">{prefs.saved.length}</span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-categories">
+            <span className="eyebrow">YOUR INTERESTS</span>
+            {categories.slice(1).map((c) => (
+              <button key={c} onClick={() => chooseCategory(c)}>
+                <span className={`category-dot dot-${categories.indexOf(c)}`} />
+                {c}
+              </button>
+            ))}
+          </div>
+          <div className="sidebar-footer">
+            <Leaf size={20} strokeWidth={1.4} />
+            <p>
+              ひと息ついて、
+              <br />
+              読みたいものを。
+            </p>
+            <span>ROMNOA · ロムノア</span>
+            <small>個人利用プレビュー · v0.1</small>
+          </div>
+        </aside>
+
+        <div className="main-shell">
+          <header className="topbar">
+            <a className="mobile-brand" href="/">
+              <img src="/icon.svg" alt="" />
+              ROMNOA
+            </a>
+            <span className="topbar-label">あなたの、読む時間。</span>
+            <div className="topbar-tools">
+              <span className="ad-free">
+                <span />
+                広告のないアプリ
+              </span>
+              <button
+                className="icon-button"
+                aria-label={
+                  dark ? "ライトモードに切り替え" : "ダークモードに切り替え"
+                }
+                onClick={() =>
+                  update((p) => ({ ...p, theme: dark ? "light" : "dark" }))
+                }
+              >
+                {dark ? <Sun size={19} /> : <Moon size={19} />}
+              </button>
+            </div>
+          </header>
+          <main id="main" className="main-content">
+            <div className="page-heading">
+              <div>
+                <span className="eyebrow">
+                  {tab === "home"
+                    ? "YOUR DAILY READING"
+                    : tab === "categories"
+                      ? "FIND YOUR INTEREST"
+                      : tab === "saved"
+                        ? "YOUR READING SHELF"
+                        : "MAKE IT YOURS"}
+                </span>
+                <h1 ref={headingRef}>
+                  {tab === "home"
+                    ? "ホーム"
+                    : tab === "categories"
+                      ? "カテゴリ"
+                      : tab === "saved"
+                        ? "あなたの本棚"
+                        : "設定"}
+                </h1>
+                <p>
+                  {tab === "home"
+                    ? "読みたい話題だけ、ノイズなく。"
+                    : tab === "categories"
+                      ? "気になることから、読みはじめよう。"
+                      : tab === "saved"
+                        ? "気になった記事を、好きなときに。"
+                        : "読む時間を、あなたらしく。"}
+                </p>
+              </div>
+              {tab === "home" && (
+                <button
+                  className={`button refresh-button ${loading ? "refreshing" : ""}`}
+                  onClick={() => void refresh()}
+                  disabled={loading}
+                  aria-label="記事を更新"
+                >
+                  <RefreshCw size={16} />
+                  <span>{loading ? "取得中" : "更新する"}</span>
+                </button>
+              )}
+            </div>
+
+            {(notice || storageError) && (
+              <div className="status-banner warning" role="alert">
+                <span>
+                  {notice ||
+                    "記事を端末にキャッシュできませんでした。オフライン表示は利用できない場合があります。"}
+                </span>
+                <button
+                  className="icon-button"
+                  onClick={() => setNotice("")}
+                  aria-label="通知を閉じる"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+            )}
+            {needRefresh && (
+              <div className="status-banner">
+                <span>新しいバージョンを利用できます。</span>
+                <button
+                  className="text-button"
+                  onClick={() => void updateServiceWorker(true)}
+                >
+                  更新する
+                </button>
+              </div>
+            )}
+            {offline && (
+              <div className="status-banner" role="status">
+                <WifiOff size={18} />
+                オフラインです。端末に残っている記事と保存内容を表示します。
+              </div>
+            )}
+            {error && (
+              <div className="status-banner warning" role="status">
+                <span>{error}</span>
+                <button
+                  className="text-button"
+                  onClick={() => void refresh()}
+                  disabled={loading}
+                >
+                  再試行
+                </button>
+              </div>
+            )}
+            {feed?.sources.some((s) => s.status !== "ok") && (
+              <div className="status-banner warning" role="status">
+                {feed.sources
+                  .filter((s) => s.status !== "ok")
+                  .map(
+                    (s) =>
+                      `${sourceInfo.find((x) => x.id === s.id)!.name}: ${s.status === "cached" ? "取得に失敗したため、前回の記事を表示中" : "現在取得できません"}`,
+                  )
+                  .join(" / ")}
+              </div>
+            )}
+
+            {tab === "home" && (
+              <section className="welcome-card">
+                <div className="welcome-copy">
+                  <span className="eyebrow">
+                    <Sparkles size={13} /> A LITTLE LESS NOISE
+                  </span>
+                  <h2>
+                    読むことに、
+                    <br className="mobile-break" />
+                    もっと自由を。
+                  </h2>
+                  <p>
+                    いくつものサイトの新着を、ひとつの場所に。
+                    <br />
+                    気になる話題を見つけて、あとでゆっくり。
+                  </p>
+                  <span className="welcome-note">
+                    <ShieldCheck size={14} />
+                    登録不要。保存や設定は、この端末だけに。
+                  </span>
+                </div>
+                <div className="book-art" aria-hidden="true">
+                  <div className="book-shadow" />
+                  <div className="book-page page-left">
+                    <i />
+                    <i />
+                    <i />
+                    <b />
+                  </div>
+                  <div className="book-page page-right">
+                    <i />
+                    <i />
+                    <i />
+                    <b />
+                  </div>
+                  <span className="book-bookmark" />
+                  <Leaf className="book-leaf" size={46} strokeWidth={1} />
+                  <span className="art-star">✳</span>
+                </div>
+              </section>
+            )}
+
+            {showList && (
+              <div className="reading-layout">
+                <section
+                  className="feed-column"
+                  aria-label={tab === "saved" ? "保存した記事" : "新着記事"}
+                >
+                  {tab === "saved" && (
+                    <div className="segmented shelf-tabs">
+                      <button
+                        className={savedView === "saved" ? "selected" : ""}
+                        aria-pressed={savedView === "saved"}
+                        onClick={() => setSavedView("saved")}
+                      >
+                        <Bookmark size={16} />
+                        保存した記事<span>{prefs.saved.length}</span>
+                      </button>
+                      <button
+                        className={savedView === "history" ? "selected" : ""}
+                        aria-pressed={savedView === "history"}
+                        onClick={() => setSavedView("history")}
+                      >
+                        <Clock3 size={16} />
+                        閲覧履歴
+                      </button>
+                    </div>
+                  )}
+                  <div className="search-box">
+                    <Search size={18} />
+                    <input
+                      type="search"
+                      placeholder="気になるキーワードを検索"
+                      aria-label="記事を検索"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                    {query && (
+                      <button
+                        className="icon-button"
+                        aria-label="検索をクリア"
+                        onClick={() => setQuery("")}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <div
+                    className="category-chips"
+                    aria-label="カテゴリで絞り込み"
+                  >
+                    {categories.map((c) => (
+                      <button
+                        key={c}
+                        className={category === c ? "selected" : ""}
+                        aria-pressed={category === c}
+                        onClick={() => setCategory(c)}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="list-heading">
+                    <h2>
+                      {tab === "saved"
+                        ? savedView === "history"
+                          ? "最近読んだ記事"
+                          : "保存した記事"
+                        : query
+                          ? "検索結果"
+                          : category === "すべて"
+                            ? "新着記事"
+                            : category}
+                      <span>{groups.length}</span>
+                    </h2>
+                    {!(tab === "saved" && savedView === "history") && (
+                      <label className="sort-control">
+                        <ArrowDownUp size={14} />
+                        <select
+                          aria-label="記事の並び順"
+                          value={sort}
+                          onChange={(e) => setSort(e.target.value as Sort)}
+                        >
+                          <option value="newest">新着順</option>
+                          <option value="unread">未読優先</option>
+                          <option value="category">カテゴリ別</option>
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                  {query && (
+                    <p className="search-note">
+                      取得済みの記事から検索しています。
+                    </p>
+                  )}
+                  <div className="article-list" aria-busy={loading && !feed}>
+                    {loading && !feed ? (
+                      <div
+                        className="skeleton-list"
+                        role="status"
+                        aria-label="記事を読み込み中"
+                      >
+                        {[1, 2, 3, 4].map((n) => (
+                          <div className="skeleton-row" key={n}>
+                            <i />
+                            <span>
+                              <b />
+                              <b />
+                              <b />
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : groups.length === 0 ? (
+                      <div className="empty-state">
+                        <BookOpen size={35} strokeWidth={1.2} />
+                        <h3>
+                          {tab === "saved"
+                            ? savedView === "saved"
+                              ? "気になる記事を、ここに。"
+                              : "読んだ記事がここに並びます"
+                            : error
+                              ? "記事を取得できませんでした"
+                              : "表示する記事がありません"}
+                        </h3>
+                        <p>
+                          {tab === "saved" && savedView === "saved"
+                            ? "記事のしおりをタップすると、あとで読む記事を保存できます。"
+                            : "検索・カテゴリ・配信元・NGワードの設定をご確認ください。"}
+                        </p>
+                        {(query || category !== "すべて") && (
+                          <button
+                            className="button secondary"
+                            onClick={() => {
+                              setQuery("");
+                              setCategory("すべて");
+                            }}
+                          >
+                            絞り込みを解除
+                          </button>
+                        )}
+                        {tab === "home" && (
+                          <button
+                            className="text-button"
+                            onClick={() => navigate("settings")}
+                          >
+                            配信元とNGワードを確認
+                            <ArrowRight size={15} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      groups.map((group) => (
+                        <div className="article-group" key={group[0].id}>
+                          <ArticleRow
+                            article={group[0]}
+                            saved={savedIds.has(group[0].id)}
+                            read={!!prefs.read[group[0].id]}
+                            onOpen={() => open(group[0])}
+                            onSave={() => toggleSaved(group[0])}
+                          />
+                          {group.length > 1 && (
+                            <>
+                              <button
+                                className="similar-toggle"
+                                aria-expanded={expanded.includes(group[0].id)}
+                                onClick={() =>
+                                  setExpanded((p) =>
+                                    p.includes(group[0].id)
+                                      ? p.filter((id) => id !== group[0].id)
+                                      : [...p, group[0].id],
+                                  )
+                                }
+                              >
+                                似ている記事 {group.length - 1}件
+                                <ChevronRight size={13} />
+                              </button>
+                              {expanded.includes(group[0].id) &&
+                                group
+                                  .slice(1)
+                                  .map((a) => (
+                                    <ArticleRow
+                                      key={a.id}
+                                      article={a}
+                                      saved={savedIds.has(a.id)}
+                                      read={!!prefs.read[a.id]}
+                                      onOpen={() => open(a)}
+                                      onSave={() => toggleSaved(a)}
+                                    />
+                                  ))}
+                            </>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {tab === "home" && (
+                    <footer className="feed-footer">
+                      <span
+                        className={`connection-dot ${offline || error ? "disconnected" : ""}`}
+                      />
+                      {feed
+                        ? `${cached ? "端末キャッシュ · " : ""}${articleDate(feed.generatedAt)} 更新情報`
+                        : "配信元の新着をお届けします"}
+                      <span>取得間隔 約10分</span>
+                    </footer>
+                  )}
+                </section>
+                <aside className="reading-aside">
+                  <section className="aside-card">
+                    <span className="eyebrow">YOUR READING</span>
+                    <h3>今日も、自分のペースで。</h3>
+                    <div className="reading-stats">
+                      <div>
+                        <strong>
+                          {
+                            filteredCount.filter((a) => !prefs.read[a.id])
+                              .length
+                          }
+                        </strong>
+                        <span>見つかる未読</span>
+                      </div>
+                      <div>
+                        <strong>{prefs.saved.length}</strong>
+                        <span>あとで読む</span>
+                      </div>
+                    </div>
+                    <button
+                      className="aside-link"
+                      onClick={() => navigate("saved")}
+                    >
+                      本棚を開く
+                      <ArrowRight size={15} />
+                    </button>
+                  </section>
+                  <section className="aside-sources">
+                    <span className="eyebrow">SOURCES</span>
+                    <h3>新着を届けるサイト</h3>
+                    {sourceInfo.map((s) => (
+                      <div className="source-status" key={s.id}>
+                        <span className={`tiny-monogram source-${s.id}`}>
+                          {s.short}
+                        </span>
+                        <span>{s.name}</span>
+                        <span
+                          className={`source-indicator ${prefs.hiddenSources.includes(s.id) ? "muted" : feed?.sources.find((x) => x.id === s.id)?.status === "ok" ? "" : "muted"}`}
+                        />
+                      </div>
+                    ))}
+                    <button
+                      className="text-button"
+                      onClick={() => navigate("settings")}
+                    >
+                      配信元をカスタマイズ
+                      <Settings2 size={14} />
+                    </button>
+                  </section>
+                  <section className="small-note">
+                    <BookOpen size={20} strokeWidth={1.4} />
+                    <h3>気持ちよく、読むために。</h3>
+                    <p>
+                      ロムノアの画面に広告はありません。記事の本文は配信元で開くため、広告が表示される場合があります。
+                    </p>
+                  </section>
+                </aside>
+              </div>
+            )}
+
+            {tab === "categories" && (
+              <>
+                <div className="category-grid">
+                  {categories.slice(1).map((c, i) => (
+                    <button
+                      className="category-card"
+                      key={c}
+                      onClick={() => chooseCategory(c)}
+                    >
+                      <span className={`category-number dot-${i + 1}`}>
+                        0{i + 1}
+                      </span>
+                      <h2>{c}</h2>
+                      <p>{categoryDescriptions[c]}</p>
+                      <span className="category-card-footer">
+                        {filteredCount.filter((a) => a.category === c).length}{" "}
+                        件の記事
+                        <ArrowRight size={18} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <p className="muted-note">
+                  カテゴリは配信元の分類と記事タイトルから推定しています。
+                </p>
+              </>
+            )}
+
+            {tab === "settings" && (
+              <div className="settings-layout">
+                <div className="settings-column">
+                  <section className="settings-card">
+                    <div className="settings-title">
+                      <Sun size={19} />
+                      <h2>読みやすさ</h2>
+                    </div>
+                    <label className="setting-row">
+                      <span>
+                        表示モード<small>端末に合わせることもできます</small>
+                      </span>
+                      <select
+                        aria-label="表示モード"
+                        value={prefs.theme}
+                        onChange={(e) =>
+                          update((p) => ({
+                            ...p,
+                            theme: e.target.value as Preferences["theme"],
+                          }))
+                        }
+                      >
+                        <option value="system">端末に合わせる</option>
+                        <option value="light">ライト</option>
+                        <option value="dark">ダーク</option>
+                      </select>
+                    </label>
+                    <div className="setting-row">
+                      <span>文字サイズ</span>
+                      <div className="segmented font-options">
+                        {(
+                          [
+                            ["small", "小"],
+                            ["medium", "標準"],
+                            ["large", "大"],
+                          ] as const
+                        ).map(([size, label]) => (
+                          <button
+                            key={size}
+                            className={
+                              prefs.fontSize === size ? "selected" : ""
+                            }
+                            aria-pressed={prefs.fontSize === size}
+                            onClick={() =>
+                              update((p) => ({ ...p, fontSize: size }))
+                            }
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="setting-row">
+                      <span>
+                        似ている記事をまとめる
+                        <small>タイトルが近い記事を折りたたみます</small>
+                      </span>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={prefs.groupSimilar}
+                        onChange={(e) =>
+                          update((p) => ({
+                            ...p,
+                            groupSimilar: e.target.checked,
+                          }))
+                        }
+                      />
+                    </label>
+                  </section>
+                  <section className="settings-card">
+                    <div className="settings-title">
+                      <Grid2X2 size={19} />
+                      <h2>配信元</h2>
+                    </div>
+                    <p className="setting-help">
+                      表示するサイトを選べます。本文は元サイトで開きます。
+                    </p>
+                    {sourceInfo.map((s) => (
+                      <label className="setting-row source-setting" key={s.id}>
+                        <span className={`tiny-monogram source-${s.id}`}>
+                          {s.short}
+                        </span>
+                        <span>
+                          {s.name}
+                          <small>{new URL(s.url).hostname}</small>
+                        </span>
+                        <input
+                          type="checkbox"
+                          role="switch"
+                          aria-label={`${s.name}を表示`}
+                          checked={!prefs.hiddenSources.includes(s.id)}
+                          onChange={(e) =>
+                            update((p) => ({
+                              ...p,
+                              hiddenSources: e.target.checked
+                                ? p.hiddenSources.filter((id) => id !== s.id)
+                                : [...p.hiddenSources, s.id],
+                            }))
+                          }
+                        />
+                      </label>
+                    ))}
+                  </section>
+                  <section className="settings-card">
+                    <div className="settings-title">
+                      <ShieldCheck size={19} />
+                      <h2>NGワード</h2>
+                    </div>
+                    <p className="setting-help">
+                      タイトルに含まれる記事を非表示にします。最大50件。
+                    </p>
+                    <form
+                      className="ng-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        addNg();
+                      }}
+                    >
+                      <input
+                        aria-label="NGワード"
+                        placeholder="表示したくないキーワード"
+                        maxLength={80}
+                        value={ngInput}
+                        onChange={(e) => setNgInput(e.target.value)}
+                      />
+                      <button
+                        className="button primary"
+                        disabled={!ngInput.trim()}
+                      >
+                        <Plus size={17} />
+                        追加
+                      </button>
+                    </form>
+                    <div className="ng-tags">
+                      {prefs.ngWords.length ? (
+                        prefs.ngWords.map((word) => (
+                          <button
+                            key={word}
+                            onClick={() =>
+                              update((p) => ({
+                                ...p,
+                                ngWords: p.ngWords.filter((w) => w !== word),
+                              }))
+                            }
+                            aria-label={`NGワードを削除: ${word}`}
+                          >
+                            {word}
+                            <X size={13} />
+                          </button>
+                        ))
+                      ) : (
+                        <span>まだ登録されていません</span>
+                      )}
+                    </div>
+                  </section>
+                  <section className="settings-card">
+                    <div className="settings-title">
+                      <Clock3 size={19} />
+                      <h2>端末のデータ</h2>
+                    </div>
+                    <p className="setting-help">
+                      設定・保存・履歴はこのブラウザだけに保存されます。端末間では同期されません。ブラウザのデータ削除で失われます。
+                    </p>
+                    <details className="clear-data">
+                      <summary>履歴・既読をリセット</summary>
+                      <p>
+                        閲覧履歴と既読を削除します。保存した記事は残ります。
+                      </p>
+                      <button
+                        className="button danger"
+                        onClick={() => {
+                          update((p) => ({ ...p, history: [], read: {} }));
+                          setNotice("履歴と既読をリセットしました。");
+                        }}
+                      >
+                        履歴・既読を削除する
+                      </button>
+                    </details>
+                  </section>
+                </div>
+                <aside className="settings-side">
+                  <section className="install-card">
+                    <img src="/icon.svg" alt="" />
+                    <span className="eyebrow">ALWAYS WITH YOU</span>
+                    <h2>
+                      ホーム画面に、
+                      <br />
+                      ロムノアを。
+                    </h2>
+                    <p>
+                      Safariの共有メニューから
+                      <br />
+                      「ホーム画面に追加」を選択。
+                      <br />
+                      いつもの読む時間が、すぐそこに。
+                    </p>
+                    <span className="pill">インストール無料</span>
+                  </section>
+                  <section className="small-note">
+                    <ShieldCheck size={20} />
+                    <h3>Read freely.</h3>
+                    <p>
+                      広告・トラッキングSDKは使いません。配信元へのアクセスは元記事を開いたときだけ。記事の収集はサーバーで行います。
+                    </p>
+                    <p>
+                      本文の転載許諾は確認できていないため、現在は元サイトへご案内します。
+                    </p>
+                  </section>
+                </aside>
+              </div>
+            )}
+            <footer className="page-footer">
+              <span>
+                ROMNOA <span>—</span> Read freely.
+              </span>
+              <small>読む時間に、余白を。</small>
+            </footer>
+          </main>
+        </div>
+      </div>
+      <nav className="bottom-nav" aria-label="下部ナビゲーション">
+        {tabs.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            className={tab === id ? "active" : ""}
+            aria-current={tab === id ? "page" : undefined}
+            onClick={() => navigate(id)}
+          >
+            <Icon size={21} strokeWidth={tab === id ? 2 : 1.6} />
+            <span>{label}</span>
+            {id === "saved" && prefs.saved.length > 0 && <i />}
+          </button>
+        ))}
+      </nav>
+      {selected && selection && (
+        <Reader
+          article={selected}
+          saved={savedIds.has(selected.id)}
+          read={!!prefs.read[selected.id]}
+          index={selection.index}
+          total={selection.articles.length}
+          onClose={() => setSelection(null)}
+          onSave={() => toggleSaved(selected)}
+          onRead={() => toggleRead(selected)}
+          onMove={(delta) => {
+            const index = selection.index + delta;
+            if (index >= 0 && index < selection.articles.length) {
+              update((p) => markRead(p, selection.articles[index]));
+              setSelection({ ...selection, index });
+            }
+          }}
+        />
+      )}
+    </>
+  );
+}
