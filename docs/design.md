@@ -8,6 +8,8 @@ React 19 / TypeScript / Vite / Tailwind CSS 4。Vercel Node.js 24 Function `GET 
 
 画面: ホーム（検索・並び順・カテゴリ・記事）、カテゴリ（件数と選択）、保存（お気に入り/履歴）、設定（配信元・NGワード・文字・テーマ・PWA案内）。記事詳細はモーダルで出典/日時/元記事導線/保存/既読/前後移動を提供する。全文や外部HTMLは描画しない。
 
+本文が外部サイトであることをホームと詳細の両方で明示する。Safariの自動リーダー案内は詳細で常時表示し、Apple公式手順へリンクする。外部広告の除去機能はなく、この案内を全文リーダーの代替実装や最重要目標の達成と扱わない。
+
 ## データ
 
 Article: id（正規化URL）、url、sourceId、title、publishedAt（不明はnull）、category。本文/画像/広告/外部埋込はAPIにも保持しない。FeedResult: 記事、ソースごとのstatus/取得日時、generatedAt。

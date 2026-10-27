@@ -1353,12 +1353,12 @@ button {
   color: var(--muted);
   font-size: 12px;
 }
-.reader-tip summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: list-item;
+.reader-tip h2 {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 550;
   line-height: 1.8;
-  padding: 12px 0;
+  padding: 6px 0;
 }
 .reader-tip p {
   font-size: 13px;

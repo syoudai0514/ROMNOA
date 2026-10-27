@@ -112,10 +112,10 @@ export function Reader({
           </div>
           <section className="external-reading">
             <BookOpen size={29} strokeWidth={1.3} />
-            <h2>続きは、配信元で。</h2>
+            <h2>この記事は外部サイトで開きます</h2>
             <p>
               {source.name}が配信した{article.category}
-              の記事です。本文・画像は元サイトでご覧いただけます。
+              の記事です。現在、ロムノア内の全文閲覧と、外部サイトの広告を除去する機能はありません。
             </p>
             <a
               className="button primary"
@@ -133,12 +133,24 @@ export function Reader({
               外部サイトが開きます。広告が表示される場合があります。
             </small>
           </section>
-          <details className="reader-tip">
-            <summary>Safariで読みやすくするには</summary>
+          <section className="reader-tip" aria-labelledby="safari-reader-title">
+            <h2 id="safari-reader-title">Safariの自動リーダーを使う</h2>
             <p>
-              元記事をSafariで開き、アドレスバーのページメニューから「リーダーを表示」を選びます。対応しているページで利用でき、すべての広告が消えることを保証するものではありません。
+              iPhoneの「設定」→「アプリ」→「Safari」→「リーダー」で「すべてのウェブサイト」をオンにすると、対応ページを本文中心の表示で開けます。
             </p>
-          </details>
+            <p>
+              元記事のページメニューから「リーダーを表示」も選べます。非対応のページでは使えず、すべての広告を除去できる機能ではありません。ロムノアから自動でオンにはできません。
+            </p>
+            <a
+              className="text-button"
+              href="https://support.apple.com/ja-jp/guide/iphone/iphdc30e3b86/ios"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Appleの設定手順を見る
+              <ExternalLink size={14} />
+            </a>
+          </section>
           <p className="rights-note">
             配信元の権利を尊重し、ロムノアではこの記事の本文を転載していません。
           </p>

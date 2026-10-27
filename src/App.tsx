@@ -312,7 +312,7 @@ export default function App() {
             <div className="topbar-tools">
               <span className="ad-free">
                 <span />
-                広告のないアプリ
+                本文は外部サイト
               </span>
               <button
                 className="icon-button"
@@ -445,7 +445,7 @@ export default function App() {
                   </p>
                   <span className="welcome-note">
                     <ShieldCheck size={14} />
-                    登録不要。保存や設定は、この端末だけに。
+                    本文は配信元で開きます。外部サイトの広告は残ります。
                   </span>
                 </div>
                 <div className="book-art" aria-hidden="true">
