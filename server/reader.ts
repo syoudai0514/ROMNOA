@@ -1,14 +1,16 @@
 import { parseDocument, DomUtils } from "htmlparser2";
 import { getCache } from "@vercel/functions";
 import {
+  readerArticleTarget,
   readerDocumentSchema,
   readerImageUrl,
   type ReaderDocument,
 } from "../src/lib/reader-model.js";
-import type { Article } from "../src/lib/model.js";
+import { classify, type Article } from "../src/lib/model.js";
 import { feedService, type FeedService } from "./feed-service.js";
 
 type Node = ReturnType<typeof parseDocument>["children"][number];
+type Tag = Extract<Node, { attribs: Record<string, string> }>;
 type Block = ReaderDocument["blocks"][number];
 const MAX_HTML = 2_000_000;
 const MAX_TEXT = 100_000;
@@ -58,34 +60,78 @@ export class ReaderError extends Error {
   }
 }
 
-export function articleTarget(
-  url: string,
-): { sourceId: Article["sourceId"]; url: string } | null {
+export const articleTarget = readerArticleTarget;
+
+// Normalize only tracking decoration on direct links, never redirect/proxy targets.
+export function linkedArticle(
+  raw: string,
+  base: string,
+): ReturnType<typeof articleTarget> {
   try {
-    const u = new URL(url);
-    if (
-      u.protocol !== "https:" ||
-      u.port ||
-      u.username ||
-      u.password ||
-      u.search ||
-      u.hash
-    )
+    const u = new URL(raw, base);
+    if (u.protocol === "http:") u.protocol = "https:";
+    if ([...u.searchParams.keys()].some((key) => !/^utm_[a-z_]+$/i.test(key)))
       return null;
-    if (
-      u.hostname === "hamusoku.com" &&
-      /^\/archives\/[1-9]\d{5,11}\.html$/.test(u.pathname)
-    )
-      return { sourceId: "hamusoku", url: u.href };
-    if (
-      u.hostname === "alfalfalfa.com" &&
-      /^\/articles\/[1-9]\d{5,11}\.html$/.test(u.pathname)
-    )
-      return { sourceId: "alfalfa", url: u.href };
-    return null;
+    u.search = "";
+    u.hash = "";
+    return articleTarget(u.href);
   } catch {
     return null;
   }
+}
+
+function hidden(node: Tag) {
+  const a = node.attribs;
+  return (
+    a.hidden !== undefined ||
+    a["aria-hidden"] === "true" ||
+    /display\s*:\s*none|visibility\s*:\s*hidden/i.test(a.style || "")
+  );
+}
+const AD_MARKERS =
+  /(?:^|[-_\s])(?:ad|ads|advert|advertisement|sponsored|affiliate|banner)(?:$|[-_\s])|adsbygoogle|google-auto-placed|kaerebalink|rakuten|amazon|blogroll|antenna/i;
+function advertisement(node: Tag) {
+  const a = node.attribs;
+  return (
+    AD_MARKERS.test(`${a.class || ""} ${a.id || ""}`) ||
+    Object.keys(a).some((key) => key.startsWith("data-ad-")) ||
+    /(?:^|\s)sponsored(?:$|\s)/i.test(a.rel || "") ||
+    (node.name === "a" &&
+      /(?:amazon\.|amzn\.|link\.amazon|rakuten\.|a8\.net|doubleclick\.|googlesyndication\.)/i.test(
+        a.href || "",
+      ))
+  );
+}
+function recommendation(node: Tag) {
+  return /related|recommend|pickup|recent-article-image/i.test(
+    `${node.attribs.class || ""} ${node.attribs.id || ""}`,
+  );
+}
+function imageSource(node: Tag) {
+  const a = node.attribs;
+  return (
+    a["data-original"] || a["data-src"] || a["data-lazy-src"] || a.src || ""
+  );
+}
+function thumbnailUrl(raw: string, sourceId: string) {
+  // Unwrap the publisher's resize URL, but only ever return the approved image CDN.
+  try {
+    const u = new URL(raw);
+    if (
+      u.protocol === "https:" &&
+      u.hostname === "resize.blogsys.jp" &&
+      !u.username &&
+      !u.password &&
+      !u.port &&
+      !u.search
+    ) {
+      const start = u.pathname.indexOf("/https://livedoor.blogimg.jp/");
+      if (start >= 0) raw = u.pathname.slice(start + 1);
+    }
+  } catch {
+    return null;
+  }
+  return readerImageUrl(raw, sourceId);
 }
 
 export function extractArticle(
@@ -119,6 +165,95 @@ export function extractArticle(
   });
   const blocks: Block[] = [];
   const images = new Set<string>();
+  const imageAudit = { excluded: 0, uncertain: 0, related: 0 };
+  const related = new Map<string, ReaderDocument["related"][number]>();
+  const collectRelated = (node: Node, depth = 0) => {
+    if (
+      depth > 120 ||
+      node.type !== "tag" ||
+      hidden(node) ||
+      advertisement(node) ||
+      ["script", "style", "iframe", "noscript", "template", "form"].includes(
+        node.name,
+      )
+    )
+      return;
+    if (node.name === "a") {
+      const target = linkedArticle(node.attribs.href || "", article.url);
+      if (target && target.url !== article.id) {
+        const text = DomUtils.textContent(node).replace(/\s+/g, " ").trim();
+        const title =
+          text ||
+          node.attribs.title ||
+          DomUtils.findAll((el) => el.name === "img", node.children)[0]?.attribs
+            .alt ||
+          "";
+        const thumbnail =
+          DomUtils.findAll((el) => el.name === "img", node.children)
+            .filter(
+              (el) =>
+                !hidden(el) &&
+                !advertisement(el) &&
+                !(
+                  parseFloat(el.attribs.width) <= 4 ||
+                  parseFloat(el.attribs.height) <= 4
+                ) &&
+                (() => {
+                  let parent = el.parent;
+                  while (parent && parent !== node) {
+                    if (
+                      parent.type === "tag" &&
+                      (hidden(parent) || advertisement(parent))
+                    )
+                      return false;
+                    parent = parent.parent;
+                  }
+                  return true;
+                })(),
+            )
+            .map((el) => thumbnailUrl(imageSource(el), target.sourceId))
+            .find(Boolean) || null;
+        const old = related.get(target.url);
+        if (old || related.size < 40)
+          related.set(target.url, {
+            article: {
+              id: target.url,
+              url: target.url,
+              sourceId: target.sourceId,
+              title: (title || old?.article.title || "").slice(0, 300),
+              category: classify(title || old?.article.title || ""),
+              publishedAt: null,
+            },
+            thumbnail: thumbnail || old?.thumbnail || null,
+          });
+      }
+    }
+    node.children.forEach((child) => collectRelated(child, depth + 1));
+  };
+  // Explicit editorial areas only. No execution of third-party recommendation scripts.
+  selected.forEach((root) => collectRelated(root));
+  const editorial = DomUtils.findAll((el) => recommendation(el), doc.children);
+  for (const root of editorial) {
+    let parent = root.parent;
+    let safe = true;
+    while (parent) {
+      if (
+        parent.type === "tag" &&
+        (hidden(parent) ||
+          advertisement(parent) ||
+          ["script", "noscript", "template"].includes(parent.name))
+      )
+        safe = false;
+      parent = parent.parent;
+    }
+    if (safe) collectRelated(root);
+  }
+  const countImages = (node: Node) =>
+    node.type === "tag"
+      ? node.name === "img"
+        ? 1
+        : DomUtils.findAll((el) => el.name === "img", node.children).length
+      : 0;
   let text = "",
     length = 0;
   const flush = () => {
@@ -150,39 +285,72 @@ export function extractArticle(
     }
     if (node.type !== "tag") return;
     const a = node.attribs;
-    const tokens = `${a.class || ""} ${a.id || ""}`;
     if (
       NON_CONTENT.has(node.name) ||
-      a.hidden !== undefined ||
-      a["aria-hidden"] === "true" ||
-      /display\s*:\s*none|visibility\s*:\s*hidden/i.test(a.style || "") ||
-      /(?:^|[-_\s])(?:ad|ads|advert|advertisement)(?:$|[-_\s])|adsbygoogle|google-auto-placed|related|recommend|pickup|kaerebalink|rakuten|amazon|blogroll|antenna/i.test(
-        tokens,
-      ) ||
-      Object.keys(a).some((k) => k.startsWith("data-ad-"))
-    )
+      hidden(node) ||
+      advertisement(node) ||
+      recommendation(node)
+    ) {
+      const count = countImages(node);
+      if (recommendation(node) && !advertisement(node))
+        imageAudit.related += count;
+      else imageAudit.excluded += count;
       return;
+    }
     if (node.name === "br") {
       text += "\n";
       return;
     }
     if (node.name === "img") {
-      if (
-        (a.width && Number(a.width) <= 4) ||
-        (a.height && Number(a.height) <= 4)
-      )
+      if (parseFloat(a.width) <= 4 || parseFloat(a.height) <= 4) {
+        imageAudit.excluded++;
         return;
-      const image = readerImageUrl(
-        a["data-src"] || a.src || "",
-        article.sourceId,
-      );
-      if (image && !images.has(image) && images.size < 24) {
+      }
+      let image = readerImageUrl(imageSource(node), article.sourceId);
+      let parent = node.parent;
+      while (parent) {
+        if (parent.type === "tag" && parent.name === "a") {
+          const raw = parent.attribs.href || "";
+          const linked = linkedArticle(raw, article.url);
+          if (linked && linked.url !== article.id) {
+            imageAudit.related++;
+            return;
+          }
+          const full = readerImageUrl(raw, article.sourceId);
+          if (!full && linked?.url !== article.id) {
+            imageAudit.uncertain++;
+            return;
+          }
+          if (full && image) image = full;
+          break;
+        }
+        parent = parent.parent;
+      }
+      if (!image) {
+        imageAudit.uncertain++;
+        return;
+      }
+      let context = node.parent;
+      let cover = false;
+      while (context) {
+        if (
+          context.type === "tag" &&
+          /(?:^|\s)(?:eye-catch|eyecatch|article-cover)(?:\s|$)/i.test(
+            context.attribs.class || "",
+          )
+        )
+          cover = true;
+        if (selected.some((root) => root === context)) break;
+        context = context.parent;
+      }
+      if (!images.has(image) && images.size < 80) {
         flush();
         images.add(image);
         blocks.push({
           type: "image",
           url: image,
           alt: (a.alt || "記事内の画像").slice(0, 160),
+          ...(cover ? { role: "cover" as const } : {}),
         });
       }
       return;
@@ -196,12 +364,17 @@ export function extractArticle(
   if (!blocks.length || (!length && !images.size))
     throw new ReaderError("empty", "このページの本文を読み取れませんでした。");
   return readerDocumentSchema.parse({
+    schemaVersion: 2,
     articleId: article.id,
     sourceId: article.sourceId,
     title: article.title,
     url: article.url,
     fetchedAt: new Date(now).toISOString(),
     blocks,
+    imageAudit,
+    related: [...related.values()]
+      .filter((r) => r.article.title.length >= 4)
+      .slice(0, 12),
   });
 }
 
@@ -286,7 +459,7 @@ export class MemoryReaderCache implements ReaderCache {
 }
 function runtimeCache(): ReaderCache {
   if (!process.env.VERCEL) return new MemoryReaderCache();
-  const cache = getCache({ namespace: "romnoa-personal-reader-v1" });
+  const cache = getCache({ namespace: "romnoa-personal-reader-v2" });
   return {
     async get(key) {
       const value = (await cache.get(key)) as ReaderEntry | undefined;
@@ -313,20 +486,21 @@ export class ReaderService {
     private load = fetchArticle,
     private now = Date.now,
   ) {}
-  async get(id: string): Promise<ReaderDocument> {
+  async get(id: string, from?: string): Promise<ReaderDocument> {
     if (!articleTarget(id))
       throw new ReaderError("not_found", "対応していない記事です。");
-    const pending = this.pending.get(id);
+    const key = `${id}\n${from || ""}`;
+    const pending = this.pending.get(key);
     if (pending) return pending;
-    const work = this.read(id);
-    this.pending.set(id, work);
+    const work = this.read(id, from);
+    this.pending.set(key, work);
     try {
       return await work;
     } finally {
-      this.pending.delete(id);
+      this.pending.delete(key);
     }
   }
-  private async read(id: string): Promise<ReaderDocument> {
+  private async read(id: string, from?: string): Promise<ReaderDocument> {
     let old: ReaderEntry | undefined;
     try {
       old = await this.cache.get(id);
@@ -347,11 +521,30 @@ export class ReaderService {
         "本文を取得できませんでした。時間をおいて再試行してください。",
       );
     const feed = await this.feeds.get();
-    const article = feed.articles.find((a) => a.id === id);
+    let article = feed.articles.find((a) => a.id === id);
+    if (!article && from && articleTarget(from)) {
+      // A client-provided parent is not proof: verify the exact link in a fresh,
+      // server-extracted parent document. Do not recursively fetch supplied URLs.
+      try {
+        const parent = await this.cache.get(from);
+        const parsed = readerDocumentSchema.safeParse(parent?.document);
+        if (
+          parsed.success &&
+          parsed.data.articleId === from &&
+          now - Date.parse(parsed.data.fetchedAt) >= -60_000 &&
+          now - Date.parse(parsed.data.fetchedAt) < MAX_AGE
+        )
+          article = parsed.data.related.find(
+            (r) => r.article.id === id,
+          )?.article;
+      } catch {
+        console.error("ROMNOA reader_parent_cache_failed");
+      }
+    }
     if (!article)
       throw new ReaderError(
         "not_found",
-        "現在の配信フィードにない記事です。端末に保存した本文があればそちらを利用できます。",
+        "配信フィードにも、確認済みの関連記事にもない記事です。元の記事を開き直してからお試しください。",
       );
     try {
       const document = await this.load(article);
@@ -406,13 +599,22 @@ export async function handleReader(
     );
   const params = new URL(request.url).searchParams;
   const id = params.get("article") || "";
-  if ([...params.keys()].length !== 1 || id.length > 2048 || !articleTarget(id))
+  const from = params.get("from") || undefined;
+  if (
+    params.getAll("article").length !== 1 ||
+    params.getAll("from").length > 1 ||
+    [...params.keys()].some((key) => key !== "article" && key !== "from") ||
+    (params.has("from") &&
+      (!from || from.length > 2048 || !articleTarget(from) || from === id)) ||
+    id.length > 2048 ||
+    !articleTarget(id)
+  )
     return Response.json(
       { error: "記事IDが正しくありません。", code: "not_found" },
       { status: 400, headers },
     );
   try {
-    return Response.json(await service.get(id), { headers });
+    return Response.json(await service.get(id, from), { headers });
   } catch (error) {
     const problem =
       error instanceof ReaderError

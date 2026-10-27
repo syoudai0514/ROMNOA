@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   articleTarget,
+  linkedArticle,
   extractArticle,
   fetchArticle,
   ReaderService,
@@ -16,6 +17,116 @@ const html = `<html><body><nav>サイトナビ</nav><div class="article-body-inn
 const document = () => extractArticle(html, a);
 
 describe("Personal article reader", () => {
+  it("labels publisher eye-catch images separately from photographs in the body", () => {
+    const d = extractArticle(
+      `<div class="article-body-inner"><div class="eye-catch"><img src="${picture}"></div><p>写真の本文</p></div>`,
+      a,
+    );
+    expect(d.blocks[0]).toMatchObject({ type: "image", role: "cover" });
+  });
+  it("separates article photographs, affiliate banners, uncertain links and other-article images", () => {
+    const full = picture.replace("example", "original");
+    const other = article(55);
+    const d = extractArticle(
+      `<meta property="og:image" content="${picture.replace("example", "outside")}">
+      <div class="article-body-inner">
+      <a href="${full}"><img data-original="${picture}" src="https://tracker.invalid/placeholder" width="500px"></a>
+      <a href="https://amzn.to/product"><img src="${picture.replace("example", "affiliate")}"></a>
+      <a href="https://unknown.invalid/redirect"><img src="${picture.replace("example", "uncertain")}"></a>
+      <img src="https://tracker.invalid/pixel.png" width="1px" height="1px">
+      <img src="https://other-images.invalid/unverified.jpg">
+      <div class="manual-related"><a href="${other.url}?utm_source=test"><img src="${picture.replace("example", "other")}">${other.title}</a></div>
+      <div class="advertisement"><a href="${article(56).url}">広告からの誘導<img src="${picture}"></a></div>
+      <p>記事の本文。</p></div>`,
+      a,
+    );
+    expect(d.blocks.filter((b) => b.type === "image")).toEqual([
+      { type: "image", url: full, alt: "記事内の画像" },
+    ]);
+    expect(d.imageAudit).toEqual({ excluded: 3, uncertain: 2, related: 1 });
+    expect(d.related).toHaveLength(1);
+    expect(d.related[0].article.id).toBe(other.id);
+    expect(d.related[0].thumbnail).toBe(picture.replace("example", "other"));
+  });
+  it("collects editorial titles and thumbnails separately without executing recommendation scripts", () => {
+    const other = article(65, { title: "[テスト用] 休日の料理と写真まとめ" });
+    const thumb = picture.replace("example", "thumbnail");
+    const d = extractArticle(
+      `<div class="article-body-inner">本文</div>
+      <ul class="recent-article-image"><li><a href="${other.url}"><img src="https://resize.blogsys.jp/hash/crop1/100x100/${thumb}"></a>
+      <a href="${other.url}?utm_medium=related">${other.title}</a></li></ul>
+      <aside class="ads"><div class="related"><a href="${article(66).url}">広告内の別記事リンク</a></div></aside>
+      <div hidden><ul class="related"><a href="${article(67).url}">隠された別記事リンク</a></ul></div>
+      <script>document.write('unsafe recommendations')</script>`,
+      a,
+    );
+    expect(d.related).toEqual([
+      { article: { ...other, publishedAt: null }, thumbnail: thumb },
+    ]);
+    expect(d.blocks).toEqual([{ type: "text", text: "本文" }]);
+  });
+  it("normalizes only direct editorial links and rejects redirect parameters and foreign hosts", () => {
+    expect(
+      linkedArticle("/archives/11000055.html?utm_source=x#comments", a.url)
+        ?.url,
+    ).toBe(article(55).url);
+    expect(
+      linkedArticle("http://hamusoku.com/archives/11000055.html", a.url)?.url,
+    ).toBe(article(55).url);
+    for (const link of [
+      "javascript:alert(1)",
+      "https://hamusoku.com/archives/11000055.html?url=https://evil.test",
+      "https://evil.test/archives/11000055.html",
+      "https://user@hamusoku.com/archives/11000055.html",
+    ])
+      expect(linkedArticle(link, a.url)).toBeNull();
+  });
+  it("follows a verified related chain outside RSS but refuses invented or expired parent links", async () => {
+    const second = article(70),
+      third = article(71),
+      invented = article(72);
+    let now = Date.now();
+    const cache = new MemoryReaderCache();
+    const load = vi.fn(async (target) =>
+      extractArticle(
+        `<div class="article-body-inner"><p>本文の画像まとめ</p>
+      <a href="${target.id === a.id ? second.url : third.url}">次に気になる画像まとめ</a></div>`,
+        target,
+        now,
+      ),
+    );
+    const service = new ReaderService(
+      cache,
+      { get: async () => feed },
+      load,
+      () => now,
+    );
+    await service.get(a.id);
+    await expect(service.get(second.id, invented.id)).rejects.toThrow(
+      "確認済み",
+    );
+    await expect(service.get(invented.id, a.id)).rejects.toThrow("確認済み");
+    await service.get(second.id, a.id);
+    await service.get(third.id, second.id);
+    expect(load).toHaveBeenCalledTimes(3);
+    now += 86_400_001;
+    await expect(service.get(second.id, a.id)).rejects.toThrow("確認済み");
+    expect(load).toHaveBeenCalledTimes(3);
+  });
+  it("rejects forged related image provenance and obsolete cached image classification", () => {
+    const d = document();
+    expect(
+      readerDocumentSchema.safeParse({ ...d, schemaVersion: 1 }).success,
+    ).toBe(false);
+    expect(
+      readerDocumentSchema.safeParse({
+        ...d,
+        related: [
+          { article: article(55), thumbnail: "https://ads.invalid/banner.jpg" },
+        ],
+      }).success,
+    ).toBe(false);
+  });
   it("extracts both body parts and excludes ads, page furniture, scripts, iframes, videos and tracking images", () => {
     const d = document();
     const text = d.blocks
@@ -117,7 +228,7 @@ describe("Personal article reader", () => {
     expect(load).toHaveBeenCalledTimes(1);
     await expect(
       service.get("https://hamusoku.com/archives/11999999.html"),
-    ).rejects.toThrow("配信フィードにない");
+    ).rejects.toThrow("確認済みの関連記事にもない");
     expect(load).toHaveBeenCalledTimes(1);
   });
   it("cools down upstream failures and does not repeatedly hit a broken source", async () => {
@@ -153,6 +264,14 @@ describe("Personal article reader", () => {
         encodeURIComponent(a.id) +
         "&article=" +
         encodeURIComponent(a.id),
+      "?article=" + encodeURIComponent(a.id) + "&from=http://127.0.0.1/",
+      "?article=" + encodeURIComponent(a.id) + "&from=",
+      "?article=" +
+        encodeURIComponent(a.id) +
+        "&from=" +
+        encodeURIComponent(article(55).id) +
+        "&from=" +
+        encodeURIComponent(article(55).id),
     ])
       expect(
         (
@@ -173,5 +292,21 @@ describe("Personal article reader", () => {
     );
     expect(result.status).toBe(200);
     expect(result.headers.get("Cache-Control")).toBe("private, no-store");
+    const from = article(55).id;
+    expect(
+      (
+        await handleReader(
+          new Request(
+            "https://app.test/api/reader?article=" +
+              encodeURIComponent(a.id) +
+              "&from=" +
+              encodeURIComponent(from),
+          ),
+          service,
+          true,
+        )
+      ).status,
+    ).toBe(200);
+    expect(service.get).toHaveBeenLastCalledWith(a.id, from);
   });
 });

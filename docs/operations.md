@@ -8,9 +8,9 @@ Node.js 24 / npm。`npm ci` → `npm run dev`。本番相当ビルドは `npm ru
 
 ## Vercelへの配置
 
-GitHubのROMNOAをVercelでImportしViteを選ぶ。Node.js 24、build `npm run build`、output `dist`。`vercel.json`にhnd1と15秒の上限、CSPを設定済み。DBやアプリAPIキーは不要。個人利用中はPreview Deployment Protectionを維持する。一般公開前に配信元表示条件・実機確認を完了する。
+GitHubのROMNOAをVercelでImportしViteを選ぶ。Node.js 24、build `npm run build`、output `dist`。`vercel.json`にhnd1と一覧15秒/本文25秒の上限、CSPを設定済み。DBやアプリAPIキーは不要。個人利用中はPreview Deployment Protectionを維持する。一般公開前に配信元表示条件・実機確認を完了する。
 
-一覧APIは `/api/articles`（クエリ不可）。本文APIは `/api/reader?article=<正規化記事URL>` で、既知のフィード記事・固定数値記事パスだけを取得する。UI/機密設定をCDNに混在させない。検索・NG・保存はサーバーへ送らない。Vercel Runtime Cacheはサーバーの自動設定を使用。キャッシュが使えない場合はログが出るので本番で確認する。
+一覧APIは `/api/articles`（クエリ不可）。本文APIは `/api/reader?article=<正規化記事URL>` で、既知のフィード記事・固定数値記事パス、または `&from=<元記事ID>` による確認済み関連記事だけを取得する。親キャッシュの有効期限/リンク完全一致を必須とし、任意URLプロキシは作らない。UI/機密設定をCDNに混在させない。検索・NG・保存はサーバーへ送らない。Vercel Runtime Cacheはサーバーの自動設定を使用。キャッシュが使えない場合はログが出るので本番で確認する。
 
 本文リーダーは認証付きPreview専用。Vercel Authenticationを外さない。本文APIはVERCEL_ENVがpreview以外なら403になる。一般公開・Productionへ拡大する際は、本文利用条件・許諾と認証を先に確認する。APIからのデプロイはtarget=`staging`でPreviewを明示する（初回にtargetを省くとProductionになる場合がある）。
 
@@ -49,7 +49,9 @@ Vercelの直前の正常デプロイへ戻す。Gitコミットを識別し、�
 - [ ] 実機機種・iOS版・URL・Git SHA・日時を記録
 - [ ] Safariで初回取得、カテゴリ、検索、配信元選択を操作
 - [ ] 保存/既読→Safari終了→再起動で保持
-- [ ] 元記事を開き、外部広告の注意文とSafariリーダー案内を確認
+- [ ] 記事画像の初期表示・拡大・前後画像・閉じるを確認
+- [ ] 関連記事を2段階辿る→元記事へ戻る→スクロール復元・保存/既読を確認
+- [ ] 元記事の補助リンクの外部広告注意文とSafariリーダー案内を確認
 - [ ] 前/次/閉じる・キーボード表示・スクロール復元を確認
 - [ ] ライト/ダーク・文字大・375px相当幅で横はみ出しなし
 - [ ] 共有→ホーム画面に追加→アイコンからstandalone起動
@@ -57,3 +59,11 @@ Vercelの直前の正常デプロイへ戻す。Gitコミットを識別し、�
 - [ ] 画面上下のsafe areaと下部タブの操作性を確認
 
 この全項目と requirements.md の受け入れ条件を確認して初めてPhase 1完成とする。
+
+## 画像優先版の運用
+
+画像は同意ボタンを廃止し、記事表示時に選別した画像だけを許可CDNから遅延読込する。記事画像と別記事サムネイルを混同しない。本文画像は最大80枚、関連記事12件。広告/不明画像を表示するフォールバックはない。画像バイナリのオフライン保存は行わない。
+
+画像がない/保留になる場合は本文ルート・配信フォルダ・リンク先・lazy属性・広告要素を確認し、分類の回帰テストを追加する。CSPへ任意ホストを追加して解決しない。関連記事が開けない場合は親キャッシュが有効か、relatedに対象IDがあるかを確認。新着RSS外の親キャッシュが失効した場合は許可済みの経路から開き直す必要がある。
+
+新しい分類のリリースではRuntime Cacheのv2 namespaceとschemaVersion=2を使用し、旧版本文キャッシュは読込拒否。お気に入り・既読は維持する。画像の見出しとの意味的一致を保証する機能ではない。一般公開の権利条件は未確認のままであり、Preview認証を維持する。

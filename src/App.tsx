@@ -59,6 +59,8 @@ const categoryDescriptions: Record<string, string> = {
   話題: "思わず誰かに話したい",
 };
 
+type ReaderSelection = { articles: Article[]; index: number; from?: string };
+
 export default function App() {
   const [initial] = useState(loadPreferences);
   const [prefs, setPrefs] = useState<Preferences>(initial.value);
@@ -71,10 +73,8 @@ export default function App() {
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
   const [ngInput, setNgInput] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [selection, setSelection] = useState<{
-    articles: Article[];
-    index: number;
-  } | null>(null);
+  const [selection, setSelection] = useState<ReaderSelection | null>(null);
+  const [readerTrail, setReaderTrail] = useState<ReaderSelection[]>([]);
   const [systemDark, setSystemDark] = useState(
     () => matchMedia("(prefers-color-scheme: dark)").matches,
   );
@@ -227,6 +227,7 @@ export default function App() {
     }));
   }
   function open(article: Article, sequence = articles) {
+    setReaderTrail([]);
     update((p) => markRead(p, article));
     setSelection({
       articles: sequence,
@@ -445,7 +446,7 @@ export default function App() {
                   </p>
                   <span className="welcome-note">
                     <ShieldCheck size={14} />
-                    記事をタップして本文を読む。画像は必要なときだけ。
+                    記事の画像を、広告なしで。気になる関連記事へ、そのまま。
                   </span>
                 </div>
                 <div className="book-art" aria-hidden="true">
@@ -966,7 +967,7 @@ export default function App() {
                     <ShieldCheck size={20} />
                     <h3>Read freely.</h3>
                     <p>
-                      広告・トラッキングSDKは使いません。記事の収集・本文取得はサーバーで行います。画像は表示ボタンを押したときに配信元の画像サーバーから読み込みます。
+                      広告・トラッキングSDKは使いません。記事の収集・本文取得はサーバーで行います。記事画像と関連記事のサムネイルは、選別後に配信元の画像サーバーから読み込みます。広告・誘導画像と判定できるもの、判定保留の画像は読み込みません。
                     </p>
                     <p>
                       個人用プレビューの読書機能です。一般公開に向けた本文の利用条件・許諾確認は別途必要です。
@@ -1001,6 +1002,22 @@ export default function App() {
       {selected && selection && (
         <Reader
           article={selected}
+          from={selection.from}
+          onRelated={(article) => {
+            setReaderTrail((trail) => [...trail, selection].slice(-50));
+            update((p) => markRead(p, article));
+            setSelection({ articles: [article], index: 0, from: selected.id });
+          }}
+          onBack={
+            readerTrail.length
+              ? () => {
+                  setSelection(readerTrail[readerTrail.length - 1]);
+                  setReaderTrail((trail) => trail.slice(0, -1));
+                }
+              : undefined
+          }
+          hiddenSources={prefs.hiddenSources}
+          ngWords={prefs.ngWords}
           saved={savedIds.has(selected.id)}
           read={!!prefs.read[selected.id]}
           index={selection.index}

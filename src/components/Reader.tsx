@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
 import { useReader } from "../lib/use-reader";
+import { ArticleImages } from "./ArticleImages";
 
 export function Reader({
   article,
@@ -21,6 +22,11 @@ export function Reader({
   onSave,
   onRead,
   onMove,
+  from,
+  onRelated,
+  onBack,
+  hiddenSources,
+  ngWords,
 }: {
   article: Article;
   saved: boolean;
@@ -31,13 +37,43 @@ export function Reader({
   onSave: () => void;
   onRead: () => void;
   onMove: (delta: number) => void;
+  from?: string;
+  onRelated: (article: Article) => void;
+  onBack?: () => void;
+  hiddenSources: string[];
+  ngWords: string[];
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
-  const reading = useReader(article.id);
-  const [imagesFor, setImagesFor] = useState("");
+  const reading = useReader(article.id, from);
+  const [textFor, setTextFor] = useState<Set<string>>(() => new Set());
+  const pictures =
+    reading.document?.blocks.filter((b) => b.type === "image") || [];
+  const related =
+    reading.document?.related.filter(
+      (r) =>
+        !hiddenSources.includes(r.article.sourceId) &&
+        !ngWords.some((word) =>
+          r.article.title
+            .toLocaleLowerCase()
+            .includes(word.toLocaleLowerCase()),
+        ),
+    ) || [];
   const positions = useRef<Record<string, number>>({});
+  const restoring = useRef(false);
+  function rememberPosition() {
+    if (!reading.document || !content.current) return;
+    positions.current[article.id] = content.current.scrollTop;
+    try {
+      sessionStorage.setItem(
+        `romnoa:detail:${article.id}`,
+        String(content.current.scrollTop),
+      );
+    } catch {
+      /* optional persistence */
+    }
+  }
   useLayoutEffect(() => {
     const d = dialog.current!;
     d.showModal();
@@ -52,6 +88,7 @@ export function Reader({
     try {
       positions.current[article.id] =
         Number(sessionStorage.getItem(`romnoa:detail:${article.id}`)) || 0;
+      restoring.current = positions.current[article.id] > 0;
       el.scrollTop = positions.current[article.id];
     } catch {
       /* session storage unavailable */
@@ -68,26 +105,82 @@ export function Reader({
     };
   }, [article.id]);
   useLayoutEffect(() => {
-    if (reading.document && content.current)
-      content.current.scrollTop = positions.current[article.id] || 0;
+    const el = content.current;
+    if (!reading.document || !el) return;
+    const target = positions.current[article.id] || 0;
+    if (!target) {
+      restoring.current = false;
+      el.scrollTop = 0;
+      return;
+    }
+    // Image heights arrive asynchronously. Keep restoring until layout settles,
+    // but immediately give control back when the user touches or scrolls.
+    restoring.current = true;
+    const restore = () => {
+      if (restoring.current) el.scrollTop = target;
+    };
+    const observer = new ResizeObserver(restore);
+    const finish = () => {
+      restoring.current = false;
+      observer.disconnect();
+    };
+    const timer = setTimeout(finish, 8000);
+    el.querySelectorAll(".reading-body, .reader-related").forEach((node) =>
+      observer.observe(node),
+    );
+    el.addEventListener("load", restore, true);
+    el.addEventListener("pointerdown", finish, { passive: true });
+    el.addEventListener("touchstart", finish, { passive: true });
+    el.addEventListener("wheel", finish, { passive: true });
+    restore();
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      el.removeEventListener("load", restore, true);
+      el.removeEventListener("pointerdown", finish);
+      el.removeEventListener("touchstart", finish);
+      el.removeEventListener("wheel", finish);
+    };
   }, [reading.document, article.id]);
   return (
     <dialog
       ref={dialog}
       className="reader"
       aria-labelledby="reader-title"
-      onCancel={onClose}
+      onCancel={() => {
+        rememberPosition();
+        onClose();
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) {
+          rememberPosition();
+          onClose();
+        }
       }}
     >
       <div className="reader-inner">
         <header className="reader-toolbar">
-          <span className="eyebrow">ROMNOA / ARTICLE</span>
+          {onBack ? (
+            <button
+              className="button quiet reader-back"
+              onClick={() => {
+                rememberPosition();
+                onBack();
+              }}
+            >
+              <ArrowLeft size={17} />
+              元の記事へ戻る
+            </button>
+          ) : (
+            <span className="eyebrow">ROMNOA / ARTICLE</span>
+          )}
           <button
             className="icon-button"
             aria-label="記事を閉じる"
-            onClick={onClose}
+            onClick={() => {
+              rememberPosition();
+              onClose();
+            }}
             autoFocus
           >
             <X size={21} />
@@ -97,7 +190,7 @@ export function Reader({
           className="reader-content"
           ref={content}
           onScroll={(e) => {
-            if (!reading.document) return;
+            if (!reading.document || restoring.current) return;
             const y = e.currentTarget.scrollTop;
             positions.current[article.id] = y;
             try {
@@ -153,42 +246,95 @@ export function Reader({
                 <Check size={14} />
                 アプリ内リーダー<span>出典：{source.name}</span>
               </div>
-              {reading.document.blocks.some((b) => b.type === "image") && (
+              <div className="image-classification">
+                <strong>この記事の画像 {pictures.length}枚</strong>
+                <details>
+                  <summary>画像の判定について</summary>
+                  <p>
+                    本文内の掲載位置・画像の配信元・リンク先から選別しています。
+                  </p>
+                  <p>
+                    本文内で広告・誘導と判定：
+                    {reading.document.imageAudit.excluded}
+                    枚除外／別記事への画像：
+                    {reading.document.imageAudit.related}枚分離／判定保留：
+                    {reading.document.imageAudit.uncertain}
+                    枚非表示。画像の内容と見出しの一致を保証する判定ではありません。
+                  </p>
+                </details>
+              </div>
+              {pictures.length > 0 ? (
+                <ArticleImages key={article.id} pictures={pictures} />
+              ) : (
+                <p className="reader-image-placeholder">
+                  この記事で表示できる画像は見つかりませんでした。判定保留の画像は読み込んでいません。
+                </p>
+              )}
+              {pictures.length > 0 && (
                 <button
-                  className="button secondary image-consent"
+                  className="button secondary body-toggle"
+                  aria-expanded={textFor.has(article.id)}
                   onClick={() =>
-                    setImagesFor(imagesFor === article.id ? "" : article.id)
+                    setTextFor((previous) => {
+                      const next = new Set(previous);
+                      if (next.has(article.id)) next.delete(article.id);
+                      else next.add(article.id);
+                      return next;
+                    })
                   }
-                  aria-pressed={imagesFor === article.id}
                 >
-                  {imagesFor === article.id
-                    ? "画像を非表示"
-                    : "記事の画像を表示"}
+                  {textFor.has(article.id) ? "本文を閉じる" : "本文も読む"}
                 </button>
               )}
-              {reading.document.blocks.map((block, i) =>
-                block.type === "text" ? (
-                  <p key={i}>{block.text}</p>
-                ) : imagesFor === article.id ? (
-                  <figure key={i}>
-                    <img
-                      src={block.url}
-                      alt={block.alt}
-                      loading="lazy"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                    />
-                  </figure>
-                ) : (
-                  <div className="reader-image-placeholder" key={i}>
-                    記事内の画像（表示ボタンで読み込み）
-                  </div>
-                ),
-              )}
+              {(textFor.has(article.id) || !pictures.length) &&
+                reading.document.blocks.map((block, i) =>
+                  block.type === "text" ? <p key={i}>{block.text}</p> : null,
+                )}
               {reading.storageError && (
                 <p className="reader-storage-warning" role="status">
                   本文を端末に保存できませんでした。この画面では引き続き読めます。
                 </p>
+              )}
+            </section>
+          )}
+          {reading.document && (
+            <section className="reader-related" aria-label="ほかのまとめ">
+              <h2>気になるまとめを、もうひとつ</h2>
+              <p>別の記事です。タップするとアプリ内で開きます。</p>
+              {related.length ? (
+                related.map(({ article: next, thumbnail }) => (
+                  <button
+                    className="related-card"
+                    key={next.id}
+                    onClick={() => {
+                      rememberPosition();
+                      onRelated(next);
+                    }}
+                  >
+                    {thumbnail && (
+                      <img
+                        src={thumbnail}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        onError={(event) => {
+                          event.currentTarget.hidden = true;
+                        }}
+                      />
+                    )}
+                    <span>
+                      <small>
+                        別の記事 ·{" "}
+                        {sourceInfo.find((s) => s.id === next.sourceId)?.name}
+                      </small>
+                      <strong>{next.title}</strong>
+                    </span>
+                    <ArrowRight size={17} />
+                  </button>
+                ))
+              ) : (
+                <p>このページから開ける関連記事はありません。</p>
               )}
             </section>
           )}
@@ -233,7 +379,10 @@ export function Reader({
           <button
             className="button quiet"
             disabled={index <= 0}
-            onClick={() => onMove(-1)}
+            onClick={() => {
+              rememberPosition();
+              onMove(-1);
+            }}
           >
             <ArrowLeft size={18} />
             前の記事
@@ -244,7 +393,10 @@ export function Reader({
           <button
             className="button quiet"
             disabled={index >= total - 1}
-            onClick={() => onMove(1)}
+            onClick={() => {
+              rememberPosition();
+              onMove(1);
+            }}
           >
             次の記事
             <ArrowRight size={18} />

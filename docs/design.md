@@ -2,17 +2,17 @@
 
 ## 構成
 
-React 19 / TypeScript / Vite / Tailwind CSS 4。Vercel Node.js 24の `GET /api/articles`・`GET /api/reader?article=<記事ID>` とUIを分離する。外部DB・ユーザー登録・AI・広告SDKは導入しない。個人用プレビューをVercel Authenticationで保護する。
+React 19 / TypeScript / Vite / Tailwind CSS 4。Vercel Node.js 24の `GET /api/articles`・`GET /api/reader?article=<記事ID>[&from=<元記事ID>]` とUIを分離する。外部DB・ユーザー登録・AI・広告SDKは導入しない。個人用プレビューをVercel Authenticationで保護する。
 
 `server/sources.ts` → 安全なRSS取得 → XMLパーサー → 正規化・重複排除 → JSON API → React → localStorage。
 
 画面: ホーム（検索・並び順・カテゴリ・記事）、カテゴリ（件数と選択）、保存（お気に入り/履歴）、設定（配信元・NGワード・文字・テーマ・PWA案内）。記事タップで本文リーダーを開き、出典・保存・既読・前後移動を提供する。本文はテキストブロックと検証した記事画像URLの配列へ変換し、元のHTMLは描画しない。
 
-本文はアプリ内に表示し、画像は表示ボタンを押すまで読み込まない。元記事とSafari案内は折りたたんだ補助導線に置く。取得失敗時はエラー・再試行を表示し、外部サイトへ自動遷移しない。一般公開の全文再配信許諾は未確認。個人用Previewに限定する（ADR 003）。
+画像優先: 記事を開いたら選別した記事画像を表示し、タップで拡大。本文は「本文も読む」で開く（画像なしなら本文を初期表示）。関連記事のタイトルとサムネイルを別領域に置き、アプリ内で連続閲覧・元記事へ戻る。元記事とSafari案内は折りたたんだ補助導線に置く。取得失敗時はエラー・再試行を表示し、外部サイトへ自動遷移しない。一般公開の全文再配信許諾は未確認。個人用Previewに限定する（ADR 003）。
 
 ## データ
 
-Article: id（正規化URL）、url、sourceId、title、publishedAt（不明はnull）、category。一覧APIには本文を含めない。FeedResult: 記事、ソースごとのstatus/取得日時、generatedAt。ReaderDocument: articleId、sourceId、title、url、fetchedAt、blocks（text/image）。画像はlivedoor.blogimg.jpの各サイト固有フォルダにある画像形式だけ許可する。
+Article: id（正規化URL）、url、sourceId、title、publishedAt（不明はnull）、category。一覧APIには本文を含めない。FeedResult: 記事、ソースごとのstatus/取得日時、generatedAt。ReaderDocument: articleId、sourceId、title、url、fetchedAt、schemaVersion=2、blocks（text/image）、imageAudit（広告等の除外/不明/別記事の画像数）、related（Articleとthumbnail）。画像はlivedoor.blogimg.jpの各サイト固有フォルダにある画像形式だけ許可する。
 
 端末保存v1: お気に入りのメタデータ（最大200件）、既読/履歴（500件）、テーマ、文字サイズ、NGワード、非表示配信元、表示位置。Zodによる復元時検証、破損時の復旧と書込失敗時の通知。記事キャッシュは24時間、設定とは別キー。容量不足でもアプリ操作は継続する。
 
@@ -25,9 +25,9 @@ Article: id（正規化URL）、url、sourceId、title、publishedAt（不明は
 - htmlparser2でタイトル・本文を解析しReactの文字列で表示。本文ルートはハムスター速報 `article-body-inner/article-body-more`、アルファルファ `article_body/article_bodymore` に固定。見つからない場合にページ全体へフォールバックしない。script/style/iframe/video/広告欄/関連記事等を捨てる。dangerouslySetInnerHTMLは使わない。
 - 正常/失敗とも次回アクセスを10分抑制。Vercel Runtime Cacheに最終正常データを24時間保持。ローカル開発だけメモリを利用。同一プロセスの同時取得はまとめる。Runtime Cacheは分散ロックではないため複数インスタンスの同時cold missは発生し得る。
 - CDNは成功/部分成功を10分キャッシュ、最大1日stale。全件失敗は503/no-storeにして最後のブラウザキャッシュを利用。
-- 本文取得: 10秒・展開後2MB・深さ120・本文10万文字・画像24件・ブロック600件まで。同時取得をまとめ、正常本文を24時間、取得失敗を1分キャッシュする。本文APIはprivate/no-storeでCDNへ配信せず、Runtime Cache内だけで再利用する。
+- 本文取得: 10秒・展開後2MB・深さ120・本文10万文字・画像80件・ブロック600件まで。同時取得をまとめ、正常本文を24時間、取得失敗を1分キャッシュする。本文APIはprivate/no-storeでCDNへ配信せず、Runtime Cache内だけで再利用する。
 - 検索・配信元選択はブラウザ処理。同じAPIパスを共有してキャッシュ分断を防ぐ。
-- 外部画像の自動読込・iframe・外部scriptなし。画像は明示操作後のみ許可CDNから読込。CSPは同一オリジンとその画像CDNに限定。元記事は補助リンクの明示操作で別タブに開く。
+- 広告/未判定画像・iframe・外部scriptなし。画像は許可CDNとサイト固有フォルダを検証し、記事/関連記事を分けて読込。CSPは同一オリジンとその画像CDNに限定。元記事は補助リンクの明示操作で別タブに開く。
 
 ## 重複と順序
 
@@ -36,3 +36,13 @@ Article: id（正規化URL）、url、sourceId、title、publishedAt（不明は
 ## PWA
 
 Service Workerでアプリシェルをprecache。APIはSWでキャッシュせず、検証後の端末キャッシュを使用。更新は通知して明示的に切り替える。iOSはSafari共有メニューから「ホーム画面に追加」。一覧とアプリ内本文のスクロール位置を復元する。外部サイトを任意に開いた場合の位置は管理しない。
+
+## 画像分類と関連記事の認可（ADR 004）
+
+本文の固定ルート内で画像を抽出する。広告/非表示/affiliate/sponsored要素、小さな追跡画像を除外。既知の記事パスへのリンク画像は別記事として扱い、本文画像へ混ぜない。不明な画像ホスト/誘導先は判定保留にして返さない。画像のフルサイズリンクが同じ許可フォルダなら原寸を使用する。画像の意味や真贋をAIで判定したとは表示しない。
+
+関連記事は本文中の直リンクと明示的なrelated/recommend/pickup/recent-article-image領域から最大12件。広告/非表示領域内を除き、タイトルと重複URLを統合する。utm_*だけ除去し、他のクエリ・リダイレクト先は拒否。resize.blogsys.jpのサムネイルは埋め込まれた許可CDN URLを取り出し、CDNだけへ接続する。
+
+RSS外の記事を取得する場合、fromの元記事IDに対応するサーバーキャッシュをスキーマ/ID/24時間の有効期限で検証し、related内に対象IDが完全一致した場合だけ取得。クライアントが送った親IDやタイトルだけでは許可しない。親URLを再帰取得せず、キャッシュ失効時は元記事の開き直しを案内する。本文APIのPreview制限を維持する。
+
+サーバーの本文キャッシュはv2 namespaceへ移行。端末本文はschemaVersion=2を要求し、旧版の未分類画像キャッシュを表示しない。保存記事・既読等のメタデータは削除しない。ReaderSelectionにfromを持ち、最大50件の閲覧経路を保持する。前の経路へ戻ると既存のsessionStorage位置を復元する。関連記事にも非表示サイトとNGワードを適用する。

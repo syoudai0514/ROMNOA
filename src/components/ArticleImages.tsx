@@ -1,0 +1,142 @@
+import { useLayoutEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Expand, X } from "lucide-react";
+
+type Picture = { url: string; alt: string; role?: "cover" | "body" };
+
+function Picture({
+  picture,
+  onOpen,
+}: {
+  picture: Picture;
+  onOpen: () => void;
+}) {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <p className="reader-image-placeholder" role="status">
+      この画像を読み込めませんでした。
+    </p>
+  ) : (
+    <button
+      className="article-picture"
+      onClick={onOpen}
+      aria-label={`${picture.alt}を拡大`}
+    >
+      <img
+        src={picture.url}
+        alt={picture.alt}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+      />
+      <span className="picture-expand">
+        <Expand size={15} aria-hidden="true" />
+        拡大
+      </span>
+    </button>
+  );
+}
+
+function ImageViewer({
+  pictures,
+  initial,
+  onClose,
+}: {
+  pictures: Picture[];
+  initial: number;
+  onClose: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [index, setIndex] = useState(initial);
+  useLayoutEffect(() => {
+    const element = dialog.current!;
+    element.showModal();
+    return () => element.close();
+  }, []);
+  return (
+    <dialog
+      ref={dialog}
+      className="image-viewer"
+      aria-label="記事画像の拡大表示"
+      onCancel={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
+        if (event.key === "ArrowRight")
+          setIndex((i) => Math.min(pictures.length - 1, i + 1));
+      }}
+    >
+      <header>
+        <span>
+          記事内の画像 {index + 1} / {pictures.length}
+        </span>
+        <button
+          className="icon-button"
+          onClick={onClose}
+          aria-label="拡大画像を閉じる"
+          autoFocus
+        >
+          <X />
+        </button>
+      </header>
+      <div className="image-viewer-canvas">
+        <img
+          key={pictures[index].url}
+          src={pictures[index].url}
+          alt={pictures[index].alt}
+          referrerPolicy="no-referrer"
+          onError={(event) => {
+            event.currentTarget.alt = "この画像を読み込めませんでした。";
+          }}
+        />
+      </div>
+      <footer>
+        <button
+          className="button quiet"
+          disabled={index === 0}
+          onClick={() => setIndex(index - 1)}
+          aria-label="前の画像"
+        >
+          <ArrowLeft />
+          前の画像
+        </button>
+        <button
+          className="button quiet"
+          disabled={index === pictures.length - 1}
+          onClick={() => setIndex(index + 1)}
+          aria-label="次の画像"
+        >
+          次の画像
+          <ArrowRight />
+        </button>
+      </footer>
+    </dialog>
+  );
+}
+
+export function ArticleImages({ pictures }: { pictures: Picture[] }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
+  return (
+    <section className="article-gallery" aria-label="この記事の画像">
+      {pictures.map((picture, index) => (
+        <figure key={picture.url}>
+          <Picture picture={picture} onOpen={() => setExpanded(index)} />
+          <figcaption>
+            {picture.role === "cover" ? "記事の見出し画像" : "記事内の画像"}{" "}
+            {index + 1} / {pictures.length}
+          </figcaption>
+        </figure>
+      ))}
+      {expanded !== null && (
+        <ImageViewer
+          pictures={pictures}
+          initial={expanded}
+          onClose={() => setExpanded(null)}
+        />
+      )}
+    </section>
+  );
+}
