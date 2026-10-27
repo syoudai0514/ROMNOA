@@ -17,8 +17,8 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 
 | ID | サイト / 実在フィード | 確認内容 | 本文・画像の扱い |
 |---|---|---|---|
-| hamusoku | [ハムスター速報](https://hamusoku.com/) / [RSS](https://hamusoku.com/index.rdf) | トップにRSSリンク（http表記、HTTPSで取得成功）。RSS 1.0 RDF、20件の有効記事、HTTP 200。タイトル・リンク・dc:dateを確認 | 明示的全文転載許諾は未確認。本文・概要本文・画像を配信しない |
-| alfalfa | [アルファルファモザイク](https://alfalfalfa.com/) / [RSS](https://alfalfalfa.com/index.rdf) | トップにFeedly購読リンクで同フィードが指定。RSS 1.0 RDF、50件の有効記事、HTTP 200 | RSSにcontent:encodedがあっても再配信しない。全文転載許諾は未確認 |
+| hamusoku | [ハムスター速報](https://hamusoku.com/) / [RSS](https://hamusoku.com/index.rdf) | トップにRSSリンク（http表記、HTTPSで取得成功）。RSS 1.0 RDF、20件の有効記事、HTTP 200。タイトル・リンク・dc:dateを確認 | 一覧はメタデータ。2026-10-27に個人用Previewの本文リーダーを追加。一般公開の全文転載許諾は未確認 |
+| alfalfa | [アルファルファモザイク](https://alfalfalfa.com/) / [RSS](https://alfalfalfa.com/index.rdf) | トップにFeedly購読リンクで同フィードが指定。RSS 1.0 RDF、50件の有効記事、HTTP 200 | 一覧はメタデータ。2026-10-27に個人用Previewの本文リーダーを追加。一般公開の全文転載許諾は未確認 |
 | 不採用 | キニ速 `https://blog.livedoor.jp/kinisoku/index.rdf` | トップ・RSSとも今回503応答 | 制限回避・別ルート探索は行わず初期対象外 |
 
 両採用サイトの `/robots.txt` は今回404。これは転載許可でも収集の包括的許可でもない。サイトのRSS購読導線を根拠に、個人向けRSSリーダーとしてタイトル等のメタデータに限定した試用を設計した。将来の一般公開における集約表示の権利範囲は別途確認する必要がある。
@@ -33,7 +33,7 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 
 ## 残る確認
 
-一般公開用の集約表示の許諾、商標・ドメイン取得可能性、iPhone Safari実機動作は未確認。許諾が得られた場合にのみ全文リーダーを別途設計・実装する。権利者からの停止要請時は配信元を外しキャッシュを消去する（operations.md）。
+一般公開用の集約・本文表示の許諾、商標・ドメイン取得可能性、iPhone Safari実機動作は未確認。一般公開リーダーは許諾確認後に別途判断する。権利者からの停止要請時は配信元を外しキャッシュを消去する（operations.md）。
 
 ## 2026-10-27: 外部広告の残存に対する再確認
 
@@ -43,3 +43,5 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 - [Apple公式ガイド](https://support.apple.com/ja-jp/guide/iphone/iphdc30e3b86/ios)で、Safariの自動リーダー設定を確認。「設定」→「アプリ」→「Safari」→「リーダー」→「すべてのウェブサイト」。リーダー対応ページが対象で、現行2配信元での実機適用可否や全広告の非表示は未検証。
 - 画面上の「広告のないアプリ」という表示を外部本文であることが分かる表現へ改め、記事詳細のSafari案内を折りたたまず表示する。これは説明と補助導線の改善であり、全文閲覧機能の実装や外部広告問題の解決として数えない。
 - 全文リーダーは引き続き未実装。元の要件を縮小せず、本文の利用条件・許諾を確定してから対応する。無断転載や制限回避は行わない。
+
+その後の利用者の明示的な修正指示を受け、個人用PreviewについてはADR 003へ更新した。公開ページ200応答の本文要素を特定し、現在のRSSで発見した記事の読書表示を実装。これは一般公開の全文再配信許諾を新たに取得したという調査結果ではない。ハムスター速報のRSS content:encodedは記事画像中心、アルファルファRSSはscript/関連記事も含むため、RSSの量から記事全文の完全性を判定せず、ページの固定本文要素を利用する。

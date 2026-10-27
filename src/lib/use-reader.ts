@@ -1,0 +1,95 @@
+import { useEffect, useState } from "react";
+import { cacheReader, cachedReader } from "./reader-cache";
+import { readerDocumentSchema, type ReaderDocument } from "./reader-model";
+
+export function useReader(id: string) {
+  const [state, setState] = useState<{
+    id: string;
+    document: ReaderDocument | null;
+    loading: boolean;
+    error: string;
+    storageError: boolean;
+  }>({ id, document: null, loading: true, error: "", storageError: false });
+  const [attempt, retry] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const abort = new AbortController();
+    const timeout = setTimeout(() => abort.abort(), 18000);
+    setState({
+      id,
+      document: null,
+      loading: true,
+      error: "",
+      storageError: false,
+    });
+    void (async () => {
+      const cached = await cachedReader(id);
+      if (cancelled) return;
+      if (cached) {
+        clearTimeout(timeout);
+        setState({
+          id,
+          document: cached,
+          loading: false,
+          error: "",
+          storageError: false,
+        });
+        return;
+      }
+      try {
+        const response = await fetch(
+          `/api/reader?article=${encodeURIComponent(id)}`,
+          { signal: abort.signal },
+        );
+        const value = await response.json();
+        if (!response.ok)
+          throw new Error(
+            typeof value?.error === "string"
+              ? value.error
+              : "本文を取得できませんでした。",
+          );
+        const document = readerDocumentSchema.parse(value);
+        if (document.articleId !== id)
+          throw new Error("記事が一致しませんでした。");
+        if (cancelled) return;
+        const saved = await cacheReader(document);
+        if (!cancelled)
+          setState({
+            id,
+            document,
+            loading: false,
+            error: "",
+            storageError: !saved,
+          });
+      } catch (e) {
+        if (!cancelled)
+          setState({
+            id,
+            document: null,
+            loading: false,
+            error: !navigator.onLine
+              ? "オフラインです。まだ本文を保存していない記事は、接続後に開いてください。"
+              : e instanceof Error &&
+                  e.name !== "AbortError" &&
+                  e.name !== "ZodError"
+                ? e.message
+                : "本文を取得できませんでした。再試行してください。",
+            storageError: false,
+          });
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      abort.abort();
+    };
+  }, [id, attempt]);
+  return {
+    ...(state.id === id
+      ? state
+      : { id, document: null, loading: true, error: "", storageError: false }),
+    retry: () => retry((n) => n + 1),
+  };
+}

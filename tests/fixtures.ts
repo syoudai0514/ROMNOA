@@ -1,6 +1,21 @@
 import type { Article, FeedResponse } from "../src/lib/model";
+import type { ReaderDocument } from "../src/lib/reader-model";
+
+export function readerFixture(article: Article): ReaderDocument {
+  return {
+    articleId: article.id,
+    sourceId: article.sourceId,
+    title: article.title,
+    url: article.url,
+    fetchedAt: new Date().toISOString(),
+    blocks: Array.from({ length: 24 }, (_, i) => ({
+      type: "text" as const,
+      text: `[テスト用本文] ${i + 1} 本文をアプリ内で読めます。元サイトへ移動せずに、話題の内容を確認するための文章です。`,
+    })),
+  };
+}
 export function article(n = 0, overrides: Partial<Article> = {}): Article {
-  const url = `https://hamusoku.com/archives/test-${n}.html`;
+  const url = `https://hamusoku.com/archives/${11000000 + n}.html`;
   return {
     id: url,
     url,
@@ -24,8 +39,8 @@ export const feed: FeedResponse = {
       category: "暮らし",
     }),
     article(2, {
-      id: "https://alfalfalfa.com/articles/test.html",
-      url: "https://alfalfalfa.com/articles/test.html",
+      id: "https://alfalfalfa.com/articles/11110000.html",
+      url: "https://alfalfalfa.com/articles/11110000.html",
       sourceId: "alfalfa",
       title: "[テスト用] スマートフォンの新機能を試してみた",
       category: "テクノロジー",

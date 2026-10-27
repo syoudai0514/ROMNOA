@@ -1,6 +1,6 @@
 import { chromium, expect } from "@playwright/test";
 import { preview } from "vite";
-import { feed } from "../tests/fixtures";
+import { feed, readerFixture } from "../tests/fixtures";
 
 // Exercise the built app and real service worker, separately from dev-server E2E.
 const server = await preview({
@@ -19,13 +19,25 @@ try {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.route("**/api/articles", (route) => route.fulfill({ json: feed }));
+  await page.route("**/api/reader**", (route) => {
+    const id = new URL(route.request().url()).searchParams.get("article");
+    const article = feed.articles.find((a) => a.id === id);
+    return route.fulfill(
+      article
+        ? { json: readerFixture(article) }
+        : { status: 404, json: { error: "missing" } },
+    );
+  });
   await page.goto("http://127.0.0.1:4174/");
   await expect(page.getByTestId("article-row").first()).toBeVisible();
   await page
     .getByTestId("article-row")
     .first()
-    .getByRole("button", { name: /^保存する/ })
+    .getByRole("button", { name: /^記事を開く/ })
     .click();
+  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
+  await page.getByRole("button", { name: "あとで読む" }).click();
+  await page.getByRole("button", { name: "記事を閉じる" }).click();
   const manifestUrl = await page
     .locator("link[rel=manifest]")
     .getAttribute("href");
@@ -47,6 +59,8 @@ try {
   expect(
     await page.evaluate(async () => !!(await caches.match("/api/articles"))),
   ).toBe(false);
+  await page.unroute("**/api/articles");
+  await page.unroute("**/api/reader**");
   await context.setOffline(true);
   await page.reload();
   await expect(
@@ -60,9 +74,14 @@ try {
     .getByRole("button", { name: /^保存/ })
     .click();
   await expect(page.getByTestId("article-row")).toHaveCount(1);
+  await page
+    .getByTestId("article-row")
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
   expect(errors).toEqual([]);
   console.log(
-    "PWA PASS: built shell + manifest + icons + real SW + offline reload + persistent favorite; no page errors.",
+    "PWA PASS: built shell + manifest + icons + real SW + offline reload + persistent favorite + offline reader body (API mocks removed); no page errors.",
   );
   await context.close();
 } finally {

@@ -10,7 +10,11 @@ Node.js 24 / npm。`npm ci` → `npm run dev`。本番相当ビルドは `npm ru
 
 GitHubのROMNOAをVercelでImportしViteを選ぶ。Node.js 24、build `npm run build`、output `dist`。`vercel.json`にhnd1と15秒の上限、CSPを設定済み。DBやアプリAPIキーは不要。個人利用中はPreview Deployment Protectionを維持する。一般公開前に配信元表示条件・実機確認を完了する。
 
-APIパスは `/api/articles` のみ。クエリ不可。UI/機密設定をCDNに混在させない。検索・NG・保存はサーバーへ送らない。Vercel Runtime Cacheはサーバーの自動設定を使用。キャッシュが使えない場合はログが出るので本番で確認する。
+一覧APIは `/api/articles`（クエリ不可）。本文APIは `/api/reader?article=<正規化記事URL>` で、既知のフィード記事・固定数値記事パスだけを取得する。UI/機密設定をCDNに混在させない。検索・NG・保存はサーバーへ送らない。Vercel Runtime Cacheはサーバーの自動設定を使用。キャッシュが使えない場合はログが出るので本番で確認する。
+
+本文リーダーは認証付きPreview専用。Vercel Authenticationを外さない。本文APIはVERCEL_ENVがpreview以外なら403になる。一般公開・Productionへ拡大する際は、本文利用条件・許諾と認証を先に確認する。APIからのデプロイはtarget=`staging`でPreviewを明示する（初回にtargetを省くとProductionになる場合がある）。
+
+本文は10秒/2MBで取得し、iframeやscriptを実行しない。正常本文を24時間、取得失敗を1分キャッシュ。取得拒否や本文要素変更はエラーにし、迂回・別URL探索・元サイトへの自動遷移は行わない。`reader_fetch_failed`・`reader_cache_read_failed`・`reader_cache_write_failed`を監視する。端末の本文はIndexedDBの最大100件/24時間キャッシュで、従来の保存メタデータとは独立する。
 
 ## キャッシュと負荷
 

@@ -312,7 +312,7 @@ export default function App() {
             <div className="topbar-tools">
               <span className="ad-free">
                 <span />
-                本文は外部サイト
+                アプリ内リーダー
               </span>
               <button
                 className="icon-button"
@@ -445,7 +445,7 @@ export default function App() {
                   </p>
                   <span className="welcome-note">
                     <ShieldCheck size={14} />
-                    本文は配信元で開きます。外部サイトの広告は残ります。
+                    記事をタップして本文を読む。画像は必要なときだけ。
                   </span>
                 </div>
                 <div className="book-art" aria-hidden="true">
@@ -728,7 +728,7 @@ export default function App() {
                     <BookOpen size={20} strokeWidth={1.4} />
                     <h3>気持ちよく、読むために。</h3>
                     <p>
-                      ロムノアの画面に広告はありません。記事の本文は配信元で開くため、広告が表示される場合があります。
+                      記事はアプリ内リーダーで開きます。広告・動画・埋め込みは表示しません。配信元のページを開く操作は任意です。
                     </p>
                   </section>
                 </aside>
@@ -839,7 +839,7 @@ export default function App() {
                       <h2>配信元</h2>
                     </div>
                     <p className="setting-help">
-                      表示するサイトを選べます。本文は元サイトで開きます。
+                      表示するサイトを選べます。本文はアプリ内リーダーで開きます。
                     </p>
                     {sourceInfo.map((s) => (
                       <label className="setting-row source-setting" key={s.id}>
@@ -966,10 +966,10 @@ export default function App() {
                     <ShieldCheck size={20} />
                     <h3>Read freely.</h3>
                     <p>
-                      広告・トラッキングSDKは使いません。配信元へのアクセスは元記事を開いたときだけ。記事の収集はサーバーで行います。
+                      広告・トラッキングSDKは使いません。記事の収集・本文取得はサーバーで行います。画像は表示ボタンを押したときに配信元の画像サーバーから読み込みます。
                     </p>
                     <p>
-                      本文の転載許諾は確認できていないため、現在は元サイトへご案内します。
+                      個人用プレビューの読書機能です。一般公開に向けた本文の利用条件・許諾確認は別途必要です。
                     </p>
                   </section>
                 </aside>

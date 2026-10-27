@@ -3,25 +3,31 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { handleArticles } from "./server/handler";
+import { handleReader } from "./server/reader";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
   configureServer(server) {
-    server.middlewares.use("/api/articles", async (req, res) => {
-      try {
-        const result = await handleArticles(
-          new Request(`http://localhost/api/articles${req.url ?? ""}`, {
-            method: req.method,
-          }),
-        );
-        res.statusCode = result.status;
-        result.headers.forEach((value, key) => res.setHeader(key, value));
-        res.end(await result.text());
-      } catch {
-        res.statusCode = 500;
-        res.end(JSON.stringify({ error: "記事を取得できませんでした。" }));
-      }
-    });
+    for (const [path, handler] of [
+      ["/api/articles", handleArticles],
+      ["/api/reader", handleReader],
+    ] as const) {
+      server.middlewares.use(path, async (req, res) => {
+        try {
+          const result = await handler(
+            new Request(`http://localhost${path}${req.url ?? ""}`, {
+              method: req.method,
+            }),
+          );
+          res.statusCode = result.status;
+          result.headers.forEach((value, key) => res.setHeader(key, value));
+          res.end(await result.text());
+        } catch {
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: "記事を取得できませんでした。" }));
+        }
+      });
+    }
   },
 });
 

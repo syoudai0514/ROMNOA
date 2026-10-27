@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
+import { useReader } from "../lib/use-reader";
 
 export function Reader({
   article,
@@ -34,6 +35,9 @@ export function Reader({
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
+  const reading = useReader(article.id);
+  const [imagesFor, setImagesFor] = useState("");
+  const positions = useRef<Record<string, number>>({});
   useLayoutEffect(() => {
     const d = dialog.current!;
     d.showModal();
@@ -46,8 +50,9 @@ export function Reader({
   useLayoutEffect(() => {
     const el = content.current!;
     try {
-      el.scrollTop =
+      positions.current[article.id] =
         Number(sessionStorage.getItem(`romnoa:detail:${article.id}`)) || 0;
+      el.scrollTop = positions.current[article.id];
     } catch {
       /* session storage unavailable */
     }
@@ -55,13 +60,17 @@ export function Reader({
       try {
         sessionStorage.setItem(
           `romnoa:detail:${article.id}`,
-          String(el.scrollTop),
+          String(positions.current[article.id] || 0),
         );
       } catch {
         /* best effort */
       }
     };
   }, [article.id]);
+  useLayoutEffect(() => {
+    if (reading.document && content.current)
+      content.current.scrollTop = positions.current[article.id] || 0;
+  }, [reading.document, article.id]);
   return (
     <dialog
       ref={dialog}
@@ -84,7 +93,20 @@ export function Reader({
             <X size={21} />
           </button>
         </header>
-        <div className="reader-content" ref={content}>
+        <div
+          className="reader-content"
+          ref={content}
+          onScroll={(e) => {
+            if (!reading.document) return;
+            const y = e.currentTarget.scrollTop;
+            positions.current[article.id] = y;
+            try {
+              sessionStorage.setItem(`romnoa:detail:${article.id}`, String(y));
+            } catch {
+              /* optional position persistence */
+            }
+          }}
+        >
           <span className="pill">{article.category}</span>
           <h1 id="reader-title">{article.title}</h1>
           <p className="reader-byline">
@@ -110,15 +132,71 @@ export function Reader({
               {read ? "未読に戻す" : "既読にする"}
             </button>
           </div>
-          <section className="external-reading">
-            <BookOpen size={29} strokeWidth={1.3} />
-            <h2>この記事は外部サイトで開きます</h2>
-            <p>
-              {source.name}が配信した{article.category}
-              の記事です。現在、ロムノア内の全文閲覧と、外部サイトの広告を除去する機能はありません。
-            </p>
+          {reading.loading && (
+            <div className="reader-loading" role="status">
+              <BookOpen size={28} />
+              <p>本文を読み込んでいます…</p>
+            </div>
+          )}
+          {reading.error && (
+            <section className="reader-failure" role="alert">
+              <h2>本文を読み込めませんでした</h2>
+              <p>{reading.error}</p>
+              <button className="button secondary" onClick={reading.retry}>
+                再試行
+              </button>
+            </section>
+          )}
+          {reading.document && (
+            <section className="reading-body" aria-label="記事本文">
+              <div className="reading-body-label">
+                <Check size={14} />
+                アプリ内リーダー<span>出典：{source.name}</span>
+              </div>
+              {reading.document.blocks.some((b) => b.type === "image") && (
+                <button
+                  className="button secondary image-consent"
+                  onClick={() =>
+                    setImagesFor(imagesFor === article.id ? "" : article.id)
+                  }
+                  aria-pressed={imagesFor === article.id}
+                >
+                  {imagesFor === article.id
+                    ? "画像を非表示"
+                    : "記事の画像を表示"}
+                </button>
+              )}
+              {reading.document.blocks.map((block, i) =>
+                block.type === "text" ? (
+                  <p key={i}>{block.text}</p>
+                ) : imagesFor === article.id ? (
+                  <figure key={i}>
+                    <img
+                      src={block.url}
+                      alt={block.alt}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                    />
+                  </figure>
+                ) : (
+                  <div className="reader-image-placeholder" key={i}>
+                    記事内の画像（表示ボタンで読み込み）
+                  </div>
+                ),
+              )}
+              {reading.storageError && (
+                <p className="reader-storage-warning" role="status">
+                  本文を端末に保存できませんでした。この画面では引き続き読めます。
+                </p>
+              )}
+            </section>
+          )}
+          <details className="reader-original" key={article.id}>
+            <summary>配信元のページを開く</summary>
+            <p>外部サイトが開きます。広告が表示される場合があります。</p>
             <a
-              className="button primary"
+              className="button secondary"
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
@@ -126,33 +204,29 @@ export function Reader({
                 if (!read) onRead();
               }}
             >
-              元の記事を読む
+              元の記事を読む（外部・広告あり）
               <ExternalLink size={16} />
             </a>
-            <small>
-              外部サイトが開きます。広告が表示される場合があります。
-            </small>
-          </section>
-          <section className="reader-tip" aria-labelledby="safari-reader-title">
-            <h2 id="safari-reader-title">Safariの自動リーダーを使う</h2>
-            <p>
-              iPhoneの「設定」→「アプリ」→「Safari」→「リーダー」で「すべてのウェブサイト」をオンにすると、対応ページを本文中心の表示で開けます。
-            </p>
-            <p>
-              元記事のページメニューから「リーダーを表示」も選べます。非対応のページでは使えず、すべての広告を除去できる機能ではありません。ロムノアから自動でオンにはできません。
-            </p>
-            <a
-              className="text-button"
-              href="https://support.apple.com/ja-jp/guide/iphone/iphdc30e3b86/ios"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Appleの設定手順を見る
-              <ExternalLink size={14} />
-            </a>
-          </section>
+            <div className="reader-tip">
+              <p>
+                iPhoneの「設定」→「アプリ」→「Safari」→「リーダー」で「すべてのウェブサイト」をオンにすると、対応ページを本文中心の表示で開けます。
+              </p>
+              <p>
+                元記事のページメニューから「リーダーを表示」も選べます。非対応のページでは使えず、すべての広告を除去できる機能ではありません。ロムノアから自動でオンにはできません。
+              </p>
+              <a
+                className="text-button"
+                href="https://support.apple.com/ja-jp/guide/iphone/iphdc30e3b86/ios"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Appleの設定手順を見る
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          </details>
           <p className="rights-note">
-            配信元の権利を尊重し、ロムノアではこの記事の本文を転載していません。
+            個人用プレビューの読書表示です。配信元の文章・画像の権利は各権利者に帰属します。
           </p>
         </div>
         <footer className="reader-footer">

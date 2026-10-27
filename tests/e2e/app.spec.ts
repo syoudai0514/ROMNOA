@@ -1,7 +1,16 @@
 import { test, expect, type Page } from "@playwright/test";
-import { feed } from "../fixtures";
+import { feed, readerFixture } from "../fixtures";
 
 async function fixture(page: Page) {
+  await page.route("**/api/reader**", (route) => {
+    const id = new URL(route.request().url()).searchParams.get("article");
+    const article = feed.articles.find((a) => a.id === id);
+    return route.fulfill(
+      article
+        ? { json: readerFixture(article) }
+        : { status: 404, json: { error: "記事がありません" } },
+    );
+  });
   await page.route("**/api/articles", (route) => route.fulfill({ json: feed }));
   await page.goto("/");
   await expect(page.getByTestId("article-row").first()).toBeVisible();
@@ -22,14 +31,22 @@ test("discovery → article → save → persistent read and favorites (R04/R05/
   await first.getByRole("button", { name: /^記事を開く/ }).click();
   const reader = page.getByRole("dialog");
   await expect(reader).toBeVisible();
+  await expect(reader.getByRole("region", { name: "記事本文" })).toBeVisible();
+  await expect(
+    reader.getByText(
+      "[テスト用本文] 1 本文をアプリ内で読めます。元サイトへ移動せずに、話題の内容を確認するための文章です。",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await reader.getByText("配信元のページを開く", { exact: true }).click();
   await expect(
     reader.getByText("外部サイトが開きます。広告が表示される場合があります。"),
   ).toBeVisible();
   await expect(
-    reader.getByRole("link", { name: "元の記事を読む" }),
+    reader.getByRole("link", { name: /^元の記事を読む/ }),
   ).toHaveAttribute("href", feed.articles[0].url);
   await expect(
-    reader.getByRole("link", { name: "元の記事を読む" }),
+    reader.getByRole("link", { name: /^元の記事を読む/ }),
   ).toHaveAttribute("rel", "noopener noreferrer");
   await reader.getByRole("button", { name: "あとで読む" }).click();
   await expect(
@@ -172,6 +189,7 @@ test("dialog traps focus, preserves list scroll and restores detail scroll (R15)
   const row = page.getByTestId("article-row").nth(6);
   await row.getByRole("button", { name: /^記事を開く/ }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "記事を閉じる" }),
   ).toBeFocused();
@@ -216,4 +234,96 @@ test("corrupt and blocked local storage show an actionable warning (R06)", async
   await expect(page.getByRole("alert")).toContainText(
     "端末に保存できませんでした",
   );
+});
+
+test("article stays in-app, escapes text and loads only consented article images", async ({
+  page,
+}) => {
+  await fixture(page);
+  const a = feed.articles[0];
+  const picture = "https://livedoor.blogimg.jp/hamusoku/imgs/1/2/test.jpg";
+  await page.route("**/api/reader**", (route) =>
+    route.fulfill({
+      json: {
+        ...readerFixture(a),
+        blocks: [
+          {
+            type: "text",
+            text: 'これはアプリ内の本文です。<img src="https://ads.invalid/pixel" onerror="alert(1)">',
+          },
+          { type: "image", url: picture, alt: "記事の写真" },
+        ],
+      },
+    }),
+  );
+  await page.route(picture, (route) =>
+    route.fulfill({
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6U5cAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    }),
+  );
+  const outside: string[] = [];
+  page.on("request", (r) => {
+    if (new URL(r.url()).hostname !== "127.0.0.1") outside.push(r.url());
+  });
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  const body = page.getByRole("region", { name: "記事本文" });
+  await expect(body).toBeVisible();
+  await expect(body).toContainText("これはアプリ内の本文です。");
+  await expect(body.locator("img,iframe,script,video")).toHaveCount(0);
+  expect(outside).toEqual([]);
+  expect(new URL(page.url()).hostname).toBe("127.0.0.1");
+  await expect(
+    page.getByRole("link", { name: /^元の記事を読む/ }),
+  ).not.toBeVisible();
+  await page.getByRole("button", { name: "記事の画像を表示" }).click();
+  await expect(body.getByRole("img", { name: "記事の写真" })).toBeVisible();
+  await expect.poll(() => outside.length).toBe(1);
+  expect(outside[0]).toBe(picture);
+});
+
+test("cached body survives reload and works offline; uncached failures never redirect", async ({
+  page,
+  context,
+}) => {
+  await fixture(page);
+  let reads = 0;
+  page.on("request", (r) => {
+    if (new URL(r.url()).pathname === "/api/reader") reads++;
+  });
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
+  await page.getByRole("button", { name: "記事を閉じる" }).click();
+  await page.reload();
+  await expect(page.getByTestId("article-row").first()).toBeVisible();
+  await page.unroute("**/api/reader**");
+  await context.setOffline(true);
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
+  expect(reads).toBe(1);
+  await page.getByRole("button", { name: "記事を閉じる" }).click();
+  await page
+    .getByTestId("article-row")
+    .nth(1)
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "本文を読み込めませんでした" }),
+  ).toBeVisible();
+  expect(new URL(page.url()).hostname).toBe("127.0.0.1");
 });

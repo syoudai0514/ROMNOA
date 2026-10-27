@@ -20,6 +20,9 @@ const response = await GET(
 );
 if (response.status !== 400)
   throw new Error(`Native server smoke failed: ${response.status}`);
+const { GET: read } = await import(new URL("api/reader.js", output));
+const readerResponse = await read(new Request("http://localhost/api/reader?article=http://127.0.0.1/"));
+if (![400, 403].includes(readerResponse.status)) throw new Error(`Native reader smoke failed: ${readerResponse.status}`);
 console.log(
   "Native Node ESM API import + query rejection PASS (no upstream requests).",
 );
