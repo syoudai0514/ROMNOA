@@ -220,6 +220,7 @@ test("rapid day changes and a failed date never display another date's stories; 
   ).toBe(false);
   failedLists = true;
   await page.reload();
+  await page.getByTestId("home-filters").locator("summary").click();
   await page.getByLabel("掲載日", { exact: true }).fill(yesterday);
   await page.getByRole("button", { name: "表示", exact: true }).click();
   await expect(page.getByTestId("article-row")).toHaveCount(1);

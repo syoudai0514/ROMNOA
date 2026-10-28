@@ -840,7 +840,10 @@ export default function App() {
                     </div>
                   )}
                   {discoveryMode && (
-                    <details className="discovery-note">
+                    <details
+                      className="discovery-note"
+                      open={cached || !!error}
+                    >
                       <summary>順位・取得範囲について</summary>
                       <div role="status">
                         {sort === "popular" ? (

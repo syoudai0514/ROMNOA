@@ -134,7 +134,7 @@ mergeLocalSearchは保存/履歴のタイトル一致だけを通常/本文モ�
 
 ## 一覧密度とタブ構成（ADR 012）
 
-ホームからwelcome-cardのDOMと検索フォームを除去。上部に今日の記事/新着/人気/更新を置き、HomeFiltersのnative detailsへカテゴリ・DateFilter・詳細SortControlを収納する。取得/順位の説明も開閉できる。検索タブは既存ArticleSearch/マイ検索/検索結果を受け持ち、サーバーAPIの条件・本文検索の除外基準は変更しない。
+ホームからwelcome-cardのDOMと検索フォームを除去。上部に今日の記事/新着/人気/更新を置き、HomeFiltersのnative detailsへカテゴリ・DateFilter・詳細SortControlを収納する。取得/順位の説明も開閉でき、取得障害・キャッシュ利用時は自動で開いて状態を説明する。検索タブは既存ArticleSearch/マイ検索/検索結果を受け持ち、サーバーAPIの条件・本文検索の除外基準は変更しない。
 
 homeSort/searchSort/shelfSortを分離し、検索語/入力語は検索タブに保持、保存内の入力とは独立。タブ往復時は通常検索を保持し、隠し結果から離れると候補と語を消す。PIN照合成功時は検索タブへ移る。下部/デスクトップ共通で5タブ。全期間検索の継続と記事別collectionは既存useSearch/ReaderSelectionを維持する。
 
