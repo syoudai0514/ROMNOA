@@ -112,3 +112,15 @@ Vercelの `romnoa` プロジェクト（Node24、hnd1、Preview認証保護）�
 - schemaVersion=3とRuntime Cache namespaceを維持。既にユーザーが開いた記事と親記事の認可を破棄せず、保存/既読を削除しない。画像ファイル・拡張子・異なるIDを推測して探索する処理はない。
 - 日常利用は固定URL https://romnoa-syoudai1984.vercel.app/ を案内。過去のデプロイ固有URLは旧版のままであり、新版への更新先として扱わない。
 - iPhone Safari実機・一般公開の権利条件は未確認。個人用Preview認証、Production本文API拒否を維持する。
+
+## 2026-10-28: MP4・GIF・SNSの直接メディア（VIDEO01〜SOCIAL02）
+
+- 開始HEAD: `31383d50f237e5cbcf092105f4f70770cef6f5cf`、ブランチfeat/romnoa-mvp、変更なし、AGENTS.mdなしを確認。Preview認証保護、schemaVersion=3/Runtime Cache v3を維持する。
+- 通常MP4をネイティブcontrols/playsInlineで再生。本文リンクはアプリ内の該当プレーヤーへ移動・再生する。XのアニメーションMP4/Imgur gifvとGIFに対応。動画読込エラーと再読み込み、再生拒否時の説明を追加。
+- 単体65件が成功。TypeScript/Vite本番ビルドとNative Node ESMチェックも成功。全48 E2Eが一度の実行ですべて成功（モバイルChromium/WebKit、デスクトップChromium各16件）。自己生成H.264の実復号/currentTime進行/停止、アニメーション再生、GIFのフレーム変化、404→エラー→再試行→再生、popup 0、SNS画像と投稿のみの説明を含む。referrerメタ追加後もビルド/PWAが成功。メディア9件の追加検証では、並行検証中の画面再読込でWebKit3件が失敗したため、他の処理終了後に9件を再実行して全件成功。待機・アサーションの緩和なし。最終コミットの全件CI結果はPR/最終報告に記載する。
+- 最初のWebKitメディアfixtureはRange非対応でループ時に失敗。実CDN同様の206/content-rangeをテストサーバーに実装。GIFのフレーム判定は位置安定待機とフレーム周期が重なるため固定矩形の直接キャプチャへ変更。WebKitネイティブコントロールの同一origin blob URLと外部通信を区別。いずれも再生・フレーム変化のアサーションは維持した。
+- 実サイト/API/CDN: RSS70件・両ソースok。新着11124504.htmlの本文APIが200で、実MP4を抽出。モバイルChromiumとWebKitで、1206×1982、約71.42秒、readyState=4、currentTime約0.140/0.638秒まで進行し、同じアプリURL・popup 0・pageerror 0。本文APIと動画CDNはモックなし。フィード表示のみ実取得した対象1記事に絞った。
+- 開発環境のReferer付き動画要求は403、既存VercelのReferrer-Policyと同じno-referrerにすると上記実再生に成功。開発/PWAでも同じ方針になるようindex.htmlにreferrerメタを追加。アクセス制限の迂回や任意サーバープロキシは追加していない。
+- 報告された11019201.htmlのMP4は直接の通常GET/Range GETとも404・0バイト。ファイルが有効だと偽って完了扱いにしない。旧Previewの本文APIは200で同じMP4をlinksに保持していたため、キャッシュ再作成なしで新プレーヤーの対象になる。配信元404の動画自体の復元はできない。
+- Instagramの直接CDN画像・署名維持・プロフィール画像除外と、X/Instagramの投稿リンクを確認。Instagram画像のブラウザ検証は合成fixtureによる。公式oEmbedの実調査では直接画像URLを得られず、投稿URLだけからの写真・全メディア展開は未実装。SDK/iframeを読込せず説明と元投稿リンクを表示する。
+- 本番ビルドのPWA検証はmanifest/アイコン/本物のSW/オフライン再起動/保存・本文保持が成功。メディアのオフライン保存は対象外。iPhone Safari実機・一般公開の権利条件は未確認。固定URLへ更新し、デプロイ固有URLは旧版のままとする。

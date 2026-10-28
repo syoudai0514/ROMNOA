@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
 import { readerPictures } from "../lib/reader-model";
+import { readerVideos, readerSocialPosts } from "../lib/reader-media";
+import { ArticleVideos } from "./ArticleVideos";
 import { useReader } from "../lib/use-reader";
 import { ReaderText } from "./ReaderText";
 import { ArticleImages, ImageViewer } from "./ArticleImages";
@@ -53,6 +55,15 @@ export function Reader({
   const allPictures = reading.document ? readerPictures(reading.document) : [];
   const bodyPictures = allPictures.filter((b) => b.role !== "cover");
   const pictures = bodyPictures.length ? bodyPictures : allPictures;
+  const videos = reading.document ? readerVideos(reading.document) : [];
+  const socialPosts = reading.document
+    ? readerSocialPosts(reading.document)
+    : [];
+  const videoElements = useRef<Record<string, HTMLVideoElement | null>>({});
+  const [videoNotice, setVideoNotice] = useState<{
+    id: string;
+    text: string;
+  } | null>(null);
   const roundup = reading.document?.pageKind === "roundup";
   const [expandedImage, setExpandedImage] = useState<{
     articleId: string;
@@ -290,7 +301,10 @@ export function Reader({
               ) : (
                 <>
                   <div className="image-classification">
-                    <strong>この記事の画像 {pictures.length}枚</strong>
+                    <strong>
+                      この記事の画像 {pictures.length}枚
+                      {videos.length > 0 ? `・動画 ${videos.length}本` : ""}
+                    </strong>
                     <details>
                       <summary>画像の判定について</summary>
                       <p>
@@ -306,14 +320,48 @@ export function Reader({
                       </p>
                     </details>
                   </div>
+                  {videos.length > 0 && (
+                    <ArticleVideos
+                      videos={videos}
+                      onElement={(url, element) => {
+                        videoElements.current[url] = element;
+                      }}
+                    />
+                  )}
+                  {videoNotice?.id === article.id && (
+                    <p role="status" className="video-notice">
+                      {videoNotice.text}
+                    </p>
+                  )}
                   {pictures.length > 0 ? (
                     <ArticleImages key={article.id} pictures={pictures} />
-                  ) : (
+                  ) : videos.length === 0 && socialPosts.length === 0 ? (
                     <p className="reader-image-placeholder">
                       この記事で表示できる画像は見つかりませんでした。判定保留の画像は読み込んでいません。
                     </p>
-                  )}
-                  {pictures.length > 0 && (
+                  ) : null}
+                  {!bodyPictures.length &&
+                    !videos.length &&
+                    socialPosts.length > 0 && (
+                      <section className="social-posts" aria-label="SNSの投稿">
+                        <p>
+                          投稿のリンクはありますが、記事に画像・動画の配信URLがないため、ここではメディアを表示できません。
+                        </p>
+                        {socialPosts.map((post) => (
+                          <a
+                            key={post.url}
+                            className="button secondary"
+                            href={post.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {post.provider}の投稿を開く（外部）
+                            <ExternalLink size={15} />
+                          </a>
+                        ))}
+                      </section>
+                    )}
+                  {(pictures.length > 0 || videos.length > 0) && (
                     <button
                       className="button secondary body-toggle"
                       aria-expanded={textFor.has(article.id)}
@@ -329,7 +377,8 @@ export function Reader({
                       {textFor.has(article.id) ? "本文を閉じる" : "本文も読む"}
                     </button>
                   )}
-                  {(textFor.has(article.id) || !pictures.length) &&
+                  {(textFor.has(article.id) ||
+                    (!pictures.length && !videos.length)) &&
                     reading.document.blocks.map((block, i) =>
                       block.type === "text" ? (
                         <p key={i}>
@@ -345,6 +394,31 @@ export function Reader({
                             onArticleOpen={(next) => {
                               rememberPosition();
                               onRelated(next);
+                            }}
+                            videoUrls={videos.map((video) => video.url)}
+                            onVideoOpen={(url) => {
+                              const element = videoElements.current[url];
+                              if (!element) {
+                                setVideoNotice({
+                                  id: article.id,
+                                  text: "動画を読み込めませんでした。プレーヤーの再読み込みをお試しください。",
+                                });
+                                content.current
+                                  ?.querySelector(".article-videos")
+                                  ?.scrollIntoView({ block: "center" });
+                                return;
+                              }
+                              element.scrollIntoView({ block: "center" });
+                              element.focus({ preventScroll: true });
+                              void element
+                                .play()
+                                .then(() => setVideoNotice(null))
+                                .catch(() =>
+                                  setVideoNotice({
+                                    id: article.id,
+                                    text: "動画プレーヤーの再生ボタンを押してください。",
+                                  }),
+                                );
                             }}
                           />
                         </p>

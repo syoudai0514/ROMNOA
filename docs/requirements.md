@@ -85,3 +85,17 @@
 | MEDIA04 | 既存schemaVersion=3の本文キャッシュ内の検証済み画像リンクも再認識し、保存/既読/親記事認可を維持 | cache compatibility unit / PWA |
 
 Imgurの拡張子なしページURLは、同じIDの画像ファイルが本文で確認できる場合だけ、その画像の拡大へ対応付ける。拡張子・別画像IDを推測して取得しない。画像の真贋判定やモザイク復元は行わない。
+
+## 2026-10-28: MP4・GIF・SNS画像（VIDEO01〜SOCIAL02）
+
+利用者が「mp4が動かない」「gifも表示」「インスタやXの画像も可能なら表示」と追加指示。従来の動画全面除外を、検証した記事動画のネイティブ再生へ変更する。動画広告や元ページのスクリプト・iframeは引き続き実行しない。元のPhase 1受け入れ条件は維持する。
+
+| ID | 追加要件 | 検証 |
+|---|---|---|
+| VIDEO01 | 本文のMP4リンク・プレーンURL・video/sourceから許可した配信URLを抽出。外部遷移を必要とせずcontrols/playsInlineの動画プレーヤーを表示 | media unit / native playback E2E |
+| VIDEO02 | 本文の動画リンクは該当プレーヤーへ移動して再生。再生拒否・読込失敗を説明し再試行できる。既存schemaVersion=3のlinksも利用 | cached links unit / E2E |
+| VIDEO03 | GIF画像を動いたまま表示。Xのtweet_videoとImgur gifvはMP4アニメーションとして扱い、音声なし・ループ再生。通常MP4は自動再生しない | frame-change / playback E2E |
+| SOCIAL01 | 固定本文にあるXメディアURL・Instagram CDNの直接画像/MP4を検証して表示。広告・プロフィール画像を除外。ログイン突破や任意代理取得はしない | URL/classification unit / CDN fixture E2E |
+| SOCIAL02 | 投稿URLだけでメディアを取得できない場合はその旨と明示的な元投稿リンクを表示。取得できたと偽らず、外部SDK/iframeを自動読込しない | post-only E2E / official API research |
+
+動画は最大8本。許可形式・ホスト、削除・配信元の公開範囲・署名期限により表示できない場合がある。すべてのMP4配信元・SNS投稿への対応を完了と扱わない。SNSの直接CDN対応と投稿URLからの取得は区別する。一般公開の権利条件・実機検証は引き続き未完了。

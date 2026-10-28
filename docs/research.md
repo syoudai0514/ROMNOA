@@ -45,3 +45,10 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 - 全文リーダーは引き続き未実装。元の要件を縮小せず、本文の利用条件・許諾を確定してから対応する。無断転載や制限回避は行わない。
 
 その後の利用者の明示的な修正指示を受け、個人用PreviewについてはADR 003へ更新した。公開ページ200応答の本文要素を特定し、現在のRSSで発見した記事の読書表示を実装。これは一般公開の全文再配信許諾を新たに取得したという調査結果ではない。ハムスター速報のRSS content:encodedは記事画像中心、アルファルファRSSはscript/関連記事も含むため、RSSの量から記事全文の完全性を判定せず、ページの固定本文要素を利用する。
+
+## 2026-10-28: MP4とSNSの公式経路の確認
+
+- 報告記事: https://alfalfalfa.com/articles/11019201.html 。本文にvideo.twimg.comのamplify_video MP4とX投稿へのリンクがある。2026-10-28の通常HTTPS GETとRange GETで当該MP4は404、応答0バイト。アプリの表示改善だけではこのファイル自体を再生可能にできない。
+- X公式oEmbed: https://publish.twitter.com/oembed （公式資料: https://developer.x.com/en/docs/x-for-websites/oembed-api ）。報告記事の公開投稿URLにomit_script=true/dnt=trueで200を確認。応答にthumbnail_urlなし、html内imgタグ0。直接画像URLを得られなかった。第三者プロキシ・非公式guest APIは利用しない。
+- Instagram公式oEmbed: https://graph.facebook.com/instagram_oembed （公式資料: https://developers.facebook.com/docs/instagram/oembed/ ）。配信元の公開記事11101860.htmlに含まれる実在投稿URLで200を確認。返却キーはversion/provider_name/provider_url/type/width/html、thumbnail_urlなし。html内imgタグ・cdninstagram URLは0。公式応答は埋込用マークアップであり、この確認では直接写真URLを得られなかった。トークン必須という未検証の説明はしない。
+- 記事に含まれるXの画像/MP4、Instagram CDNの直接URLは表示対象にする。投稿URLだけから写真や全添付メディアを展開する機能は未実装。公式ウィジェットの自動実行は採用しない。実際のInstagram CDNの写真読込は別途確認が必要で、合成fixtureの成功を実通信成功と扱わない。

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { ReaderDocument } from "../lib/reader-model";
 import { readerImageFromLink } from "../lib/reader-model";
 import type { Article } from "../lib/model";
+import { readerVideoUrl } from "../lib/reader-media";
 
 // Match only URLs/titles that the parser validated; never interpret article HTML.
 export function ReaderText({
@@ -12,6 +13,8 @@ export function ReaderText({
   onImageOpen,
   articles,
   onArticleOpen,
+  videoUrls,
+  onVideoOpen,
 }: {
   text: string;
   links: ReaderDocument["links"];
@@ -20,6 +23,8 @@ export function ReaderText({
   onImageOpen: (url: string) => void;
   articles: Article[];
   onArticleOpen: (article: Article) => void;
+  videoUrls: string[];
+  onVideoOpen: (url: string) => void;
 }) {
   const candidates = links.flatMap((link) =>
     [link.url, link.title]
@@ -43,9 +48,22 @@ export function ReaderText({
     if (match.index > cursor) parts.push(text.slice(cursor, match.index));
     const url = byLabel.get(match[0])!;
     const image = readerImageFromLink(url, sourceId, imageUrls);
+    const video = readerVideoUrl(url, sourceId);
     const article = articles.find((candidate) => candidate.id === url);
     parts.push(
-      image ? (
+      video ? (
+        videoUrls.includes(video) ? (
+          <button
+            key={match.index}
+            className="inline-image-link"
+            onClick={() => onVideoOpen(video)}
+          >
+            動画{videoUrls.indexOf(video) + 1}を再生
+          </button>
+        ) : (
+          <span key={match.index}>表示対象外の動画</span>
+        )
+      ) : image ? (
         imageUrls.includes(image) ? (
           <button
             key={match.index}

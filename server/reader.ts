@@ -1,3 +1,4 @@
+import { readerVideoUrl, socialPostUrl } from "../src/lib/reader-media.js";
 import { parseDocument, DomUtils } from "htmlparser2";
 import { getCache } from "@vercel/functions";
 import {
@@ -344,15 +345,37 @@ export function extractArticle(
         for (const match of node.data.matchAll(/https?:\/\/[^\s<>"']+/g)) {
           const raw = match[0].replace(/[)\]｝）、，。.,;!?]+$/, "");
           const image = readerImageUrl(raw, article.sourceId);
-          if (image) {
-            addImage(image);
-            if (links.size < 40) links.set(raw, { url: raw, title: raw });
-          }
+          const video = readerVideoUrl(raw, article.sourceId);
+          if (image) addImage(image);
+          if ((image || video) && links.size < 40)
+            links.set(raw, { url: raw, title: raw });
         }
       return;
     }
     if (node.type !== "tag") return;
     const a = node.attribs;
+    if (!hidden(node) && !advertisement(node) && !recommendation(node)) {
+      const post = socialPostUrl(
+        a["data-instgrm-permalink"] ||
+          a.cite ||
+          (node.name === "iframe" ? a.src || "" : ""),
+      );
+      if (post && links.size < 40)
+        links.set(post.url, { url: post.url, title: `${post.provider}の投稿` });
+      if (node.name === "video") {
+        const candidates = [
+          a.src || "",
+          ...DomUtils.findAll((el) => el.name === "source", node.children).map(
+            (el) => el.attribs.src || "",
+          ),
+        ];
+        for (const candidate of candidates) {
+          const url = readerVideoUrl(candidate, article.sourceId);
+          if (url && links.size < 40)
+            links.set(candidate, { url: candidate, title: "動画" });
+        }
+      }
+    }
     if (
       NON_CONTENT.has(node.name) ||
       hidden(node) ||
@@ -405,7 +428,15 @@ export function extractArticle(
             return;
           }
           const full = readerImageUrl(raw, article.sourceId);
-          if (!full && linked?.url !== article.id) {
+          const post = socialPostUrl(raw);
+          const socialImage =
+            image &&
+            post &&
+            ((post.provider === "X" &&
+              new URL(image).hostname === "pbs.twimg.com") ||
+              (post.provider === "Instagram" &&
+                new URL(image).hostname.endsWith(".cdninstagram.com")));
+          if (!full && !socialImage && linked?.url !== article.id) {
             imageAudit.uncertain++;
             return;
           }
@@ -441,7 +472,13 @@ export function extractArticle(
   selected.forEach((root) => walk(root));
   flush();
   if (pageKind === "roundup") imageAudit.related += images.size;
-  if (!blocks.length || (!length && !images.size))
+  const linkedMedia = [...links.values()].some(
+    (link) =>
+      readerVideoUrl(link.url, article.sourceId) || socialPostUrl(link.url),
+  );
+  if (!blocks.length && linkedMedia)
+    blocks.push({ type: "text", text: "記事内のメディアです。" });
+  if (!blocks.length || (!length && !images.size && !linkedMedia))
     throw new ReaderError("empty", "このページの本文を読み取れませんでした。");
   return readerDocumentSchema.parse({
     schemaVersion: 3,

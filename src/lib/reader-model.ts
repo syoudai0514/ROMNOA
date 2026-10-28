@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { instagramImageUrl } from "./reader-media.js";
 import { articleSchema, sourceInfo } from "./model.js";
 
 export function readerArticleTarget(raw: string) {
@@ -55,18 +56,18 @@ export function readerImageUrl(raw: string, sourceId: string): string | null {
       /\.(jpe?g|png|gif|webp)$/i.test(u.pathname);
     const socialImage =
       u.hostname === "pbs.twimg.com" &&
-      /^\/media\/[A-Za-z0-9_-]{1,128}(?:\.(?:jpe?g|png|webp))?$/.test(
+      /^\/media\/[A-Za-z0-9_-]{1,128}(?:\.(?:jpe?g|png|gif|webp))?$/.test(
         u.pathname,
       ) &&
-      (/\.(?:jpe?g|png|webp)$/.test(u.pathname) ||
-        /^(?:jpg|png|webp)$/.test(u.searchParams.get("format") || "")) &&
+      (/\.(?:jpe?g|png|gif|webp)$/.test(u.pathname) ||
+        /^(?:jpg|png|gif|webp)$/.test(u.searchParams.get("format") || "")) &&
       [...u.searchParams.keys()].every(
         (key) =>
           (key === "format" || key === "name") &&
           u.searchParams.getAll(key).length === 1,
       ) &&
       (!u.searchParams.has("format") ||
-        /^(?:jpg|png|webp)$/.test(u.searchParams.get("format")!)) &&
+        /^(?:jpg|png|gif|webp)$/.test(u.searchParams.get("format")!)) &&
       (!u.searchParams.has("name") ||
         /^(?:orig|large|medium|small|thumb|[1-9]\d{0,3}x[1-9]\d{0,3})$/.test(
           u.searchParams.get("name")!,
@@ -75,7 +76,8 @@ export function readerImageUrl(raw: string, sourceId: string): string | null {
       imgurHost &&
       !u.search &&
       /^\/[A-Za-z0-9]{5,12}\.(?:jpe?g|png|gif|webp)$/i.test(u.pathname);
-    if (!publisher && !socialImage && !imgurImage) return null;
+    const instagram = instagramImageUrl(u.href);
+    if (!publisher && !socialImage && !imgurImage && !instagram) return null;
     if (imgurImage) u.hostname = "i.imgur.com";
     u.hash = "";
     return u.href;
