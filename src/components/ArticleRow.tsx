@@ -1,4 +1,4 @@
-import { Bookmark, Check, ChevronRight } from "lucide-react";
+import { Bookmark, Check } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
 
 export function ArticleRow({
@@ -7,12 +7,18 @@ export function ArticleRow({
   read,
   onOpen,
   onSave,
+  rank,
+  bookmarks,
+  local = false,
 }: {
   article: Article;
   saved: boolean;
   read: boolean;
   onOpen: () => void;
   onSave: () => void;
+  rank?: number;
+  bookmarks?: number;
+  local?: boolean;
 }) {
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
   return (
@@ -20,19 +26,31 @@ export function ArticleRow({
       className={`article-row ${read ? "is-read" : ""}`}
       data-testid="article-row"
     >
-      <span
-        className={`source-monogram source-${source.id}`}
-        aria-hidden="true"
-      >
-        {source.short}
-      </span>
       <button
         className="article-open"
         onClick={onOpen}
         aria-label={`記事を開く: ${article.title}`}
       >
+        <h3>{article.title}</h3>
         <span className="article-meta">
-          <span className="category-label">{article.category}</span>
+          {rank !== undefined && (
+            <span className="rank-label">
+              <strong>{rank}位</strong>
+            </span>
+          )}
+          {bookmarks !== undefined && (
+            <span className="bookmark-metric" title="はてなブックマーク数">
+              <span className="sr-only">はてなブックマーク </span>
+              {bookmarks}件
+            </span>
+          )}
+          <span className="article-source">
+            <i
+              className={`source-dot source-${source.id}`}
+              aria-hidden="true"
+            />
+            <span>{source.name}</span>
+          </span>
           <time dateTime={article.publishedAt || undefined}>
             {articleDate(article.publishedAt)}
           </time>
@@ -42,11 +60,14 @@ export function ArticleRow({
               既読
             </span>
           )}
-        </span>
-        <h3>{article.title}</h3>
-        <span className="article-source">
-          {source.name}
-          <ChevronRight size={12} />
+          {local && (
+            <span
+              className="local-search-label"
+              title="保存・履歴から見つかった記事"
+            >
+              端末
+            </span>
+          )}
         </span>
       </button>
       <button

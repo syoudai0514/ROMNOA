@@ -70,9 +70,12 @@ test("search, category, unread order, source and NG word filters (R03/R09/R13)",
   page,
 }) => {
   await fixture(page);
+  await nav(page).getByRole("button", { name: "検索", exact: true }).click();
   await page.getByRole("searchbox", { name: "記事を検索" }).fill("休日の料理");
   await expect(page.getByTestId("article-row")).toHaveCount(1);
   await page.getByRole("button", { name: "検索をクリア" }).click();
+  await nav(page).getByRole("button", { name: "ホーム", exact: true }).click();
+  await page.getByTestId("home-filters").locator("summary").click();
   await page
     .getByLabel("カテゴリで絞り込み")
     .getByRole("button", { name: "ゲーム", exact: true })

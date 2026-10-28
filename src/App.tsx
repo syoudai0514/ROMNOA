@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import {
-  ArrowDownUp,
   ArrowRight,
   Bookmark,
   BookOpen,
@@ -17,7 +16,6 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  Sparkles,
   Sun,
   WifiOff,
   X,
@@ -26,7 +24,8 @@ import type { LucideIcon } from "lucide-react";
 import type { MouseEvent } from "react";
 import { ArticleRow } from "./components/ArticleRow";
 import { Reader } from "./components/Reader";
-import { DateFilter } from "./components/DateFilter";
+import { HomeFilters, CategoryChips } from "./components/HomeFilters";
+import { SortControl } from "./components/SortControl";
 import { ArticleSearch } from "./components/ArticleSearch";
 import { MySearch } from "./components/MySearch";
 import { HiddenUnlock, HiddenSearch } from "./components/HiddenSearch";
@@ -58,9 +57,10 @@ import {
 } from "./lib/storage";
 import { useFeed } from "./lib/use-feed";
 
-type Tab = "home" | "categories" | "saved" | "settings";
+type Tab = "home" | "search" | "categories" | "saved" | "settings";
 const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: "home", label: "ホーム", icon: Home },
+  { id: "search", label: "検索", icon: Search },
   { id: "categories", label: "カテゴリ", icon: Grid2X2 },
   { id: "saved", label: "保存", icon: Bookmark },
   { id: "settings", label: "設定", icon: Settings2 },
@@ -89,8 +89,23 @@ export default function App() {
   const [notice, setNotice] = useState(initial.warning);
   const [tab, setTab] = useState<Tab>("home");
   const [category, setCategory] = useState<Category>("すべて");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<Sort>("newest");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [shelfQuery, setShelfQuery] = useState("");
+  const query =
+    tab === "search" ? searchQuery : tab === "saved" ? shelfQuery : "";
+  const setQuery = (value: string) =>
+    tab === "search" ? setSearchQuery(value) : setShelfQuery(value);
+  const [homeSort, setHomeSort] = useState<Sort>("newest");
+  const [searchSort, setSearchSort] = useState<Sort>("newest");
+  const [shelfSort, setShelfSort] = useState<Sort>("newest");
+  const sort =
+    tab === "search" ? searchSort : tab === "saved" ? shelfSort : homeSort;
+  const setSort = (value: Sort) =>
+    tab === "search"
+      ? setSearchSort(value)
+      : tab === "saved"
+        ? setShelfSort(value)
+        : setHomeSort(value);
   const [date, setDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchScope, setSearchScope] = useState<SearchScope>("title");
@@ -116,7 +131,7 @@ export default function App() {
     storageError: feedStorageError,
     refresh: refreshFeed,
   } = useFeed();
-  const searchActive = tab === "home" && !!searchTerm;
+  const searchActive = tab === "search" && !!searchTerm;
   const pastSearch = useSearch(searchActive ? searchTerm : "", searchScope);
   const discoveryMode =
     tab === "home" && !searchActive
@@ -277,7 +292,9 @@ export default function App() {
         ? searchArticles
         : discoveryMode
           ? discovery.data?.articles || []
-          : all;
+          : tab === "search" && !query
+            ? []
+            : all;
   const articles = useMemo(() => {
     const filtered = filterArticles(base, {
       category,
@@ -334,13 +351,16 @@ export default function App() {
   function navigate(next: Tab) {
     scrollPositions.current[viewKey] = window.scrollY;
     setTab(next);
-    setQuery("");
+    setShelfQuery("");
     setCategory("すべて");
-    setDate("");
-    setSearchTerm("");
-    setHiddenResult(false);
-    if (next !== "home") setHiddenGroups(null);
-    if (next !== "home" && sort === "popular") setSort("newest");
+    if (next !== "search") {
+      setHiddenGroups(null);
+      if (hiddenResult) {
+        setSearchQuery("");
+        setSearchTerm("");
+        setHiddenResult(false);
+      }
+    }
   }
   function chooseCategory(next: Category) {
     scrollPositions.current[viewKey] = window.scrollY;
@@ -409,16 +429,16 @@ export default function App() {
     update((p) => ({ ...p, ngWords: [...p.ngWords, word] }));
     setNgInput("");
   }
-  const showList = tab === "home" || tab === "saved";
+  const showList = tab === "home" || tab === "search" || tab === "saved";
   function startSearch(value: string, hidden = false) {
     const term = normalizeSearch(value);
     if (!validSearch(term)) return;
     pastSearch.reset();
-    setQuery(term);
+    setSearchQuery(term);
     setSearchTerm(term);
     setDate("");
     setCategory("すべて");
-    setTab("home");
+    setTab("search");
     setHiddenResult(hidden);
   }
   function blankTap(event: MouseEvent<HTMLElement>) {
@@ -507,47 +527,61 @@ export default function App() {
               </button>
             </div>
           </header>
-          <main onClick={blankTap} id="main" className="main-content">
-            <div className="page-heading">
-              <div>
-                <span className="eyebrow">
-                  {tab === "home"
-                    ? "YOUR DAILY READING"
-                    : tab === "categories"
-                      ? "FIND YOUR INTEREST"
-                      : tab === "saved"
-                        ? "YOUR READING SHELF"
-                        : "MAKE IT YOURS"}
-                </span>
-                <h1 ref={headingRef}>
-                  {tab === "home"
-                    ? "ホーム"
+          <main
+            onClick={blankTap}
+            id="main"
+            className={tab === "home" ? "main-content is-home" : "main-content"}
+          >
+            <div
+              className={`page-heading ${tab === "home" ? "home-heading" : ""}`}
+            >
+              <h1 ref={headingRef}>
+                {tab === "home"
+                  ? "今日の記事"
+                  : tab === "search"
+                    ? "記事を探す"
                     : tab === "categories"
                       ? "カテゴリ"
                       : tab === "saved"
                         ? "あなたの本棚"
                         : "設定"}
-                </h1>
-                <p>
-                  {tab === "home"
-                    ? "読みたい話題だけ、ノイズなく。"
-                    : tab === "categories"
-                      ? "気になることから、読みはじめよう。"
-                      : tab === "saved"
-                        ? "気になった記事を、好きなときに。"
-                        : "読む時間を、あなたらしく。"}
-                </p>
-              </div>
+              </h1>
               {tab === "home" && (
-                <button
-                  className={`button refresh-button ${loading ? "refreshing" : ""}`}
-                  onClick={() => void refresh()}
-                  disabled={loading}
-                  aria-label="記事を更新"
-                >
-                  <RefreshCw size={16} />
-                  <span>{loading ? "取得中" : "更新する"}</span>
-                </button>
+                <div className="home-actions">
+                  <div
+                    className="segmented quick-sort"
+                    aria-label="記事の表示切替"
+                  >
+                    <button
+                      className={sort === "newest" ? "selected" : ""}
+                      aria-pressed={sort === "newest"}
+                      onClick={() => {
+                        setHomeSort("newest");
+                        setDate("");
+                      }}
+                    >
+                      新着
+                    </button>
+                    <button
+                      className={sort === "popular" ? "selected" : ""}
+                      aria-pressed={sort === "popular"}
+                      onClick={() => {
+                        setHomeSort("popular");
+                        setDate("");
+                      }}
+                    >
+                      人気
+                    </button>
+                  </div>
+                  <button
+                    className={`icon-button refresh-button ${loading ? "refreshing" : ""}`}
+                    onClick={() => void refresh()}
+                    disabled={loading}
+                    aria-label="記事を更新"
+                  >
+                    <RefreshCw size={18} />
+                  </button>
+                </div>
               )}
             </div>
 
@@ -607,53 +641,17 @@ export default function App() {
               </div>
             )}
 
-            {tab === "home" && (
-              <section className="welcome-card">
-                <div className="welcome-copy">
-                  <span className="eyebrow">
-                    <Sparkles size={13} /> A LITTLE LESS NOISE
-                  </span>
-                  <h2>
-                    読むことに、
-                    <br className="mobile-break" />
-                    もっと自由を。
-                  </h2>
-                  <p>
-                    いくつものサイトの新着を、ひとつの場所に。
-                    <br />
-                    気になる話題を見つけて、あとでゆっくり。
-                  </p>
-                  <span className="welcome-note">
-                    <ShieldCheck size={14} />
-                    記事の画像を、広告なしで。気になる関連記事へ、そのまま。
-                  </span>
-                </div>
-                <div className="book-art" aria-hidden="true">
-                  <div className="book-shadow" />
-                  <div className="book-page page-left">
-                    <i />
-                    <i />
-                    <i />
-                    <b />
-                  </div>
-                  <div className="book-page page-right">
-                    <i />
-                    <i />
-                    <i />
-                    <b />
-                  </div>
-                  <span className="book-bookmark" />
-                  <Leaf className="book-leaf" size={46} strokeWidth={1} />
-                  <span className="art-star">✳</span>
-                </div>
-              </section>
-            )}
-
             {showList && (
               <div className="reading-layout">
                 <section
                   className="feed-column"
-                  aria-label={tab === "saved" ? "保存した記事" : "新着記事"}
+                  aria-label={
+                    tab === "saved"
+                      ? "保存した記事"
+                      : tab === "search"
+                        ? "記事の検索結果"
+                        : "新着記事"
+                  }
                 >
                   {tab === "saved" && (
                     <div className="segmented shelf-tabs">
@@ -675,7 +673,7 @@ export default function App() {
                       </button>
                     </div>
                   )}
-                  {tab === "home" ? (
+                  {tab === "search" ? (
                     <>
                       <ArticleSearch
                         query={query}
@@ -732,7 +730,7 @@ export default function App() {
                         />
                       )}
                     </>
-                  ) : (
+                  ) : tab === "saved" ? (
                     <div className="search-box">
                       <Search size={18} />
                       <input
@@ -752,24 +750,18 @@ export default function App() {
                         </button>
                       )}
                     </div>
-                  )}
-                  <div
-                    className="category-chips"
-                    aria-label="カテゴリで絞り込み"
-                  >
-                    {categories.map((c) => (
-                      <button
-                        key={c}
-                        className={category === c ? "selected" : ""}
-                        aria-pressed={category === c}
-                        onClick={() => setCategory(c)}
-                      >
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                  {tab === "home" && !searchActive && (
-                    <DateFilter key={date} date={date} onChange={setDate} />
+                  ) : null}
+                  {tab === "home" ? (
+                    <HomeFilters
+                      category={category}
+                      onCategory={setCategory}
+                      date={date}
+                      onDate={setDate}
+                      sort={sort}
+                      onSort={setSort}
+                    />
+                  ) : (
+                    <CategoryChips category={category} onChange={setCategory} />
                   )}
                   {searchActive && (
                     <div className="search-results-note" role="status">
@@ -780,8 +772,9 @@ export default function App() {
                       {pastSearch.data?.searchedRange.from && (
                         <p>
                           ここまで確認した記事の日付：
-                          {searchDay(pastSearch.data.searchedRange.from)} 〜{" "}
-                          {searchDay(pastSearch.data.searchedRange.to)}
+                          {searchDay(
+                            pastSearch.data.searchedRange.from,
+                          )} 〜 {searchDay(pastSearch.data.searchedRange.to)}
                           （配信元の検索結果 {pastSearch.page}ページ分）
                         </p>
                       )}
@@ -847,50 +840,54 @@ export default function App() {
                     </div>
                   )}
                   {discoveryMode && (
-                    <div className="discovery-note" role="status">
-                      {sort === "popular" ? (
-                        <>
-                          <p>
-                            配信元の現在の人気順を、サイト別に表示しています。
-                          </p>
-                          <p>
-                            ハムスター速報：直近1週間／アルファルファモザイク：掲載中のTOP6（集計期間非公表）
-                          </p>
-                          {date && (
+                    <details className="discovery-note">
+                      <summary>順位・取得範囲について</summary>
+                      <div role="status">
+                        {sort === "popular" ? (
+                          <>
                             <p>
-                              {date}
-                              掲載の記事で絞り込み中。過去の人気順位ではありません。
+                              配信元の現在の人気順を、サイト別に表示しています。
                             </p>
-                          )}
-                        </>
-                      ) : (
-                        <p>
-                          {date}
-                          （日本時間）の記事を、配信元の日付別ページから取得しています。
-                        </p>
-                      )}
-                      {discovery.data?.limitedSources.length ? (
-                        <p>
-                          配信元の一覧の一部を表示しています。全件の取得は保証していません。
-                        </p>
-                      ) : null}
-                      {discovery.data?.unavailableSources.length ? (
-                        <p>
-                          {discovery.data.unavailableSources
-                            .map(
-                              (id) => sourceInfo.find((s) => s.id === id)!.name,
-                            )
-                            .join("・")}
-                          には、この日付の一覧がありません。上のキーワード検索なら全期間から探せます。
-                        </p>
-                      ) : null}
-                      {cached && <p>前回取得した情報を表示しています。</p>}
-                      {error && (
-                        <button className="text-button" onClick={refresh}>
-                          この一覧を再試行
-                        </button>
-                      )}
-                    </div>
+                            <p>
+                              ハムスター速報：直近1週間／アルファルファモザイク：掲載中のTOP6（集計期間非公表）
+                            </p>
+                            {date && (
+                              <p>
+                                {date}
+                                掲載の記事で絞り込み中。過去の人気順位ではありません。
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p>
+                            {date}
+                            （日本時間）の記事を、配信元の日付別ページから取得しています。
+                          </p>
+                        )}
+                        {discovery.data?.limitedSources.length ? (
+                          <p>
+                            配信元の一覧の一部を表示しています。全件の取得は保証していません。
+                          </p>
+                        ) : null}
+                        {discovery.data?.unavailableSources.length ? (
+                          <p>
+                            {discovery.data.unavailableSources
+                              .map(
+                                (id) =>
+                                  sourceInfo.find((s) => s.id === id)!.name,
+                              )
+                              .join("・")}
+                            には、この日付の一覧がありません。検索タブのキーワード検索なら全期間から探せます。
+                          </p>
+                        ) : null}
+                        {cached && <p>前回取得した情報を表示しています。</p>}
+                        {error && (
+                          <button className="text-button" onClick={refresh}>
+                            この一覧を再試行
+                          </button>
+                        )}
+                      </div>
+                    </details>
                   )}
                   <div className="list-heading">
                     <h2>
@@ -900,44 +897,30 @@ export default function App() {
                           : "保存した記事"
                         : searchActive
                           ? `「${searchTerm}」の検索結果`
-                          : sort === "popular"
-                            ? "人気記事（サイト別）"
-                            : date
-                              ? `${date}の記事`
-                              : query
-                                ? "検索結果"
-                                : category === "すべて"
-                                  ? "新着記事"
-                                  : category}
+                          : tab === "search"
+                            ? "検索結果"
+                            : sort === "popular"
+                              ? "人気記事（サイト別）"
+                              : date
+                                ? `${date}の記事`
+                                : query
+                                  ? "検索結果"
+                                  : category === "すべて"
+                                    ? "新着記事"
+                                    : category}
                       <span>{groups.length}</span>
                     </h2>
-                    {!(tab === "saved" && savedView === "history") && (
-                      <label className="sort-control">
-                        <ArrowDownUp size={14} />
-                        <select
-                          aria-label="記事の並び順"
-                          value={sort}
-                          onChange={(e) => setSort(e.target.value as Sort)}
-                        >
-                          <option value="newest">新着順</option>
-                          <option value="unread">未読優先</option>
-                          <option value="category">カテゴリ別</option>
-                          {tab === "home" && (
-                            <option
-                              value="popular"
-                              disabled={
-                                searchActive &&
-                                pastSearch.data?.bookmarks === null
-                              }
-                            >
-                              {searchActive
-                                ? "人気順（ブックマーク数）"
-                                : "人気順（サイト別）"}
-                            </option>
-                          )}
-                        </select>
-                      </label>
-                    )}
+                    {tab !== "home" &&
+                      !(tab === "saved" && savedView === "history") && (
+                        <SortControl
+                          sort={sort}
+                          onChange={setSort}
+                          popular={tab === "search" ? "bookmarks" : undefined}
+                          popularityUnavailable={
+                            searchActive && pastSearch.data?.bookmarks === null
+                          }
+                        />
+                      )}
                   </div>
                   {query && !searchActive && (
                     <p className="search-note">
@@ -975,12 +958,16 @@ export default function App() {
                               : "読んだ記事がここに並びます"
                             : error
                               ? "記事を取得できませんでした"
-                              : "表示する記事がありません"}
+                              : tab === "search" && !query
+                                ? "キーワードで記事を探す"
+                                : "表示する記事がありません"}
                         </h3>
                         <p>
                           {tab === "saved" && savedView === "saved"
                             ? "記事のしおりをタップすると、あとで読む記事を保存できます。"
-                            : "検索・カテゴリ・配信元・NGワードの設定をご確認ください。"}
+                            : tab === "search" && !query
+                              ? "名前やキーワードを入力し、「検索」で全期間の記事を探せます。"
+                              : "検索・カテゴリ・配信元・NGワードの設定をご確認ください。"}
                         </p>
                         {(query || category !== "すべて" || date) && (
                           <button
@@ -1007,34 +994,21 @@ export default function App() {
                     ) : (
                       groups.map((group) => (
                         <div className="article-group" key={group[0].id}>
-                          {sort === "popular" && !searchActive && (
-                            <div className="rank-label">
-                              <span>
-                                {
-                                  sourceInfo.find(
-                                    (s) => s.id === group[0].sourceId,
-                                  )!.name
-                                }
-                              </span>
-                              <strong>{ranks[group[0].id]}位</strong>
-                            </div>
-                          )}
-                          {searchActive &&
-                            pastSearch.data?.bookmarks?.[group[0].id] !==
-                              undefined && (
-                              <p className="bookmark-metric">
-                                はてなブックマーク{" "}
-                                {pastSearch.data!.bookmarks![group[0].id]}件
-                              </p>
-                            )}
-                          {searchActive &&
-                            !remoteSearchIds.has(group[0].id) && (
-                              <p className="local-search-label">
-                                保存・履歴から見つかった記事
-                              </p>
-                            )}
                           <ArticleRow
                             article={group[0]}
+                            rank={
+                              discoveryMode === "popular"
+                                ? ranks[group[0].id]
+                                : undefined
+                            }
+                            bookmarks={
+                              searchActive
+                                ? pastSearch.data?.bookmarks?.[group[0].id]
+                                : undefined
+                            }
+                            local={
+                              searchActive && !remoteSearchIds.has(group[0].id)
+                            }
                             saved={savedIds.has(group[0].id)}
                             read={!!prefs.read[group[0].id]}
                             onOpen={() => open(group[0])}
@@ -1442,7 +1416,7 @@ export default function App() {
           onUnlock={(groups) => {
             setHiddenUnlock(false);
             setHiddenGroups(groups);
-            setTab("home");
+            setTab("search");
             window.scrollTo(0, 0);
           }}
         />

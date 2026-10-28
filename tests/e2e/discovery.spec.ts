@@ -63,6 +63,7 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
     return r.fulfill({ json: readerFixture(a) });
   });
   await page.goto("/");
+  await page.getByTestId("home-filters").locator("summary").click();
   await page
     .getByRole("combobox", { name: "記事の並び順" })
     .selectOption("popular");
@@ -93,16 +94,12 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
   await page.getByRole("button", { name: "表示", exact: true }).click();
   await expect(page.getByTestId("article-row")).toHaveCount(1);
   await expect(page.locator(".rank-label strong")).toHaveText(["3位"]);
+  await page.locator(".discovery-note > summary").click();
   await expect(
     page
       .getByRole("status")
       .filter({ hasText: "過去の人気順位ではありません" }),
   ).toBeVisible();
-  await page
-    .getByRole("searchbox", { name: "記事を検索" })
-    .fill("存在しない検索");
-  await expect(page.getByTestId("article-row")).toHaveCount(0);
-  await page.getByRole("button", { name: "検索をクリア", exact: true }).click();
   await page
     .getByTestId("article-row")
     .first()
@@ -132,6 +129,7 @@ test("date archive finds older stories, keeps favorites/read, changes day and cl
     r.fulfill({ json: readerFixture(first) }),
   );
   await page.goto("/");
+  await page.getByTestId("home-filters").locator("summary").click();
   await page.getByLabel("掲載日", { exact: true }).fill(past);
   await page.getByRole("button", { name: "表示", exact: true }).click();
   await expect(page.getByTestId("article-row")).toHaveCount(1);
@@ -199,6 +197,7 @@ test("rapid day changes and a failed date never display another date's stories; 
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  await page.getByTestId("home-filters").locator("summary").click();
   await page.getByRole("button", { name: "今日", exact: true }).click();
   await page.getByRole("button", { name: "前の日", exact: true }).click();
   await expect(page.getByTestId("article-row")).toHaveCount(1);

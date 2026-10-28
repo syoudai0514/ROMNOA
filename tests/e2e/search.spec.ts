@@ -36,9 +36,23 @@ function result(
 async function base(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
 }
+async function searchTab(page: Page) {
+  const button = page
+    .getByRole("navigation", {
+      name: /メインナビゲーション|下部ナビゲーション/,
+    })
+    .filter({ visible: true })
+    .getByRole("button", { name: "検索", exact: true });
+  if ((await button.getAttribute("aria-current")) !== "page")
+    await button.click();
+}
 async function submit(page: Page, q: string) {
+  await searchTab(page);
   await page.getByRole("searchbox", { name: "記事を検索" }).fill(q);
-  await page.getByRole("button", { name: "検索", exact: true }).click();
+  await page
+    .getByRole("region", { name: "記事を探す", exact: true })
+    .getByRole("button", { name: "検索", exact: true })
+    .click();
 }
 
 test("calendar chooses an older year; keyword search ignores dates and sorts by actual bookmark counts", async ({
@@ -72,6 +86,7 @@ test("calendar chooses an older year; keyword search ignores dates and sorts by 
     });
   });
   await page.goto("/");
+  await page.getByTestId("home-filters").locator("summary").click();
   await page
     .getByRole("button", { name: "年・月から日付を選ぶ", exact: true })
     .click();
@@ -128,6 +143,7 @@ test("My Search is visible normally, persists registered terms and searches all 
     return r.fulfill({ json: result(sent) });
   });
   await page.goto("/");
+  await searchTab(page);
   await expect(
     page.getByRole("button", { name: "マイ検索", exact: true }),
   ).toBeVisible();
@@ -139,6 +155,7 @@ test("My Search is visible normally, persists registered terms and searches all 
     .getByRole("button", { name: "キーワードを登録", exact: true })
     .click();
   await page.reload();
+  await searchTab(page);
   await page.getByRole("button", { name: "マイ検索", exact: true }).click();
   const panel = page.getByRole("region", { name: "マイ検索", exact: true });
   await panel
@@ -339,6 +356,7 @@ test("search target defaults to titles, switches to clean body and keeps scope f
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  await searchTab(page);
   await expect(
     page.getByRole("radio", { name: "タイトルのみ", exact: true }),
   ).toBeChecked();

@@ -84,7 +84,7 @@ export function ArticleSearch({
           <>
             <span>過去記事から「{active}」を検索中</span>
             <button className="text-button" onClick={onLocal}>
-              一覧に戻る
+              検索をリセット
             </button>
           </>
         ) : (
