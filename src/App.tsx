@@ -31,6 +31,7 @@ import { ArticleSearch } from "./components/ArticleSearch";
 import { MySearch } from "./components/MySearch";
 import { HiddenUnlock, HiddenSearch } from "./components/HiddenSearch";
 import { hiddenTitleAllowed, type HiddenGroups } from "./lib/hidden-model";
+import { mergeLocalSearch, searchDay } from "./lib/search-results";
 import { useSearch, savedSearchCollection } from "./lib/use-search";
 import {
   normalizeSearch,
@@ -78,6 +79,7 @@ type ReaderSelection = {
   index: number;
   from?: string;
   collection?: string;
+  collections?: Record<string, string>;
 };
 
 export default function App() {
@@ -173,7 +175,7 @@ export default function App() {
     },
   });
   const scrollPositions = useRef<Record<string, number>>({});
-  const viewKey = `${tab}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${searchScope}:${pastSearch.page}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
+  const viewKey = `${tab}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${searchScope}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
   const previousView = useRef(viewKey);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dark =
@@ -250,13 +252,29 @@ export default function App() {
   }, [feed]);
 
   const all = feed?.articles || [];
+  const searchArticles = useMemo(
+    () =>
+      mergeLocalSearch(
+        pastSearch.data?.articles || [],
+        [...prefs.saved, ...prefs.history.map((h) => h.article)],
+        searchTerm,
+      ),
+    [pastSearch.data, prefs.saved, prefs.history, searchTerm],
+  );
+  const remoteSearchIds = useMemo(
+    () => new Set(pastSearch.data?.articles.map((a) => a.id) || []),
+    [pastSearch.data],
+  );
+  const localSearchCount = searchArticles.filter(
+    (a) => !remoteSearchIds.has(a.id),
+  ).length;
   const base =
     tab === "saved"
       ? savedView === "saved"
         ? prefs.saved
         : prefs.history.map((h) => h.article)
       : searchActive
-        ? pastSearch.data?.articles || []
+        ? searchArticles
         : discoveryMode
           ? discovery.data?.articles || []
           : all;
@@ -269,6 +287,7 @@ export default function App() {
       hiddenSources: prefs.hiddenSources,
       ngWords: prefs.ngWords,
       ranks,
+      includeUnmeasured: searchActive,
       popularity: searchActive
         ? pastSearch.data?.bookmarks || undefined
         : undefined,
@@ -349,8 +368,17 @@ export default function App() {
     setSelection({
       articles: sequence,
       index: sequence.findIndex((a) => a.id === article.id),
+      collections: searchActive
+        ? Object.fromEntries(
+            sequence.flatMap((a) => {
+              const context =
+                pastSearch.collections[a.id] || savedSearchCollection(a.id);
+              return context ? [[a.id, context]] : [];
+            }),
+          )
+        : undefined,
       collection: searchActive
-        ? pastSearch.data?.collection
+        ? undefined
         : discoveryMode
           ? date
             ? `date:${date}`
@@ -745,7 +773,37 @@ export default function App() {
                   )}
                   {searchActive && (
                     <div className="search-results-note" role="status">
-                      <p>期間を絞らず、配信元の過去記事から検索しています。</p>
+                      <p>検索期間：全期間（日付の制限なし）</p>
+                      <p>
+                        表示件数は見つかった記事の累計です。全期間の総ヒット数ではありません。
+                      </p>
+                      {pastSearch.data?.searchedRange.from && (
+                        <p>
+                          ここまで確認した記事の日付：
+                          {searchDay(pastSearch.data.searchedRange.from)} 〜{" "}
+                          {searchDay(pastSearch.data.searchedRange.to)}
+                          （配信元の検索結果 {pastSearch.page}ページ分）
+                        </p>
+                      )}
+                      {pastSearch.searching && (
+                        <p>
+                          過去の記事も確認中です。見つかり次第、この一覧に追加します。
+                        </p>
+                      )}
+                      {!pastSearch.searching &&
+                        pastSearch.data &&
+                        !pastSearch.data.nextSources.length &&
+                        !error && (
+                          <p>
+                            配信元が検索で提供する最後のページまで確認しました。未収録・削除済みの記事を含む全記事の網羅は保証できません。
+                          </p>
+                        )}
+                      {!!localSearchCount && (
+                        <p>
+                          保存・履歴のタイトルに一致した記事 {localSearchCount}
+                          件も含めています。日付不明の記事も対象です。
+                        </p>
+                      )}
                       <p>
                         {searchScope === "title"
                           ? "タイトルに検索語が含まれる記事だけを表示します。"
@@ -765,16 +823,16 @@ export default function App() {
                           件は表示していません。時間をおいて更新すると再確認できます。
                         </p>
                       )}
-                      {!loading &&
+                      {!pastSearch.searching &&
                         pastSearch.data &&
-                        !pastSearch.data.articles.length &&
+                        !searchArticles.length &&
                         !!pastSearch.data.nextSources.length && (
                           <p>
-                            このページに一致する記事はありません。「さらに過去の記事」で続きを確認できます。
+                            ここまで一致する記事はありません。「さらに過去の記事」で検索を続けられます。
                           </p>
                         )}
                       <p>
-                        人気順は、このページで取得できた記事のはてなブックマーク数順です。
+                        人気順は、ここまで取得した記事のはてなブックマーク数順です。端末の保存・履歴だけにある記事は人気データがないため末尾に表示します。
                       </p>
                       {pastSearch.data?.bookmarks === null && (
                         <p>
@@ -888,9 +946,9 @@ export default function App() {
                   )}
                   <div
                     className="article-list"
-                    aria-busy={loading && !viewFeed}
+                    aria-busy={loading && !viewFeed && !articles.length}
                   >
-                    {loading && !viewFeed ? (
+                    {loading && !viewFeed && !articles.length ? (
                       <div
                         className="skeleton-list"
                         role="status"
@@ -961,12 +1019,20 @@ export default function App() {
                               <strong>{ranks[group[0].id]}位</strong>
                             </div>
                           )}
-                          {searchActive && pastSearch.data?.bookmarks && (
-                            <p className="bookmark-metric">
-                              はてなブックマーク{" "}
-                              {pastSearch.data.bookmarks[group[0].id]}件
-                            </p>
-                          )}
+                          {searchActive &&
+                            pastSearch.data?.bookmarks?.[group[0].id] !==
+                              undefined && (
+                              <p className="bookmark-metric">
+                                はてなブックマーク{" "}
+                                {pastSearch.data!.bookmarks![group[0].id]}件
+                              </p>
+                            )}
+                          {searchActive &&
+                            !remoteSearchIds.has(group[0].id) && (
+                              <p className="local-search-label">
+                                保存・履歴から見つかった記事
+                              </p>
+                            )}
                           <ArticleRow
                             article={group[0]}
                             saved={savedIds.has(group[0].id)}
@@ -1014,19 +1080,17 @@ export default function App() {
                       className="search-pagination"
                       aria-label="検索結果のページ移動"
                     >
-                      <button
-                        className="button secondary"
-                        onClick={pastSearch.previous}
-                        disabled={loading || pastSearch.page <= 1}
-                      >
-                        前の検索結果
-                      </button>
-                      <span>{pastSearch.page}ページ目</span>
+                      <span>
+                        {pastSearch.searching
+                          ? "過去の記事を確認中…"
+                          : `${pastSearch.page}ページ分を検索済み`}
+                      </span>
                       <button
                         className="button secondary"
                         onClick={pastSearch.next}
                         disabled={
-                          loading || !pastSearch.data?.nextSources.length
+                          pastSearch.searching ||
+                          !pastSearch.data?.nextSources.length
                         }
                       >
                         さらに過去の記事
@@ -1387,7 +1451,11 @@ export default function App() {
         <Reader
           article={selected}
           from={selection.from}
-          collection={selection.collection}
+          collection={
+            selection.collections
+              ? selection.collections[selected.id]
+              : selection.collection
+          }
           onRelated={(article) => {
             setReaderTrail((trail) => [...trail, selection].slice(-50));
             update((p) => markRead(p, article));

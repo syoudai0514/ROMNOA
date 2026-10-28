@@ -30,6 +30,13 @@ export const searchResponseSchema = feedResponseSchema.extend({
   scope: searchScopeSchema.default("title"),
   unverifiedCount: z.number().int().min(0).max(200).default(0),
   excludedCount: z.number().int().min(0).max(200).default(0),
+  candidateCount: z.number().int().min(0).max(200).default(0),
+  searchedRange: z
+    .object({
+      from: z.iso.datetime().nullable(),
+      to: z.iso.datetime().nullable(),
+    })
+    .default({ from: null, to: null }),
   query: z.string().min(1).max(80),
   page: z.number().int().min(1).max(MAX_SEARCH_PAGE),
   collection: z.string().regex(searchCollection),

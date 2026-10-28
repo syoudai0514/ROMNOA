@@ -2463,3 +2463,5 @@ button {
 .search-target label { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; cursor: pointer; }
 .search-target input { accent-color: var(--accent); width: 17px; height: 17px; }
 .search-target p { flex-basis: 100%; margin: 0 0 5px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+
+.local-search-label { margin: 8px 16px 0; font-size: 11px; color: var(--muted); }

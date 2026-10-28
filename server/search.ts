@@ -320,6 +320,20 @@ export class SearchService {
       scope,
       unverifiedCount,
       excludedCount: candidates.length - articles.length - unverifiedCount,
+      candidateCount: candidates.length,
+      searchedRange: {
+        from:
+          candidates
+            .map((a) => a.publishedAt)
+            .filter((d): d is string => !!d)
+            .sort()[0] || null,
+        to:
+          candidates
+            .map((a) => a.publishedAt)
+            .filter((d): d is string => !!d)
+            .sort()
+            .at(-1) || null,
+      },
       query: q,
       page,
       collection: collectionFor(q, page),

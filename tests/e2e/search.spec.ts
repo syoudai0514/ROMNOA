@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { defaults, STORAGE_KEY } from "../../src/lib/storage";
 import { feed, article, readerFixture } from "../fixtures";
 const newer = article(801, {
   title: "[テスト] 新しい検索記事",
@@ -14,6 +15,7 @@ function result(
   page = 1,
   articles = [newer, older],
   bookmarks: Record<string, number> | null = { [newer.id]: 1, [older.id]: 40 },
+  nextSources: ("hamusoku" | "alfalfa")[] = [],
 ) {
   return {
     ...feed,
@@ -22,7 +24,12 @@ function result(
     collection: collection(page),
     articles,
     bookmarks,
-    nextSources: page === 1 ? ["hamusoku"] : [],
+    nextSources,
+    candidateCount: articles.length,
+    searchedRange: {
+      from: "2010-03-01T00:00:00.000Z",
+      to: "2024-03-01T00:00:00.000Z",
+    },
     generatedAt: new Date().toISOString(),
   };
 }
@@ -99,7 +106,7 @@ test("calendar chooses an older year; keyword search ignores dates and sorts by 
   );
   await expect(page.locator(".bookmark-metric").first()).toContainText("40件");
   await expect(page.locator(".search-results-note")).toContainText(
-    "期間を絞らず",
+    "全期間（日付の制限なし）",
   );
   await submit(page, "指標なし");
   await expect(page.locator(".search-results-note")).toContainText(
@@ -244,6 +251,7 @@ test("further search pages keep their authorization context when a story is save
         n,
         n === 1 ? [newer] : [older],
         n === 1 ? { [newer.id]: 1 } : { [older.id]: 40 },
+        n === 1 ? ["hamusoku"] : [],
       ),
     });
   });
@@ -254,11 +262,10 @@ test("further search pages keep their authorization context when a story is save
   });
   await page.goto("/");
   await submit(page, "図書館");
-  await expect(page.getByTestId("article-row")).toHaveCount(1);
-  await page
-    .getByRole("button", { name: "さらに過去の記事", exact: true })
-    .click();
-  await expect(page.getByTestId("article-row")).toContainText(older.title);
+  await expect(page.getByTestId("article-row")).toHaveCount(2);
+  await expect(
+    page.getByTestId("article-row").filter({ hasText: older.title }),
+  ).toBeVisible();
   expect(requests).toEqual([1, 2]);
   await page
     .getByRole("button", { name: `保存する: ${older.title}`, exact: true })
@@ -352,14 +359,12 @@ test("search target defaults to titles, switches to clean body and keeps scope f
   await expect(page.getByTestId("article-row").first()).toContainText(
     older.title,
   );
-  await page
-    .getByRole("button", { name: "さらに過去の記事", exact: true })
-    .click();
-  await expect(page.locator(".search-pagination")).toContainText("2ページ目");
   expect(sent.at(-1)?.get("scope")).toBe("body");
   await page.getByRole("radio", { name: "タイトルのみ", exact: true }).check();
   await expect(page.getByTestId("article-row")).toHaveCount(1);
-  await expect(page.locator(".search-pagination")).toContainText("1ページ目");
+  await expect(page.locator(".search-pagination")).toContainText(
+    "1ページ分を検索済み",
+  );
   expect(sent.at(-1)?.get("scope")).toBe("title");
   expect(sent.at(-1)?.has("date")).toBe(false);
   expect(
@@ -381,14 +386,23 @@ test("an empty title-filtered page still offers older results and late body resp
       await new Promise((resolve) => setTimeout(resolve, 600));
     await r
       .fulfill({
-        json: { ...result(p.get("q")!, n, n === 1 ? [] : [older]), scope },
+        json: {
+          ...result(
+            p.get("q")!,
+            n,
+            n <= 5 ? [] : [older],
+            undefined,
+            n <= 5 ? ["hamusoku"] : [],
+          ),
+          scope,
+        },
       })
       .catch(() => {});
   });
   await page.goto("/");
   await submit(page, "図書館");
   await expect(page.locator(".search-results-note")).toContainText(
-    "このページに一致する記事はありません",
+    "ここまで一致する記事はありません",
   );
   await expect(
     page.getByRole("button", { name: "さらに過去の記事", exact: true }),
@@ -405,4 +419,156 @@ test("an empty title-filtered page still offers older results and late body resp
   await expect(
     page.getByRole("radio", { name: "タイトルのみ", exact: true }),
   ).toBeChecked();
+});
+
+test("automatically searches past an empty first page, appends further batches, and keeps per-article reader authorization", async ({
+  page,
+}) => {
+  await base(page);
+  const requests: number[] = [],
+    readerScopes: string[] = [];
+  const later = article(803, {
+    title: "[テスト] さらに昔の記事",
+    publishedAt: "2008-03-01T00:00:00Z",
+  });
+  await page.route("**/api/search**", async (r) => {
+    const p = new URL(r.request().url()).searchParams,
+      n = Number(p.get("page"));
+    requests.push(n);
+    expect(p.has("date")).toBe(false);
+    if (n > 1) expect(p.get("sources")).toBe("hamusoku");
+    await r.fulfill({
+      json: {
+        ...result(
+          p.get("q")!,
+          n,
+          n === 2 ? [older] : n === 3 ? [newer] : n === 6 ? [later] : [],
+          undefined,
+          n < 6 ? ["hamusoku"] : [],
+        ),
+        scope: p.get("scope"),
+      },
+    });
+  });
+  await page.route("**/api/reader**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    readerScopes.push(p.get("collection")!);
+    return r.fulfill({
+      json: readerFixture(p.get("article") === newer.id ? newer : older),
+    });
+  });
+  await page.goto("/");
+  await submit(page, "図書館");
+  await expect(page.locator(".search-pagination")).toContainText(
+    "5ページ分を検索済み",
+  );
+  await expect(page.getByTestId("article-row")).toHaveCount(2);
+  expect(requests).toEqual([1, 2, 3, 4, 5]);
+  await expect(page.locator(".search-results-note")).toContainText(
+    "2010-03-01",
+  );
+  await page
+    .getByRole("button", { name: `記事を開く: ${newer.title}`, exact: true })
+    .click();
+  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
+  await page.getByRole("button", { name: "次の記事", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText(older.title);
+  await expect.poll(() => readerScopes.length).toBe(2);
+  expect(readerScopes).toEqual([collection(3), collection(2)]);
+  await page.getByRole("button", { name: "記事を閉じる", exact: true }).click();
+  await page
+    .getByRole("button", { name: "さらに過去の記事", exact: true })
+    .click();
+  await expect(page.getByTestId("article-row")).toHaveCount(3);
+  await expect(page.locator(".search-results-note")).toContainText(
+    "最後のページまで確認",
+  );
+  expect(requests).toEqual([1, 2, 3, 4, 5, 6]);
+});
+
+test("saved and history titles with unknown dates appear in both scopes and stay visible in popular order without fake counts", async ({
+  page,
+}) => {
+  await base(page);
+  const saved = article(810, {
+    title: "[テスト] 岡田紗佳さんの保存した記事",
+    publishedAt: null,
+  });
+  const history = article(811, {
+    title: "[テスト] 岡田紗佳さんの以前の記事",
+    publishedAt: null,
+  });
+  const unrelated = article(812, {
+    title: "[テスト] 関係ないおすすめ記事",
+    publishedAt: null,
+  });
+  await page.addInitScript(
+    ({ key, prefs }) => localStorage.setItem(key, JSON.stringify(prefs)),
+    {
+      key: STORAGE_KEY,
+      prefs: {
+        ...defaults,
+        saved: [saved, unrelated],
+        history: [{ article: history, at: Date.now() }],
+      },
+    },
+  );
+  await page.route("**/api/search**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    return r.fulfill({
+      json: { ...result(p.get("q")!, 1, [], {}), scope: p.get("scope") },
+    });
+  });
+  await page.goto("/");
+  await submit(page, "岡田紗佳");
+  await expect(page.getByTestId("article-row")).toHaveCount(2);
+  await expect(page.locator(".search-results-note")).toContainText(
+    "保存・履歴のタイトルに一致した記事 2件",
+  );
+  await page.getByRole("radio", { name: "本文を含む", exact: true }).check();
+  await page
+    .getByRole("combobox", { name: "記事の並び順" })
+    .selectOption("popular");
+  await expect(page.getByTestId("article-row")).toHaveCount(2);
+  await expect(page.locator(".bookmark-metric")).toHaveCount(0);
+  await expect(page.locator(".local-search-label")).toHaveCount(2);
+});
+
+test("a later page failure keeps earlier results and retries the same cursor without gaps", async ({
+  page,
+}) => {
+  await base(page);
+  const requests: number[] = [];
+  let failed = false;
+  await page.route("**/api/search**", (r) => {
+    const p = new URL(r.request().url()).searchParams,
+      n = Number(p.get("page"));
+    requests.push(n);
+    if (n === 2 && !failed) {
+      failed = true;
+      return r.fulfill({ status: 503, json: { error: "down" } });
+    }
+    return r.fulfill({
+      json: result(
+        p.get("q")!,
+        n,
+        n === 1 ? [newer] : [older],
+        undefined,
+        n === 1 ? ["hamusoku"] : [],
+      ),
+    });
+  });
+  await page.goto("/");
+  await submit(page, "図書館");
+  await expect(page.getByTestId("article-row")).toHaveCount(1);
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "表示済みの記事は残しています" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "さらに過去の記事", exact: true })
+    .click();
+  await expect(page.getByTestId("article-row")).toHaveCount(2);
+  expect(requests).toEqual([1, 2, 2]);
 });

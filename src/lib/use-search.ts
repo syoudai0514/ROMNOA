@@ -5,6 +5,11 @@ import {
   type SearchResponse,
   type SearchScope,
 } from "./search-model";
+import {
+  appendSearchPage,
+  SEARCH_BATCH_PAGES,
+  SEARCH_BATCH_MATCHES,
+} from "./search-results";
 import type { Article } from "./model";
 
 type SourceId = Article["sourceId"];
@@ -45,89 +50,101 @@ function remember(data: SearchResponse) {
   }
 }
 export function useSearch(query: string, scope: SearchScope = "title") {
-  const [request, setRequest] = useState({ query: "", page: 1, sources: BOTH });
   const [attempt, setAttempt] = useState(0);
-  const page = request.query === query ? request.page : 1;
-  const sources = request.query === query ? request.sources : BOTH;
-  const key = `${query}\n${scope}\n${page}\n${sources.join(",")}`;
-  const previousSources = useRef(new Map<string, SourceId[]>());
-  const [state, setState] = useState<{
+  const [more, setMore] = useState(0);
+  const key = `${query}\n${scope}\n${attempt}`;
+  type Snapshot = {
     key: string;
     data: SearchResponse | null;
-    loading: boolean;
-    error: string;
-  }>({ key: "", data: null, loading: false, error: "" });
+    collections: Record<string, string>;
+  };
+  const snapshot = useRef<Snapshot>({ key: "", data: null, collections: {} });
+  const [state, setState] = useState<
+    Snapshot & { searching: boolean; error: string }
+  >({ key: "", data: null, collections: {}, searching: false, error: "" });
   useEffect(() => {
     if (!query) return;
     let cancelled = false;
     const abort = new AbortController();
-    const timeout = setTimeout(() => abort.abort(), 45000);
-    previousSources.current.set(`${query}\n${page}`, sources);
-    if (previousSources.current.size > 128)
-      previousSources.current.delete(
-        previousSources.current.keys().next().value!,
-      );
-    setState({ key, data: null, loading: true, error: "" });
+    let saved: Snapshot =
+      snapshot.current.key === key
+        ? snapshot.current
+        : { key, data: null, collections: {} };
+    const initialCount = saved.data?.articles.length || 0;
+    setState({ ...saved, searching: true, error: "" });
     void (async () => {
+      let error = "";
       try {
-        const response = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}&page=${page}&scope=${scope}&sources=${sources.join(",")}`,
-          { signal: abort.signal },
-        );
-        if (!response.ok) throw new Error("unavailable");
-        const data = searchResponseSchema.parse(await response.json());
-        if (data.query !== query || data.page !== page || data.scope !== scope)
-          throw new Error("mismatch");
-        if (!cancelled) {
+        for (let scanned = 0; scanned < SEARCH_BATCH_PAGES; scanned++) {
+          const page = (saved.data?.page || 0) + 1;
+          const sources = saved.data ? saved.data.nextSources : BOTH;
+          if (!sources.length) break;
+          const timeout = setTimeout(() => abort.abort(), 45000);
+          let data: SearchResponse;
+          try {
+            const response = await fetch(
+              `/api/search?q=${encodeURIComponent(query)}&page=${page}&scope=${scope}&sources=${sources.join(",")}`,
+              { signal: abort.signal },
+            );
+            if (!response.ok) throw new Error("unavailable");
+            data = searchResponseSchema.parse(await response.json());
+            if (
+              data.query !== query ||
+              data.page !== page ||
+              data.scope !== scope
+            )
+              throw new Error("mismatch");
+          } finally {
+            clearTimeout(timeout);
+          }
+          if (cancelled) return;
           remember(data);
-          setState({ key, data, loading: false, error: "" });
+          const collections = { ...saved.collections };
+          for (const a of data.articles) collections[a.id] = data.collection;
+          saved = {
+            key,
+            data: appendSearchPage(saved.data, data),
+            collections,
+          };
+          snapshot.current = saved;
+          setState({ ...saved, searching: true, error: "" });
+          if (data.sources.some((s) => s.status === "error")) {
+            error =
+              "一部の配信元を確認できませんでした。更新すると再検索できます。";
+            break;
+          }
+          if (
+            saved.data!.articles.length - initialCount >=
+            SEARCH_BATCH_MATCHES
+          )
+            break;
         }
       } catch {
-        if (!cancelled)
-          setState({
-            key,
-            data: null,
-            loading: false,
-            error:
-              "過去記事を検索できませんでした。接続や配信元の状態を確認し、再検索してください。",
-          });
+        error = saved.data
+          ? "続きの検索を取得できませんでした。表示済みの記事は残しています。「さらに過去の記事」で再試行できます。"
+          : "過去記事を検索できませんでした。接続や配信元の状態を確認し、再検索してください。";
       } finally {
-        clearTimeout(timeout);
+        if (!cancelled) setState({ ...saved, searching: false, error });
       }
     })();
     return () => {
       cancelled = true;
-      clearTimeout(timeout);
       abort.abort();
     };
-  }, [query, scope, page, key, sources, attempt]);
+  }, [query, scope, key, more]);
   const current =
     state.key === key && query
       ? state
-      : { key, data: null, loading: !!query, error: "" };
+      : { key, data: null, collections: {}, searching: !!query, error: "" };
   return {
     ...current,
-    page,
+    loading: current.searching && !current.data,
+    page: current.data?.page || 0,
     next: () => {
-      if (current.data?.nextSources.length)
-        setRequest({
-          query,
-          page: page + 1,
-          sources: current.data.nextSources,
-        });
+      if (!current.searching && current.data?.nextSources.length)
+        setMore((n) => n + 1);
     },
-    previous: () =>
-      setRequest({
-        query,
-        page: Math.max(1, page - 1),
-        sources:
-          previousSources.current.get(`${query}\n${Math.max(1, page - 1)}`) ||
-          BOTH,
-      }),
     refresh: () => setAttempt((n) => n + 1),
-    reset: () => {
-      setRequest({ query: "", page: 1, sources: BOTH });
-      setAttempt((n) => n + 1);
-    },
+    reset: () => setAttempt((n) => n + 1),
   };
 }

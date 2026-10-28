@@ -112,6 +112,7 @@ export function filterArticles(
     read: Record<string, number>;
     ranks?: Record<string, number>;
     popularity?: Record<string, number>;
+    includeUnmeasured?: boolean;
   },
 ) {
   const query = options.query.normalize("NFKC").trim().toLocaleLowerCase();
@@ -120,6 +121,7 @@ export function filterArticles(
       const text = a.title.normalize("NFKC").toLocaleLowerCase();
       return (
         (options.sort !== "popular" ||
+          options.includeUnmeasured ||
           options.ranks?.[a.id] !== undefined ||
           options.popularity?.[a.id] !== undefined) &&
         !options.hiddenSources.includes(a.sourceId) &&
@@ -139,7 +141,8 @@ export function filterArticles(
       if (options.sort === "popular")
         if (options.popularity)
           return (
-            options.popularity[b.id] - options.popularity[a.id] || newest(a, b)
+            (options.popularity[b.id] ?? -1) -
+              (options.popularity[a.id] ?? -1) || newest(a, b)
           );
       if (options.sort === "popular")
         return (
