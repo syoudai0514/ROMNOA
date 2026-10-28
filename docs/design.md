@@ -12,7 +12,7 @@ React 19 / TypeScript / Vite / Tailwind CSS 4。Vercel Node.js 24の `GET /api/a
 
 ## データ
 
-Article: id（正規化URL）、url、sourceId、title、publishedAt（不明はnull）、category。一覧APIには本文を含めない。FeedResult: 記事、ソースごとのstatus/取得日時、generatedAt。ReaderDocument: articleId、sourceId、title、url、fetchedAt、schemaVersion=2、blocks（text/image）、imageAudit（広告等の除外/不明/別記事の画像数）、related（Articleとthumbnail）。画像はlivedoor.blogimg.jpの各サイト固有フォルダにある画像形式だけ許可する。
+Article: id（正規化URL）、url、sourceId、title、publishedAt（不明はnull）、category。一覧APIには本文を含めない。FeedResult: 記事、ソースごとのstatus/取得日時、generatedAt。ReaderDocument: articleId、sourceId、title、url、fetchedAt、schemaVersion=3、blocks（text/image）、imageAudit（広告等の除外/不明/別記事の画像数）、related（Articleとthumbnail）。画像はlivedoor.blogimg.jpの各サイト固有フォルダにある画像形式、またはpbs.twimg.com/media/の検証済み静止画像だけ許可する。
 
 端末保存v1: お気に入りのメタデータ（最大200件）、既読/履歴（500件）、テーマ、文字サイズ、NGワード、非表示配信元、表示位置。Zodによる復元時検証、破損時の復旧と書込失敗時の通知。記事キャッシュは24時間、設定とは別キー。容量不足でもアプリ操作は継続する。
 
@@ -45,4 +45,14 @@ Service Workerでアプリシェルをprecache。APIはSWでキャッシュせ�
 
 RSS外の記事を取得する場合、fromの元記事IDに対応するサーバーキャッシュをスキーマ/ID/24時間の有効期限で検証し、related内に対象IDが完全一致した場合だけ取得。クライアントが送った親IDやタイトルだけでは許可しない。親URLを再帰取得せず、キャッシュ失効時は元記事の開き直しを案内する。本文APIのPreview制限を維持する。
 
-サーバーの本文キャッシュはv2 namespaceへ移行。端末本文はschemaVersion=2を要求し、旧版の未分類画像キャッシュを表示しない。保存記事・既読等のメタデータは削除しない。ReaderSelectionにfromを持ち、最大50件の閲覧経路を保持する。前の経路へ戻ると既存のsessionStorage位置を復元する。関連記事にも非表示サイトとNGワードを適用する。
+サーバーの本文キャッシュはv2 namespaceへ移行。端末本文はschemaVersion=3を要求し、旧版の未分類画像キャッシュを表示しない。保存記事・既読等のメタデータは削除しない。ReaderSelectionにfromを持ち、最大50件の閲覧経路を保持する。前の経路へ戻ると既存のsessionStorage位置を復元する。関連記事にも非表示サイトとNGワードを適用する。
+
+## Pickup・本文リンク・X画像（ADR 005）
+
+ReaderDocument v3はpageKind（article/roundup）とlinks（最大40件のURL/タイトル）を持つ。タイトル末尾のPickup指定を一覧ページとして認識し、画像ギャラリーを作らず本編へのカードを表示する。daily_popular_title内の直接記事リンクをrandom_text_linkより優先し、同じURLの「続きを読む」は元の見出しを保持する。from/area/type/posとutm_*の装飾だけを除去して既存の固定記事パスで検証する。アンテナ経由のリンクを辿るサーバー処理は追加しない。
+
+本文中の安全なhttp(s)リンクをlinksへ保存し、ReaderTextは対応する文字列だけをReactのa要素として描画する。HTMLは描画しない。URLスキーム・認証情報・ポート・ローカル/IP形式を拒否する。この許可はブラウザの明示的な外部遷移だけに使い、本文APIの取得認可とは分離する。元ページは常時表示の直接リンク、関連記事はアプリ内ボタンと元ページリンクを並置する。
+
+X画像はpbs.twimg.comの/media/画像ファイル、またはformat=jpg/png/webp形式だけを許可し、nameの値・クエリ重複も検証する。外部スクリプト・埋込・プロフィール画像・任意ホストは許可しない。CSPのimg-srcへ同ホストだけを追加する。本文画像が存在する場合は見出し画像をギャラリーから除く。モザイクの除去・推測復元・画像編集は行わない。
+
+サーバーの本文namespaceはv3へ移行し、端末本文スキーマもv3を要求する。保存・既読などのメタデータは維持する。PWAはautoUpdate/skipWaitingで修正を反映し、登録時にも更新を確認する。既に開いている旧版には更新/再起動が必要な場合がある。

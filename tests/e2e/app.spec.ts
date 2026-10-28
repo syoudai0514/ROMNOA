@@ -287,6 +287,9 @@ test("article shows selected images first, escapes text and never opens the sour
   await expect(
     page.getByRole("link", { name: /^元の記事を読む/ }),
   ).not.toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "元ページを開く", exact: true }),
+  ).toBeVisible();
   await expect(body.getByRole("img", { name: "記事の写真" })).toBeVisible();
   await expect.poll(() => outside.length).toBe(1);
   expect(outside[0]).toBe(picture);
@@ -455,4 +458,117 @@ test("follows two related articles outside the feed, saves them, and restores th
   await expect(
     page.getByTestId("article-row").getByText(second.title, { exact: true }),
   ).toBeVisible();
+});
+
+test("Pickup title opens its real story with X photos; original-page and body links actually navigate", async ({
+  page,
+  context,
+}) => {
+  await fixture(page);
+  const first = feed.articles[0];
+  const story = article(90, { title: "[テスト用] 写真が載っている本編" });
+  const external = "https://example.com/romnoa-source";
+  const photos = ["PhotoA", "PhotoB"].map(
+    (name) => `https://pbs.twimg.com/media/${name}.jpg`,
+  );
+  await context.route("https://hamusoku.com/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>Original page fixture</h1>",
+    }),
+  );
+  await context.route(external, (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>Body link destination fixture</h1>",
+    }),
+  );
+  await page.route("https://pbs.twimg.com/media/**", (route) =>
+    route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="600"><rect width="500" height="600" fill="#759685"/></svg>',
+    }),
+  );
+  await page.route("**/api/reader**", (route) => {
+    const id = new URL(route.request().url()).searchParams.get("article");
+    return route.fulfill({
+      json:
+        id === first.id
+          ? {
+              ...readerFixture(first),
+              pageKind: "roundup",
+              related: [{ article: story, thumbnail: null }],
+              blocks: [{ type: "text", text: "紹介一覧です。" }],
+            }
+          : {
+              ...readerFixture(story),
+              links: [{ url: external, title: "写真の投稿元はこちら" }],
+              blocks: [
+                {
+                  type: "image",
+                  url: "https://livedoor.blogimg.jp/hamusoku/imgs/1/2/cover.jpg",
+                  alt: "見出し用の紹介画像",
+                  role: "cover",
+                },
+                ...photos.map((url, i) => ({
+                  type: "image",
+                  url,
+                  alt: `本編写真${i + 1}`,
+                })),
+                {
+                  type: "text",
+                  text: "写真の投稿元はこちら。クリックすると元のページを開きます。",
+                },
+              ],
+            },
+    });
+  });
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  const reader = page.getByRole("dialog");
+  await expect(
+    reader.getByText("記事への案内ページです", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    reader.getByRole("region", { name: "この記事の画像", exact: true }),
+  ).toHaveCount(0);
+  await reader.getByRole("button", { name: /写真が載っている本編/ }).click();
+  await expect(reader.getByRole("heading", { level: 1 })).toHaveText(
+    story.title,
+  );
+  const gallery = reader.getByRole("region", {
+    name: "この記事の画像",
+    exact: true,
+  });
+  await expect(gallery.locator("img")).toHaveCount(2);
+  await expect(
+    gallery.getByRole("img", { name: "本編写真1", exact: true }),
+  ).toBeVisible();
+  await expect(
+    gallery.getByRole("img", { name: "見出し用の紹介画像", exact: true }),
+  ).toHaveCount(0);
+  const opened = page.waitForEvent("popup");
+  await reader
+    .getByRole("link", { name: "元ページを開く", exact: true })
+    .click();
+  const original = await opened;
+  await original.waitForURL(story.url);
+  await expect(original.getByRole("heading")).toHaveText(
+    "Original page fixture",
+  );
+  await original.close();
+  await reader.getByRole("button", { name: "本文も読む", exact: true }).click();
+  const linked = page.waitForEvent("popup");
+  await reader
+    .getByRole("link", { name: "写真の投稿元はこちら", exact: true })
+    .click();
+  const destination = await linked;
+  await destination.waitForURL(external);
+  await expect(destination.getByRole("heading")).toHaveText(
+    "Body link destination fixture",
+  );
+  await destination.close();
 });

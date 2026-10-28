@@ -83,7 +83,11 @@ export default function App() {
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
-  } = useRegisterSW();
+  } = useRegisterSW({
+    onRegisteredSW: (_url, registration) => {
+      void registration?.update();
+    },
+  });
   const scrollPositions = useRef<Record<string, number>>({});
   const viewKey = `${tab}:${category}:${savedView}`;
   const previousView = useRef(viewKey);

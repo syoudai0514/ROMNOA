@@ -39,16 +39,57 @@ export function readerImageUrl(raw: string, sourceId: string): string | null {
     if (
       !folder ||
       u.protocol !== "https:" ||
-      u.hostname !== "livedoor.blogimg.jp" ||
       u.port ||
       u.username ||
-      u.password ||
-      u.search ||
-      !u.pathname.startsWith(`/${folder}/imgs/`) ||
-      !/\.(jpe?g|png|gif|webp)$/i.test(u.pathname)
+      u.password
     )
       return null;
+    const publisher =
+      u.hostname === "livedoor.blogimg.jp" &&
+      !u.search &&
+      u.pathname.startsWith(`/${folder}/imgs/`) &&
+      /\.(jpe?g|png|gif|webp)$/i.test(u.pathname);
+    const socialImage =
+      u.hostname === "pbs.twimg.com" &&
+      /^\/media\/[A-Za-z0-9_-]{1,128}(?:\.(?:jpe?g|png|webp))?$/.test(
+        u.pathname,
+      ) &&
+      (/\.(?:jpe?g|png|webp)$/.test(u.pathname) ||
+        /^(?:jpg|png|webp)$/.test(u.searchParams.get("format") || "")) &&
+      [...u.searchParams.keys()].every(
+        (key) =>
+          (key === "format" || key === "name") &&
+          u.searchParams.getAll(key).length === 1,
+      ) &&
+      (!u.searchParams.has("format") ||
+        /^(?:jpg|png|webp)$/.test(u.searchParams.get("format")!)) &&
+      (!u.searchParams.has("name") ||
+        /^(?:orig|large|medium|small|thumb|[1-9]\d{0,3}x[1-9]\d{0,3})$/.test(
+          u.searchParams.get("name")!,
+        ));
+    if (!publisher && !socialImage) return null;
     u.hash = "";
+    return u.href;
+  } catch {
+    return null;
+  }
+}
+
+// Explicit browser navigation only. This never authorizes server-side fetching.
+export function readerLinkUrl(raw: string, base?: string): string | null {
+  try {
+    const u = new URL(raw, base);
+    if (
+      !/^https?:$/.test(u.protocol) ||
+      u.username ||
+      u.password ||
+      u.port ||
+      !u.hostname.includes(".") ||
+      u.hostname.startsWith("[") ||
+      /^(?:\d{1,3}\.){3}\d{1,3}$/.test(u.hostname) ||
+      /(?:^|\.)(?:localhost|local|internal)$/.test(u.hostname)
+    )
+      return null;
     return u.href;
   } catch {
     return null;
@@ -56,7 +97,16 @@ export function readerImageUrl(raw: string, sourceId: string): string | null {
 }
 export const readerDocumentSchema = z
   .object({
-    schemaVersion: z.literal(2),
+    schemaVersion: z.literal(3),
+    pageKind: z.enum(["article", "roundup"]),
+    links: z
+      .array(
+        z.object({
+          url: z.string().max(2048),
+          title: z.string().min(1).max(300),
+        }),
+      )
+      .max(40),
     articleId: z.string().max(2048),
     sourceId: z.enum(["hamusoku", "alfalfa"]),
     title: z.string().min(1).max(300),
@@ -109,6 +159,7 @@ export const readerDocumentSchema = z
       !u.search &&
       !u.hash &&
       readerArticleTarget(d.url)?.sourceId === d.sourceId &&
+      d.links.every((link) => readerLinkUrl(link.url) === link.url) &&
       d.related.every(
         (r) =>
           r.article.id !== d.articleId &&

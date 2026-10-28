@@ -4,6 +4,7 @@ import {
   readerArticleTarget,
   readerDocumentSchema,
   readerImageUrl,
+  readerLinkUrl,
   type ReaderDocument,
 } from "../src/lib/reader-model.js";
 import { classify, type Article } from "../src/lib/model.js";
@@ -70,7 +71,11 @@ export function linkedArticle(
   try {
     const u = new URL(raw, base);
     if (u.protocol === "http:") u.protocol = "https:";
-    if ([...u.searchParams.keys()].some((key) => !/^utm_[a-z_]+$/i.test(key)))
+    if (
+      [...u.searchParams.keys()].some(
+        (key) => !/^utm_[a-z_]+$|^(?:from|area|type|pos)$/i.test(key),
+      )
+    )
       return null;
     u.search = "";
     u.hash = "";
@@ -166,6 +171,10 @@ export function extractArticle(
   const blocks: Block[] = [];
   const images = new Set<string>();
   const imageAudit = { excluded: 0, uncertain: 0, related: 0 };
+  const pageKind = /【pickup\d*】|\[pickup\d*\]/i.test(article.title)
+    ? "roundup"
+    : "article";
+  const links = new Map<string, { url: string; title: string }>();
   const related = new Map<string, ReaderDocument["related"][number]>();
   const collectRelated = (node: Node, depth = 0) => {
     if (
@@ -182,12 +191,18 @@ export function extractArticle(
       const target = linkedArticle(node.attribs.href || "", article.url);
       if (target && target.url !== article.id) {
         const text = DomUtils.textContent(node).replace(/\s+/g, " ").trim();
-        const title =
+        const rawTitle =
           text ||
           node.attribs.title ||
           DomUtils.findAll((el) => el.name === "img", node.children)[0]?.attribs
             .alt ||
           "";
+        const title =
+          /^(?:続きを読む|読み続きを読む|こちら|詳細|記事へ|もっと見る)$/.test(
+            rawTitle,
+          )
+            ? ""
+            : rawTitle;
         const thumbnail =
           DomUtils.findAll((el) => el.name === "img", node.children)
             .filter(
@@ -230,6 +245,30 @@ export function extractArticle(
     }
     node.children.forEach((child) => collectRelated(child, depth + 1));
   };
+  // Pickup pages contain repeated headline/cover/read-more groups. Prioritize
+  // direct article headlines before random text links so the actual story is reachable.
+  const headlines = selected.flatMap((root) =>
+    DomUtils.findAll(
+      (el) =>
+        (el.attribs.class || "").split(/\s+/).includes("daily_popular_title"),
+      root.children,
+    ),
+  );
+  for (const headline of headlines) {
+    let parent = headline.parent;
+    let safe = true;
+    while (parent) {
+      if (
+        parent.type === "tag" &&
+        (hidden(parent) ||
+          advertisement(parent) ||
+          ["script", "noscript", "template"].includes(parent.name))
+      )
+        safe = false;
+      parent = parent.parent;
+    }
+    if (safe) collectRelated(headline);
+  }
   // Explicit editorial areas only. No execution of third-party recommendation scripts.
   selected.forEach((root) => collectRelated(root));
   const editorial = DomUtils.findAll((el) => recommendation(el), doc.children);
@@ -297,6 +336,20 @@ export function extractArticle(
       else imageAudit.excluded += count;
       return;
     }
+    if (node.name === "a") {
+      const direct = linkedArticle(a.href || "", article.url);
+      const url = direct?.url || readerLinkUrl(a.href || "", article.url);
+      const label =
+        DomUtils.textContent(node).replace(/\s+/g, " ").trim() ||
+        DomUtils.findAll((el) => el.name === "img", node.children)[0]?.attribs
+          .alt ||
+        "画像の掲載先";
+      // Avoid forwarding antenna/redirect links when the publisher provides a
+      // direct article link for that same headline on a Pickup page.
+      const indirect = pageKind === "roundup" && !direct;
+      if (url && url !== article.url && !indirect && links.size < 40)
+        links.set(url, { url, title: label.slice(0, 300) });
+    }
     if (node.name === "br") {
       text += "\n";
       return;
@@ -361,16 +414,27 @@ export function extractArticle(
   };
   selected.forEach((root) => walk(root));
   flush();
+  if (pageKind === "roundup") imageAudit.related += images.size;
   if (!blocks.length || (!length && !images.size))
     throw new ReaderError("empty", "このページの本文を読み取れませんでした。");
   return readerDocumentSchema.parse({
-    schemaVersion: 2,
+    schemaVersion: 3,
+    pageKind,
+    links: [...links.values()],
     articleId: article.id,
     sourceId: article.sourceId,
     title: article.title,
     url: article.url,
     fetchedAt: new Date(now).toISOString(),
-    blocks,
+    blocks:
+      pageKind === "roundup"
+        ? [
+            {
+              type: "text",
+              text: "複数の記事を紹介する一覧ページです。タイトルから本編を開けます。",
+            },
+          ]
+        : blocks,
     imageAudit,
     related: [...related.values()]
       .filter((r) => r.article.title.length >= 4)
@@ -459,7 +523,7 @@ export class MemoryReaderCache implements ReaderCache {
 }
 function runtimeCache(): ReaderCache {
   if (!process.env.VERCEL) return new MemoryReaderCache();
-  const cache = getCache({ namespace: "romnoa-personal-reader-v2" });
+  const cache = getCache({ namespace: "romnoa-personal-reader-v3" });
   return {
     async get(key) {
       const value = (await cache.get(key)) as ReaderEntry | undefined;

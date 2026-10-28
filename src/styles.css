@@ -2263,3 +2263,54 @@ button {
     scroll-behavior: auto !important;
   }
 }
+
+.reader-source-link {
+  margin-top: 5px;
+}
+.external-link-note,
+.image-source-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 8px;
+}
+.roundup-note {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  line-height: 1.9;
+}
+.roundup-note strong {
+  font-size: 15px;
+}
+.roundup-note p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.related-open {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+}
+.related-open > svg {
+  flex-shrink: 0;
+}
+.related-original {
+  flex-shrink: 0;
+  color: var(--green);
+}
+.reading-body > p a {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}

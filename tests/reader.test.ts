@@ -8,7 +8,11 @@ import {
   MemoryReaderCache,
   handleReader,
 } from "../server/reader";
-import { readerDocumentSchema } from "../src/lib/reader-model";
+import {
+  readerDocumentSchema,
+  readerImageUrl,
+  readerLinkUrl,
+} from "../src/lib/reader-model";
 import { article, feed } from "./fixtures";
 
 const a = article();
@@ -17,6 +21,90 @@ const html = `<html><body><nav>サイトナビ</nav><div class="article-body-inn
 const document = () => extractArticle(html, a);
 
 describe("Personal article reader", () => {
+  it("recognizes Pickup pages and keeps their actual story links instead of presenting cover images as the body", () => {
+    const url = "https://alfalfalfa.com/articles/11110000.html";
+    const story = "https://alfalfalfa.com/articles/11089177.html";
+    const d = extractArticle(
+      `<div class="article_body">
+      <div class="daily_popular_title"><a href="https://antenna.example/pick?item=1">[テスト用] 本編のタイトル</a></div>
+      <div class="eye-catch"><img src="https://livedoor.blogimg.jp/amosaic/imgs/1/2/cover-s.jpg"></div>
+      <div class="daily_popular_title"><a href="${story}">[テスト用] 本編のタイトル</a></div>
+      <a href="${story}">続きを読む</a>
+      <a href="https://alfalfalfa.com/articles/11007783.html?from=random_text_link&area=history&type=ranran5&pos=1">[テスト用] もう一つの記事</a>
+      </div>`,
+      {
+        ...a,
+        id: url,
+        url,
+        sourceId: "alfalfa",
+        title: "[テスト用] 本編のタイトル【Pickup27072830】",
+      },
+    );
+    expect(d.pageKind).toBe("roundup");
+    expect(d.blocks.some((b) => b.type === "image")).toBe(false);
+    expect(d.related[0].article).toMatchObject({
+      id: story,
+      title: "[テスト用] 本編のタイトル",
+    });
+    expect(d.related[1].article.url).toBe(
+      "https://alfalfalfa.com/articles/11007783.html",
+    );
+    expect(d.links.map((link) => link.url)).not.toContain(
+      "https://antenna.example/pick?item=1",
+    );
+  });
+  it("retains linked X body photos and the original external links, but never scripts or advertisements", () => {
+    const photo = "https://pbs.twimg.com/media/Example_123.jpg";
+    const d = extractArticle(
+      `<div class="article-body-inner"><p><a href="https://x.com/example">画像の投稿元</a></p>
+      <a href="${photo}"><img src="${photo}"></a><a href="javascript:alert(1)">危険なリンク</a>
+      <a rel="sponsored" href="https://ads.example/">広告リンク</a></div>`,
+      a,
+    );
+    expect(d.blocks.filter((b) => b.type === "image")).toEqual([
+      { type: "image", url: photo, alt: "記事内の画像" },
+    ]);
+    expect(d.links).toContainEqual({
+      url: "https://x.com/example",
+      title: "画像の投稿元",
+    });
+    expect(
+      d.links.some((link) => /javascript|ads\.example/.test(link.url)),
+    ).toBe(false);
+  });
+  it("bounds X image URLs to media files and supported parameters", () => {
+    expect(
+      readerImageUrl(
+        "https://pbs.twimg.com/media/Example?format=jpg&name=large",
+        "alfalfa",
+      ),
+    ).toBe("https://pbs.twimg.com/media/Example?format=jpg&name=large");
+    for (const url of [
+      "https://pbs.twimg.com.evil.test/media/Example.jpg",
+      "https://pbs.twimg.com/profile_images/Example.jpg",
+      "http://pbs.twimg.com/media/Example.jpg",
+      "https://pbs.twimg.com/media/Example.svg",
+      "https://pbs.twimg.com/media/Example.jpg?url=evil",
+      "https://pbs.twimg.com/media/Example?format=svg",
+      "https://pbs.twimg.com/media/Example.jpg?name=large&name=orig",
+    ])
+      expect(readerImageUrl(url, "alfalfa")).toBeNull();
+  });
+  it("allows browser navigation only to web URLs without credentials or private-network addresses", () => {
+    expect(readerLinkUrl("/source", "https://example.com/post")).toBe(
+      "https://example.com/source",
+    );
+    for (const url of [
+      "javascript:alert(1)",
+      "data:text/html,evil",
+      "https://user:pass@example.com/",
+      "http://127.0.0.1/",
+      "https://server.local/",
+      "https://localhost/",
+      "https://[::1]/",
+    ])
+      expect(readerLinkUrl(url)).toBeNull();
+  });
   it("labels publisher eye-catch images separately from photographs in the body", () => {
     const d = extractArticle(
       `<div class="article-body-inner"><div class="eye-catch"><img src="${picture}"></div><p>写真の本文</p></div>`,
@@ -116,7 +204,7 @@ describe("Personal article reader", () => {
   it("rejects forged related image provenance and obsolete cached image classification", () => {
     const d = document();
     expect(
-      readerDocumentSchema.safeParse({ ...d, schemaVersion: 1 }).success,
+      readerDocumentSchema.safeParse({ ...d, schemaVersion: 2 }).success,
     ).toBe(false);
     expect(
       readerDocumentSchema.safeParse({

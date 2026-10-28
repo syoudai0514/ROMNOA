@@ -37,7 +37,7 @@ export default defineConfig({
     tailwindcss(),
     api(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       includeAssets: ["icon.svg", "apple-touch-icon.png"],
       manifest: {
         name: "ロムノア — ROMNOA",
@@ -58,6 +58,7 @@ export default defineConfig({
       },
       workbox: {
         clientsClaim: true,
+        skipWaiting: true,
         globPatterns: ["**/*.{js,css,html,png,svg,woff2}"],
         navigateFallbackDenylist: [/^\/api\//],
         // API data is validated and saved by the app, never cached as an HTML navigation.

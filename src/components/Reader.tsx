@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
 import { useReader } from "../lib/use-reader";
+import { ReaderText } from "./ReaderText";
 import { ArticleImages } from "./ArticleImages";
 
 export function Reader({
@@ -48,8 +49,11 @@ export function Reader({
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
   const reading = useReader(article.id, from);
   const [textFor, setTextFor] = useState<Set<string>>(() => new Set());
-  const pictures =
+  const allPictures =
     reading.document?.blocks.filter((b) => b.type === "image") || [];
+  const bodyPictures = allPictures.filter((b) => b.role !== "cover");
+  const pictures = bodyPictures.length ? bodyPictures : allPictures;
+  const roundup = reading.document?.pageKind === "roundup";
   const related =
     reading.document?.related.filter(
       (r) =>
@@ -207,6 +211,19 @@ export function Reader({
             <span>·</span>
             {articleDate(article.publishedAt)}
           </p>
+          <a
+            className="button secondary reader-source-link"
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={rememberPosition}
+          >
+            元ページを開く
+            <ExternalLink size={16} />
+          </a>
+          <p className="external-link-note">
+            元ページや外部リンクでは広告が表示される場合があります。
+          </p>
           <div className="reader-actions">
             <button
               className={`button secondary ${saved ? "is-saved" : ""}`}
@@ -246,50 +263,74 @@ export function Reader({
                 <Check size={14} />
                 アプリ内リーダー<span>出典：{source.name}</span>
               </div>
-              <div className="image-classification">
-                <strong>この記事の画像 {pictures.length}枚</strong>
-                <details>
-                  <summary>画像の判定について</summary>
+              {roundup ? (
+                <div className="roundup-note">
+                  <strong>記事への案内ページです</strong>
                   <p>
-                    本文内の掲載位置・画像の配信元・リンク先から選別しています。
+                    紹介画像の一覧です。下のタイトルから本編の画像・本文を開けます。
                   </p>
-                  <p>
-                    本文内で広告・誘導と判定：
-                    {reading.document.imageAudit.excluded}
-                    枚除外／別記事への画像：
-                    {reading.document.imageAudit.related}枚分離／判定保留：
-                    {reading.document.imageAudit.uncertain}
-                    枚非表示。画像の内容と見出しの一致を保証する判定ではありません。
-                  </p>
-                </details>
-              </div>
-              {pictures.length > 0 ? (
-                <ArticleImages key={article.id} pictures={pictures} />
+                </div>
               ) : (
-                <p className="reader-image-placeholder">
-                  この記事で表示できる画像は見つかりませんでした。判定保留の画像は読み込んでいません。
-                </p>
+                <>
+                  <div className="image-classification">
+                    <strong>この記事の画像 {pictures.length}枚</strong>
+                    <details>
+                      <summary>画像の判定について</summary>
+                      <p>
+                        本文内の掲載位置・画像の配信元・リンク先から選別しています。
+                      </p>
+                      <p>
+                        本文内で広告・誘導と判定：
+                        {reading.document.imageAudit.excluded}
+                        枚除外／別記事への画像：
+                        {reading.document.imageAudit.related}枚分離／判定保留：
+                        {reading.document.imageAudit.uncertain}
+                        枚非表示。画像の内容と見出しの一致を保証する判定ではありません。
+                      </p>
+                    </details>
+                  </div>
+                  {pictures.length > 0 ? (
+                    <ArticleImages key={article.id} pictures={pictures} />
+                  ) : (
+                    <p className="reader-image-placeholder">
+                      この記事で表示できる画像は見つかりませんでした。判定保留の画像は読み込んでいません。
+                    </p>
+                  )}
+                  {pictures.length > 0 && (
+                    <button
+                      className="button secondary body-toggle"
+                      aria-expanded={textFor.has(article.id)}
+                      onClick={() =>
+                        setTextFor((previous) => {
+                          const next = new Set(previous);
+                          if (next.has(article.id)) next.delete(article.id);
+                          else next.add(article.id);
+                          return next;
+                        })
+                      }
+                    >
+                      {textFor.has(article.id) ? "本文を閉じる" : "本文も読む"}
+                    </button>
+                  )}
+                  {(textFor.has(article.id) || !pictures.length) &&
+                    reading.document.blocks.map((block, i) =>
+                      block.type === "text" ? (
+                        <p key={i}>
+                          <ReaderText
+                            text={block.text}
+                            links={reading.document!.links}
+                          />
+                        </p>
+                      ) : null,
+                    )}
+                  {bodyPictures.length > 0 &&
+                    allPictures.length > bodyPictures.length && (
+                      <p className="image-source-note">
+                        見出し用の画像を除き、本文に掲載された画像を表示しています。
+                      </p>
+                    )}
+                </>
               )}
-              {pictures.length > 0 && (
-                <button
-                  className="button secondary body-toggle"
-                  aria-expanded={textFor.has(article.id)}
-                  onClick={() =>
-                    setTextFor((previous) => {
-                      const next = new Set(previous);
-                      if (next.has(article.id)) next.delete(article.id);
-                      else next.add(article.id);
-                      return next;
-                    })
-                  }
-                >
-                  {textFor.has(article.id) ? "本文を閉じる" : "本文も読む"}
-                </button>
-              )}
-              {(textFor.has(article.id) || !pictures.length) &&
-                reading.document.blocks.map((block, i) =>
-                  block.type === "text" ? <p key={i}>{block.text}</p> : null,
-                )}
               {reading.storageError && (
                 <p className="reader-storage-warning" role="status">
                   本文を端末に保存できませんでした。この画面では引き続き読めます。
@@ -299,39 +340,55 @@ export function Reader({
           )}
           {reading.document && (
             <section className="reader-related" aria-label="ほかのまとめ">
-              <h2>気になるまとめを、もうひとつ</h2>
+              <h2>
+                {roundup
+                  ? "この一覧の記事を開く"
+                  : "気になるまとめを、もうひとつ"}
+              </h2>
               <p>別の記事です。タップするとアプリ内で開きます。</p>
               {related.length ? (
                 related.map(({ article: next, thumbnail }) => (
-                  <button
-                    className="related-card"
-                    key={next.id}
-                    onClick={() => {
-                      rememberPosition();
-                      onRelated(next);
-                    }}
-                  >
-                    {thumbnail && (
-                      <img
-                        src={thumbnail}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        referrerPolicy="no-referrer"
-                        onError={(event) => {
-                          event.currentTarget.hidden = true;
-                        }}
-                      />
-                    )}
-                    <span>
-                      <small>
-                        別の記事 ·{" "}
-                        {sourceInfo.find((s) => s.id === next.sourceId)?.name}
-                      </small>
-                      <strong>{next.title}</strong>
-                    </span>
-                    <ArrowRight size={17} />
-                  </button>
+                  <div className="related-card" key={next.id}>
+                    <button
+                      className="related-open"
+                      onClick={() => {
+                        rememberPosition();
+                        onRelated(next);
+                      }}
+                    >
+                      {thumbnail && (
+                        <img
+                          src={thumbnail}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          onError={(event) => {
+                            event.currentTarget.hidden = true;
+                          }}
+                        />
+                      )}
+                      <span>
+                        <small>
+                          {roundup ? "本編をアプリ内で開く" : "別の記事"} ·{" "}
+                          {sourceInfo.find((s) => s.id === next.sourceId)?.name}
+                        </small>
+                        <strong>{next.title}</strong>
+                      </span>
+                      <ArrowRight size={17} />
+                    </button>
+                    <a
+                      className="related-original icon-button"
+                      href={next.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`元ページを開く：${next.title}`}
+                      title="元ページを開く（外部）"
+                      onClick={rememberPosition}
+                    >
+                      <ExternalLink size={17} />
+                    </a>
+                  </div>
                 ))
               ) : (
                 <p>このページから開ける関連記事はありません。</p>

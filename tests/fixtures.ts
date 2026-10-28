@@ -3,7 +3,9 @@ import type { ReaderDocument } from "../src/lib/reader-model";
 
 export function readerFixture(article: Article): ReaderDocument {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    pageKind: "article",
+    links: [],
     related: [],
     imageAudit: { excluded: 0, uncertain: 0, related: 0 },
     articleId: article.id,
