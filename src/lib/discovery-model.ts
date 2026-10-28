@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { feedResponseSchema } from "./model.js";
+import { articleSchema, feedResponseSchema } from "./model.js";
 import { searchCollection } from "./search-model.js";
 
 export function japanDay(value: string | number = Date.now()) {
@@ -34,14 +34,27 @@ export function shiftMonth(day: string, delta: number) {
     .toISOString()
     .slice(0, 10);
 }
+export const popularCollection = /^popular:[a-f0-9]{64}$/;
 export function validCollection(value: string, now = Date.now()) {
   return (
     value === "popular" ||
+    popularCollection.test(value) ||
     searchCollection.test(value) ||
     (value.startsWith("date:") && validDay(value.slice(5), now))
   );
 }
 export const discoveryResponseSchema = feedResponseSchema.extend({
+  articles: z.array(articleSchema).max(220),
+  collection: z.string().regex(popularCollection).optional(),
+  rankingBasis: z.enum(["publisher", "bookmarks"]).default("publisher"),
+  bookmarks: z
+    .record(z.string(), z.number().int().min(0).max(1_000_000_000))
+    .nullable()
+    .default(null),
+  partialSources: z
+    .array(z.enum(["hamusoku", "alfalfa"]))
+    .max(2)
+    .default([]),
   mode: z.enum(["popular", "date"]),
   date: z.string().nullable(),
   ranks: z

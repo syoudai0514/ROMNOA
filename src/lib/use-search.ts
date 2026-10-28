@@ -26,10 +26,13 @@ function contexts() {
     return [];
   }
 }
-export function savedSearchCollection(id: string) {
+export function savedArticleCollection(id: string) {
   return contexts().find((row) => row.id === id)?.collection;
 }
-function remember(data: SearchResponse) {
+export function rememberArticleCollection(data: {
+  articles: Article[];
+  collection: string;
+}) {
   try {
     const added = data.articles.map((a) => ({
       id: a.id,
@@ -98,7 +101,7 @@ export function useSearch(query: string, scope: SearchScope = "title") {
             clearTimeout(timeout);
           }
           if (cancelled) return;
-          remember(data);
+          rememberArticleCollection(data);
           const collections = { ...saved.collections };
           for (const a of data.articles) collections[a.id] = data.collection;
           saved = {

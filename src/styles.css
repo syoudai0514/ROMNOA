@@ -2509,3 +2509,5 @@ button {
   .article-row .article-meta { font-size: 9px; gap: 5px; }
   .article-meta .article-source { font-size: 9px; }
 }
+
+.reading-body > .reader-text-block { line-height: 1.55; margin: 0 0 6px; }

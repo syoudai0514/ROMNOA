@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { feedService, type FeedService } from "./feed-service.js";
+import { bookmarkMetrics } from "./bookmarks.js";
 import { getCache } from "@vercel/functions";
 import { parseDocument, DomUtils } from "htmlparser2";
 import { z } from "zod";
@@ -13,6 +16,7 @@ import {
   japanDay,
   validDay,
   validCollection,
+  popularCollection,
   type DiscoveryResponse,
 } from "../src/lib/discovery-model.js";
 
@@ -26,11 +30,11 @@ const MAX_AGE = 86_400_000;
 const MAX_BYTES = 2_000_000;
 const POPULAR = {
   hamusoku:
-    "https://hamusoku.com/archives/popular_articles.json?limit=5&with_image=1&image_width=320&image_height=290&rangetype=custom&range=6",
+    "https://hamusoku.com/archives/popular_articles.json?limit=10&with_image=1&image_width=320&image_height=290&rangetype=custom&range=6",
   alfalfa: "https://alfalfalfa.com/js/blogparts/pc_pop_ranking.async.js",
 } as const;
 const dataSchema = z.object({
-  articles: z.array(articleSchema).max(100),
+  articles: z.array(articleSchema).max(110),
   ranks: z
     .array(
       z.object({
@@ -366,9 +370,13 @@ export class DiscoveryService {
     private cache: DiscoveryCache,
     private load = fetchDiscovery,
     private now = Date.now,
+    private catalog?: {
+      feeds: Pick<FeedService, "get">;
+      metrics: (articles: Article[]) => Promise<Record<string, number> | null>;
+    },
   ) {}
   private key(id: SourceId, kind: Kind, day?: string) {
-    return `${id}:${kind}:${kind === "date" ? day : ""}`;
+    return `${id}:${kind}:${kind === "date" ? day : "top10-v2"}`;
   }
   private async cached(key: string) {
     try {
@@ -448,6 +456,109 @@ export class DiscoveryService {
       (mode === "date" && !day)
     )
       throw new Error("invalid_discovery_request");
+    if (mode !== "popular" || !this.catalog) return this.listing(mode, day);
+    // Publisher widgets expose only their top few entries. Use every known feed
+    // article (or every selected-date article), plus those publisher candidates.
+    const [listing, feed] = await Promise.all([
+      this.listing(day ? "date" : "popular", day),
+      day
+        ? Promise.resolve(null)
+        : this.catalog.feeds.get().catch(() => ({
+            articles: [] as Article[],
+            sources: sourceInfo.map((s) => ({
+              id: s.id,
+              status: "error" as const,
+              fetchedAt: null,
+            })),
+            generatedAt: new Date(this.now()).toISOString(),
+          })),
+    ]);
+    const articles = [
+      ...new Map(
+        [...listing.articles, ...(feed?.articles || [])].map((a) => [a.id, a]),
+      ).values(),
+    ].sort(newest);
+    if (articles.length > 220) throw new Error("popular_catalog_too_large");
+    let bookmarks = await this.catalog.metrics(articles).catch(() => null);
+    // Require a real count for every candidate. Missing is never an invented 0.
+    if (
+      bookmarks &&
+      articles.some(
+        (a) =>
+          !Number.isInteger(bookmarks![a.id]) ||
+          bookmarks![a.id] < 0 ||
+          bookmarks![a.id] > 1_000_000_000,
+      )
+    )
+      bookmarks = null;
+    const partialSources: SourceId[] = [];
+    const sources = listing.sources.map((source) => {
+      const fromFeed = feed?.sources.find((s) => s.id === source.id);
+      if (!fromFeed) return source;
+      const statuses = [source.status, fromFeed.status];
+      if (statuses.includes("error") && !statuses.every((s) => s === "error"))
+        partialSources.push(source.id);
+      return {
+        ...source,
+        status: statuses.every((s) => s === "error")
+          ? ("error" as const)
+          : statuses.includes("cached")
+            ? ("cached" as const)
+            : ("ok" as const),
+        fetchedAt: fromFeed.fetchedAt || source.fetchedAt,
+      };
+    });
+    const collection = `popular:${createHash("sha256")
+      .update(
+        `${day || ""}\n${articles
+          .map((a) => a.id)
+          .sort()
+          .join("\n")}`,
+      )
+      .digest("hex")}`;
+    await Promise.all(
+      sourceInfo.map(async (source) => {
+        const timestamps = [
+          listing.sources.find((s) => s.id === source.id)?.fetchedAt,
+          feed?.sources.find((s) => s.id === source.id)?.fetchedAt,
+        ]
+          .filter((d): d is string => !!d)
+          .map(Date.parse);
+        const fetchedAt = Math.min(this.now(), ...timestamps);
+        try {
+          await this.cache.set(`${collection}:${source.id}`, {
+            articles: articles.filter((a) => a.sourceId === source.id),
+            ranks: [],
+            limited: false,
+            fetchedAt,
+            checkedAt: this.now(),
+            failed: false,
+          });
+        } catch {
+          console.error("ROMNOA popular_catalog_cache_write_failed", source.id);
+        }
+      }),
+    );
+    return {
+      ...listing,
+      mode: "popular",
+      date: day || null,
+      articles,
+      collection,
+      rankingBasis: "bookmarks",
+      bookmarks,
+      partialSources,
+      sources,
+      ranks: [],
+    };
+  }
+  private async listing(mode: Kind, day?: string): Promise<DiscoveryResponse> {
+    if (
+      (mode !== "popular" && mode !== "date") ||
+      (day !== undefined && !validDay(day, this.now())) ||
+      (mode === "date" && !day)
+    )
+      throw new Error("invalid_discovery_request");
     const results = await Promise.all(
       sourceInfo.map(async (source) => {
         const [primary, archive] = await Promise.all([
@@ -481,6 +592,9 @@ export class DiscoveryService {
     const articles = results.flatMap((r) => r.articles);
     return {
       mode,
+      rankingBasis: "publisher",
+      bookmarks: null,
+      partialSources: [],
       date: day || null,
       articles: mode === "date" ? articles.sort(newest) : articles,
       ranks: results
@@ -507,6 +621,18 @@ export class DiscoveryService {
     if (!validCollection(collection, this.now())) return;
     const target = readerArticleTarget(id);
     if (!target) return;
+    if (popularCollection.test(collection)) {
+      const entry = await this.cached(`${collection}:${target.sourceId}`);
+      if (
+        !entry ||
+        this.now() - entry.fetchedAt < -60000 ||
+        this.now() - entry.fetchedAt >= MAX_AGE
+      )
+        return;
+      return entry.articles.find(
+        (a) => a.id === id && a.sourceId === target.sourceId,
+      );
+    }
     const kind = collection === "popular" ? "popular" : "date";
     // Saved metadata may outlive the current screen; both lookups are cache-only.
     const keys = [
@@ -517,6 +643,8 @@ export class DiscoveryService {
       ),
     ];
     if (kind === "date") keys.push(this.key(target.sourceId, "popular"));
+    // Older deployed readers used the five-item publisher cache key.
+    keys.push(`${target.sourceId}:popular:`);
     for (const key of keys) {
       const entry = await this.cached(key);
       if (
@@ -532,7 +660,15 @@ export class DiscoveryService {
     }
   }
 }
-export const discoveryService = new DiscoveryService(runtimeCache());
+export const discoveryService = new DiscoveryService(
+  runtimeCache(),
+  fetchDiscovery,
+  Date.now,
+  {
+    feeds: feedService,
+    metrics: (articles) => bookmarkMetrics.get(articles),
+  },
+);
 export async function handleDiscovery(
   request: Request,
   service: Pick<DiscoveryService, "get"> = discoveryService,

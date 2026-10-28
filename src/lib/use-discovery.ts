@@ -1,3 +1,4 @@
+import { rememberArticleCollection } from "./use-search";
 import { useEffect, useState } from "react";
 import {
   discoveryResponseSchema,
@@ -71,7 +72,7 @@ export function useDiscovery(mode: "popular" | "date" | null, date: string) {
       cached: !!data,
       storageError: false,
     });
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 35000);
     void (async () => {
       try {
         const response = await fetch(
@@ -83,6 +84,11 @@ export function useDiscovery(mode: "popular" | "date" | null, date: string) {
         if (result.mode !== mode || result.date !== (date || null))
           throw new Error("mismatch");
         if (cancelled) return;
+        if (result.collection)
+          rememberArticleCollection({
+            articles: result.articles,
+            collection: result.collection,
+          });
         setState({
           key,
           data: result,

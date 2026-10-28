@@ -139,3 +139,14 @@ mergeLocalSearchは保存/履歴のタイトル一致だけを通常/本文モ�
 homeSort/searchSort/shelfSortを分離し、検索語/入力語は検索タブに保持、保存内の入力とは独立。タブ往復時は通常検索を保持し、隠し結果から離れると候補と語を消す。PIN照合成功時は検索タブへ移る。下部/デスクトップ共通で5タブ。全期間検索の継続と記事別collectionは既存useSearch/ReaderSelectionを維持する。
 
 ArticleRowはタイトルを先頭、配信元/日時/既読と順位・ブックマーク実測・端末由来を単一メタデータ行へ配置。大きい配信元モノグラムを小さな色点に置き換え、source名は残す。標準文字15px・1.45行高・最大3行、記事ボタン最小64px/保存44px。全タイトルのaria-labelとReaderの見出しは省略しない。モバイルのsafe-areaを含む上部高と5タブ幅を調整し、Reader本文のレイアウトは変更しない。
+
+
+## 全取得記事の人気順と本文の密度（ADR 013）
+
+本番DiscoveryServiceはcatalog依存（FeedService、BookmarkMetrics）を注入。通常popularは配信元人気候補とRSS全件を並列取得しURLで重複排除、RSSの日時などを優先する。日付付きpopularはその日付のarchive全件を使い、短い人気ウィジェットとの共通部分に制限しない。候補は最大220（RSS2×100＋配信元順位2×10）。公式はてなAPIを40URL以下ずつ・最大220件で照合し、全IDの実測整数が揃わない場合はnull。rankingBasis=bookmarks、bookmarks、partialSourcesを返し、旧publisher/ranks形式もcache互換として解釈可能にする。クライアントは全候補を維持し、実数順/同数は新着、指標欠損は新着へ戻して理由を示す。
+
+配信元の順位候補はハムスター速報の実在するlimit=10を使用（limit=100指定でも10件という観測）。アルファの公開スクリプトは6件。これらは候補追加に使い、全件の順位根拠ははてな実測数。ハムスター側の公開候補キーをtop10-v2へ変更し、古い5件キーはcache-onlyの認可互換として残す。記事URL・redirect:error・応答サイズ/DOM・RSS/日付cacheを維持する。discovery関数30秒・クライアント35秒とし、配信元/指標ごとの短い期限は維持する。
+
+collection=popular:<sha256(day+sorted article IDs)>のメタデータ集合を、配信元ごと最大110件で既存Runtime Cacheへ保存する。元の取得日時の最小値を持たせ、古い候補の認可期限を延長しない。findKnownは署名/配信元/IDの完全一致と元取得24時間以内だけをcache-onlyで照合。人気集合の端末参照は既存romnoa:search-contexts:v1へsearch/popular両形式として互換追加（最大1000件/24h、検索語なし）。useDiscoveryも参照を記録し、保存記事と検索内の端末候補を開くときに使う。任意ハッシュから新規に集合を取得する処理はない。本文cacheはv3のまま。
+
+Readerは本文テキストのpへreader-text-blockを付け、フォントサイズを変えず行高1.55/下余白6pxにする。compactReaderTextはCRLFを整え、空白だけの行を含む連続改行を単一改行へ整理する表示処理。非空行・字下げ・番号・URLを保持し、元のReaderDocument/cache内容は変更しない。画像/動画/関連記事UIと認可は維持する。

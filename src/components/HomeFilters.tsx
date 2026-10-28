@@ -56,7 +56,7 @@ export function HomeFilters({
       </summary>
       <CategoryChips category={category} onChange={onCategory} />
       <DateFilter key={date} date={date} onChange={onDate} />
-      <SortControl sort={sort} onChange={onSort} popular="source" />
+      <SortControl sort={sort} onChange={onSort} popular="bookmarks" />
     </details>
   );
 }

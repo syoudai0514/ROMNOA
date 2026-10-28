@@ -31,7 +31,7 @@ import { MySearch } from "./components/MySearch";
 import { HiddenUnlock, HiddenSearch } from "./components/HiddenSearch";
 import { hiddenTitleAllowed, type HiddenGroups } from "./lib/hidden-model";
 import { mergeLocalSearch, searchDay } from "./lib/search-results";
-import { useSearch, savedSearchCollection } from "./lib/use-search";
+import { useSearch, savedArticleCollection } from "./lib/use-search";
 import {
   normalizeSearch,
   validSearch,
@@ -170,8 +170,12 @@ export default function App() {
     : discoveryMode
       ? discovery.refresh
       : refreshFeed;
+  const fullPopularity =
+    discoveryMode === "popular" && discovery.data?.rankingBasis === "bookmarks";
   const effectiveSort =
-    searchActive && sort === "popular" && !pastSearch.data?.bookmarks
+    sort === "popular" &&
+    ((searchActive && !pastSearch.data?.bookmarks) ||
+      (fullPopularity && !discovery.data?.bookmarks))
       ? "newest"
       : sort;
   const ranks = useMemo(
@@ -304,10 +308,12 @@ export default function App() {
       hiddenSources: prefs.hiddenSources,
       ngWords: prefs.ngWords,
       ranks,
-      includeUnmeasured: searchActive,
+      includeUnmeasured: searchActive || fullPopularity,
       popularity: searchActive
         ? pastSearch.data?.bookmarks || undefined
-        : undefined,
+        : fullPopularity
+          ? discovery.data?.bookmarks || undefined
+          : undefined,
     });
     const visible =
       hiddenResult && searchActive
@@ -330,6 +336,8 @@ export default function App() {
     savedView,
     ranks,
     searchActive,
+    fullPopularity,
+    discovery.data,
     pastSearch.data,
     hiddenResult,
   ]);
@@ -392,7 +400,7 @@ export default function App() {
         ? Object.fromEntries(
             sequence.flatMap((a) => {
               const context =
-                pastSearch.collections[a.id] || savedSearchCollection(a.id);
+                pastSearch.collections[a.id] || savedArticleCollection(a.id);
               return context ? [[a.id, context]] : [];
             }),
           )
@@ -400,14 +408,12 @@ export default function App() {
       collection: searchActive
         ? undefined
         : discoveryMode
-          ? date
-            ? `date:${date}`
-            : "popular"
+          ? discovery.data?.collection || (date ? `date:${date}` : "popular")
           : tab === "saved"
-            ? article.publishedAt
-              ? savedSearchCollection(article.id) ||
-                `date:${japanDay(article.publishedAt)}`
-              : "popular"
+            ? savedArticleCollection(article.id) ||
+              (article.publishedAt
+                ? `date:${japanDay(article.publishedAt)}`
+                : "popular")
             : undefined,
     });
   }
@@ -842,25 +848,58 @@ export default function App() {
                   {discoveryMode && (
                     <details
                       className="discovery-note"
-                      open={cached || !!error}
+                      open={
+                        cached ||
+                        !!error ||
+                        (fullPopularity &&
+                          discovery.data?.bookmarks === null) ||
+                        !!discovery.data?.partialSources.length
+                      }
                     >
                       <summary>順位・取得範囲について</summary>
                       <div role="status">
                         {sort === "popular" ? (
-                          <>
-                            <p>
-                              配信元の現在の人気順を、サイト別に表示しています。
-                            </p>
-                            <p>
-                              ハムスター速報：直近1週間／アルファルファモザイク：掲載中のTOP6（集計期間非公表）
-                            </p>
-                            {date && (
+                          fullPopularity ? (
+                            <>
                               <p>
-                                {date}
-                                掲載の記事で絞り込み中。過去の人気順位ではありません。
+                                新着の全記事と配信元の人気記事を対象に、実際のはてなブックマーク数順で表示しています。
                               </p>
-                            )}
-                          </>
+                              <p>
+                                取得できた記事を全件含めています。配信元サイト独自の閲覧数順位や、全過去記事の順位ではありません。
+                              </p>
+                              {date && (
+                                <p>
+                                  {date}{" "}
+                                  掲載の全取得記事が対象です。過去の人気順位の再現ではありません。
+                                </p>
+                              )}
+                              {discovery.data?.bookmarks === null && (
+                                <p>
+                                  人気データを取得できませんでした。記事を減らさず、新着順で全件表示しています。
+                                </p>
+                              )}
+                              {!!discovery.data?.partialSources.length && (
+                                <p>
+                                  一部の配信情報を取得できなかったため、確認できた記事を全件表示しています。
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <p>
+                                配信元の現在の人気順を、サイト別に表示しています。
+                              </p>
+                              <p>
+                                ハムスター速報：直近1週間／アルファルファモザイク：掲載中のTOP6（集計期間非公表）
+                              </p>
+                              {date && (
+                                <p>
+                                  {date}
+                                  掲載の記事で絞り込み中。過去の人気順位ではありません。
+                                </p>
+                              )}
+                            </>
+                          )
                         ) : (
                           <p>
                             {date}
@@ -903,7 +942,9 @@ export default function App() {
                           : tab === "search"
                             ? "検索結果"
                             : sort === "popular"
-                              ? "人気記事（サイト別）"
+                              ? fullPopularity
+                                ? "人気記事（全取得記事）"
+                                : "人気記事（サイト別）"
                               : date
                                 ? `${date}の記事`
                                 : query
@@ -1000,14 +1041,16 @@ export default function App() {
                           <ArticleRow
                             article={group[0]}
                             rank={
-                              discoveryMode === "popular"
+                              discoveryMode === "popular" && !fullPopularity
                                 ? ranks[group[0].id]
                                 : undefined
                             }
                             bookmarks={
                               searchActive
                                 ? pastSearch.data?.bookmarks?.[group[0].id]
-                                : undefined
+                                : fullPopularity
+                                  ? discovery.data?.bookmarks?.[group[0].id]
+                                  : undefined
                             }
                             local={
                               searchActive && !remoteSearchIds.has(group[0].id)

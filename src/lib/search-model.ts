@@ -47,7 +47,7 @@ export const searchContextSchema = z
   .array(
     z.object({
       id: z.string().max(2048),
-      collection: z.string().regex(searchCollection),
+      collection: z.string().regex(/^(?:search|popular):[a-f0-9]{64}$/),
       at: z.number(),
     }),
   )

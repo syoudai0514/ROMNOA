@@ -1,3 +1,4 @@
+import { compactReaderText } from "../lib/reader-layout";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -383,9 +384,9 @@ export function Reader({
                     (!pictures.length && !videos.length)) &&
                     reading.document.blocks.map((block, i) =>
                       block.type === "text" ? (
-                        <p key={i}>
+                        <p key={i} className="reader-text-block">
                           <ReaderText
-                            text={block.text}
+                            text={compactReaderText(block.text)}
                             links={reading.document!.links}
                             sourceId={article.sourceId}
                             imageUrls={pictures.map((picture) => picture.url)}

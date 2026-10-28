@@ -18,7 +18,7 @@ export async function fetchBookmarkCounts(
   fetcher: typeof fetch = fetch,
 ) {
   if (
-    articles.length > 200 ||
+    articles.length > 220 ||
     articles.some((a) => readerArticleTarget(a.id)?.sourceId !== a.sourceId)
   )
     throw new Error("invalid_metric_target");
