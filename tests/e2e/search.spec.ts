@@ -310,3 +310,99 @@ test("slow or failed searches cannot replace a newer query, and the small screen
     ),
   ).toBe(false);
 });
+
+test("search target defaults to titles, switches to clean body and keeps scope for sorting and pagination", async ({
+  page,
+}) => {
+  await base(page);
+  const sent: URLSearchParams[] = [];
+  await page.route("**/api/search**", async (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    sent.push(p);
+    const scope = p.get("scope")!,
+      n = Number(p.get("page"));
+    await r.fulfill({
+      json: {
+        ...result(p.get("q")!, n, scope === "body" ? [newer, older] : [newer]),
+        scope,
+        unverifiedCount: scope === "body" ? 1 : 0,
+        excludedCount: 3,
+      },
+    });
+  });
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/");
+  await expect(
+    page.getByRole("radio", { name: "タイトルのみ", exact: true }),
+  ).toBeChecked();
+  await submit(page, "図書館");
+  await expect(page.getByTestId("article-row")).toHaveCount(1);
+  expect(sent[0].get("scope")).toBe("title");
+  await page.getByRole("radio", { name: "本文を含む", exact: true }).check();
+  await expect(page.getByTestId("article-row")).toHaveCount(2);
+  await expect(page.locator(".search-results-note")).toContainText(
+    "おすすめ欄・関連記事・広告・リンクの文字は検索対象から除外",
+  );
+  await expect(page.locator(".search-results-note")).toContainText(
+    "確認できなかった 1件は表示していません",
+  );
+  await page
+    .getByRole("combobox", { name: "記事の並び順" })
+    .selectOption("popular");
+  await expect(page.getByTestId("article-row").first()).toContainText(
+    older.title,
+  );
+  await page
+    .getByRole("button", { name: "さらに過去の記事", exact: true })
+    .click();
+  await expect(page.locator(".search-pagination")).toContainText("2ページ目");
+  expect(sent.at(-1)?.get("scope")).toBe("body");
+  await page.getByRole("radio", { name: "タイトルのみ", exact: true }).check();
+  await expect(page.getByTestId("article-row")).toHaveCount(1);
+  await expect(page.locator(".search-pagination")).toContainText("1ページ目");
+  expect(sent.at(-1)?.get("scope")).toBe("title");
+  expect(sent.at(-1)?.has("date")).toBe(false);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+  ).toBe(false);
+});
+
+test("an empty title-filtered page still offers older results and late body responses cannot overwrite titles", async ({
+  page,
+}) => {
+  await base(page);
+  await page.route("**/api/search**", async (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    const scope = p.get("scope")!,
+      n = Number(p.get("page"));
+    if (scope === "body")
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    await r
+      .fulfill({
+        json: { ...result(p.get("q")!, n, n === 1 ? [] : [older]), scope },
+      })
+      .catch(() => {});
+  });
+  await page.goto("/");
+  await submit(page, "図書館");
+  await expect(page.locator(".search-results-note")).toContainText(
+    "このページに一致する記事はありません",
+  );
+  await expect(
+    page.getByRole("button", { name: "さらに過去の記事", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("radio", { name: "本文を含む", exact: true }).check();
+  await page.getByRole("radio", { name: "タイトルのみ", exact: true }).check();
+  await expect(page.locator(".search-results-note")).toContainText(
+    "タイトルに検索語が含まれる",
+  );
+  await page
+    .getByRole("button", { name: "さらに過去の記事", exact: true })
+    .click();
+  await expect(page.getByTestId("article-row")).toContainText(older.title);
+  await expect(
+    page.getByRole("radio", { name: "タイトルのみ", exact: true }),
+  ).toBeChecked();
+});

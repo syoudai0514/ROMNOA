@@ -15,8 +15,12 @@ import {
   validSearch,
   searchCollection,
   type SearchResponse,
+  type SearchScope,
+  searchScopeSchema,
+  matchesSearch,
 } from "../src/lib/search-model.js";
 import { parseIndexMetadata } from "./discovery.js";
+import { searchTextService } from "./search-content.js";
 import { bookmarkMetrics } from "./bookmarks.js";
 
 type SourceId = Article["sourceId"];
@@ -182,6 +186,8 @@ export class SearchService {
     private load = fetchSearch,
     private now = Date.now,
     private metrics = (articles: Article[]) => bookmarkMetrics.get(articles),
+    private bodyText = (article: Article, signal: AbortSignal) =>
+      searchTextService.get(article, signal),
   ) {}
   private async cached(key: string) {
     try {
@@ -255,9 +261,11 @@ export class SearchService {
     query: string,
     page = 1,
     ids: SourceId[] = ["hamusoku", "alfalfa"],
+    scope: SearchScope = "title",
   ): Promise<SearchResponse> {
     if (
       !validSearch(query) ||
+      !searchScopeSchema.safeParse(scope).success ||
       !Number.isInteger(page) ||
       page < 1 ||
       page > MAX_SEARCH_PAGE ||
@@ -271,14 +279,47 @@ export class SearchService {
     const results = await Promise.all(
       ids.map(async (id) => ({ id, ...(await this.source(id, q, page)) })),
     );
-    const articles = [
+    const candidates = [
       ...new Map(
         results.flatMap((r) => r.entry.articles).map((a) => [a.id, a]),
       ).values(),
     ].sort(newest);
+    // The publisher index supplies candidates, never proof that the story matches.
+    // Title matching is cheap. Only missing title words require a clean body fetch.
+    const matching = new Set<string>();
+    let unverifiedCount = 0,
+      next = 0;
+    const signal = AbortSignal.timeout(22000);
+    await Promise.all(
+      Array.from({ length: scope === "body" ? 6 : 1 }, async () => {
+        while (next < candidates.length) {
+          const article = candidates[next++];
+          if (matchesSearch(article.title, q)) {
+            matching.add(article.id);
+            continue;
+          }
+          if (scope === "title") continue;
+          if (signal.aborted) {
+            unverifiedCount++;
+            continue;
+          }
+          const body = await this.bodyText(article, signal).catch(() => null);
+          if (body === null) {
+            unverifiedCount++;
+            continue;
+          }
+          if (matchesSearch(`${article.title}\n${body}`, q))
+            matching.add(article.id);
+        }
+      }),
+    );
+    const articles = candidates.filter((a) => matching.has(a.id));
     const bookmarks = await this.metrics(articles).catch(() => null);
     return {
       bookmarks,
+      scope,
+      unverifiedCount,
+      excludedCount: candidates.length - articles.length - unverifiedCount,
       query: q,
       page,
       collection: collectionFor(q, page),
@@ -316,6 +357,7 @@ export const searchService = new SearchService(runtimeCache());
 export async function handleSearch(
   request: Request,
   service: Pick<SearchService, "get"> = searchService,
+  preview = !process.env.VERCEL || process.env.VERCEL_ENV === "preview",
 ) {
   const headers = {
     "Cache-Control": "private, no-store",
@@ -330,18 +372,22 @@ export async function handleSearch(
   const p = new URL(request.url).searchParams,
     query = p.get("q") || "",
     page = Number(p.get("page") || "1"),
+    scope = p.get("scope") || "title",
     ids = (p.get("sources")?.split(",") || [
       "hamusoku",
       "alfalfa",
     ]) as SourceId[];
   if (
     !validSearch(query) ||
+    !searchScopeSchema.safeParse(scope).success ||
     !Number.isInteger(page) ||
     page < 1 ||
     page > MAX_SEARCH_PAGE ||
     (p.has("page") && !/^[1-9]\d{0,3}$/.test(p.get("page")!)) ||
     [...p.keys()].some(
-      (k) => !["q", "page", "sources"].includes(k) || p.getAll(k).length !== 1,
+      (k) =>
+        !["q", "page", "sources", "scope"].includes(k) ||
+        p.getAll(k).length !== 1,
     ) ||
     !ids.length ||
     ids.length > 2 ||
@@ -352,8 +398,13 @@ export async function handleSearch(
       { error: "検索語（80文字以内）またはページ指定を確認してください。" },
       { status: 400, headers },
     );
+  if (scope === "body" && !preview)
+    return Response.json(
+      { error: "本文検索は個人用プレビュー専用です。" },
+      { status: 403, headers },
+    );
   try {
-    const data = await service.get(query, page, ids);
+    const data = await service.get(query, page, ids, scope as SearchScope);
     return Response.json(data, {
       status: data.sources.every((s) => s.status === "error") ? 503 : 200,
       headers,

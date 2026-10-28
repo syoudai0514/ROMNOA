@@ -19,7 +19,7 @@ await Promise.all(
       const count = result.articles.filter((a) =>
         hiddenTitleAllowed(a.title),
       ).length;
-      const good = count >= 2 && result.sources.every((s) => s.status === "ok");
+      const good = count >= 3 && result.sources.every((s) => s.status === "ok");
       console.log(
         JSON.stringify({
           query: word.query,

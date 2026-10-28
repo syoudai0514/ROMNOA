@@ -1,3 +1,4 @@
+import { fetchArticleHtml } from "./article-html.js";
 import { readerVideoUrl, socialPostUrl } from "../src/lib/reader-media.js";
 import { discoveryService } from "./discovery.js";
 import { searchService } from "./search.js";
@@ -512,62 +513,7 @@ export async function fetchArticle(
   article: Article,
   fetcher: typeof fetch = fetch,
 ): Promise<ReaderDocument> {
-  const target = articleTarget(article.url);
-  if (
-    !target ||
-    target.sourceId !== article.sourceId ||
-    article.id !== target.url
-  )
-    throw new ReaderError("not_found", "対応していない記事です。");
-  const response = await fetcher(target.url, {
-    redirect: "error",
-    signal: AbortSignal.timeout(10000),
-    headers: {
-      Accept: "text/html, application/xhtml+xml",
-      "User-Agent":
-        "ROMNOA/0.2 personal-reader (+https://github.com/syoudai0514/ROMNOA)",
-    },
-  });
-  if (
-    !response.ok ||
-    !response.body ||
-    !/text\/html|application\/xhtml\+xml/i.test(
-      response.headers.get("content-type") || "",
-    )
-  ) {
-    await response.body?.cancel();
-    throw new ReaderError(
-      "unavailable",
-      "配信元から本文を取得できませんでした。",
-    );
-  }
-  if (Number(response.headers.get("content-length")) > MAX_HTML) {
-    await response.body.cancel();
-    throw new ReaderError(
-      "unavailable",
-      "記事が大きすぎるため表示できません。",
-    );
-  }
-  const reader = response.body.getReader();
-  const parts: Uint8Array[] = [];
-  let size = 0;
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.length;
-      if (size > MAX_HTML)
-        throw new ReaderError(
-          "unavailable",
-          "記事が大きすぎるため表示できません。",
-        );
-      parts.push(value);
-    }
-  } finally {
-    await reader.cancel().catch(() => undefined);
-    reader.releaseLock();
-  }
-  return extractArticle(Buffer.concat(parts).toString("utf8"), article);
+  return extractArticle(await fetchArticleHtml(article, fetcher), article);
 }
 
 export type ReaderEntry = {

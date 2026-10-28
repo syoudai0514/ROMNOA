@@ -3,6 +3,7 @@ import {
   searchResponseSchema,
   searchContextSchema,
   type SearchResponse,
+  type SearchScope,
 } from "./search-model";
 import type { Article } from "./model";
 
@@ -43,12 +44,12 @@ function remember(data: SearchResponse) {
     /* Optional lookup hint; saving a favorite still uses the existing storage warning. */
   }
 }
-export function useSearch(query: string) {
+export function useSearch(query: string, scope: SearchScope = "title") {
   const [request, setRequest] = useState({ query: "", page: 1, sources: BOTH });
   const [attempt, setAttempt] = useState(0);
   const page = request.query === query ? request.page : 1;
   const sources = request.query === query ? request.sources : BOTH;
-  const key = `${query}\n${page}\n${sources.join(",")}`;
+  const key = `${query}\n${scope}\n${page}\n${sources.join(",")}`;
   const previousSources = useRef(new Map<string, SourceId[]>());
   const [state, setState] = useState<{
     key: string;
@@ -60,7 +61,7 @@ export function useSearch(query: string) {
     if (!query) return;
     let cancelled = false;
     const abort = new AbortController();
-    const timeout = setTimeout(() => abort.abort(), 15000);
+    const timeout = setTimeout(() => abort.abort(), 45000);
     previousSources.current.set(`${query}\n${page}`, sources);
     if (previousSources.current.size > 128)
       previousSources.current.delete(
@@ -70,12 +71,12 @@ export function useSearch(query: string) {
     void (async () => {
       try {
         const response = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}&page=${page}&sources=${sources.join(",")}`,
+          `/api/search?q=${encodeURIComponent(query)}&page=${page}&scope=${scope}&sources=${sources.join(",")}`,
           { signal: abort.signal },
         );
         if (!response.ok) throw new Error("unavailable");
         const data = searchResponseSchema.parse(await response.json());
-        if (data.query !== query || data.page !== page)
+        if (data.query !== query || data.page !== page || data.scope !== scope)
           throw new Error("mismatch");
         if (!cancelled) {
           remember(data);
@@ -99,7 +100,7 @@ export function useSearch(query: string) {
       clearTimeout(timeout);
       abort.abort();
     };
-  }, [query, page, key, sources, attempt]);
+  }, [query, scope, page, key, sources, attempt]);
   const current =
     state.key === key && query
       ? state

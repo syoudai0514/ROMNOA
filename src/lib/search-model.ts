@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { feedResponseSchema } from "./model.js";
 
+export const searchScopeSchema = z.enum(["title", "body"]);
+export type SearchScope = z.infer<typeof searchScopeSchema>;
+// Space-separated words must all match; NFKC and case folding are shared by both scopes.
+export function matchesSearch(text: string, query: string) {
+  const haystack = normalizeSearch(text).toLowerCase();
+  const words = normalizeSearch(query).toLowerCase().split(" ").filter(Boolean);
+  return words.length > 0 && words.every((word) => haystack.includes(word));
+}
+
 export const MAX_SEARCH_PAGE = 1000;
 export function normalizeSearch(value: string) {
   return value.normalize("NFKC").trim().replace(/\s+/g, " ");
@@ -18,6 +27,9 @@ export const searchResponseSchema = feedResponseSchema.extend({
   bookmarks: z
     .record(z.string(), z.number().int().min(0).max(1_000_000_000))
     .nullable(),
+  scope: searchScopeSchema.default("title"),
+  unverifiedCount: z.number().int().min(0).max(200).default(0),
+  excludedCount: z.number().int().min(0).max(200).default(0),
   query: z.string().min(1).max(80),
   page: z.number().int().min(1).max(MAX_SEARCH_PAGE),
   collection: z.string().regex(searchCollection),

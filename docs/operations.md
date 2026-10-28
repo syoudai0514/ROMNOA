@@ -10,7 +10,7 @@ Node.js 24 / npm。`npm ci` → `npm run dev`。本番相当ビルドは `npm ru
 
 GitHubのROMNOAをVercelでImportしViteを選ぶ。Node.js 24、build `npm run build`、output `dist`。`vercel.json`にhnd1と一覧15秒/本文25秒の上限、CSPを設定済み。DBやアプリAPIキーは不要。個人利用中はPreview Deployment Protectionを維持する。一般公開前に配信元表示条件・実機確認を完了する。
 
-一覧APIは `/api/articles`（クエリ不可）。本文APIは `/api/reader?article=<正規化記事URL>` で、既知のフィード記事・固定数値記事パス、または `&from=<元記事ID>` による確認済み関連記事だけを取得する。親キャッシュの有効期限/リンク完全一致を必須とし、任意URLプロキシは作らない。UI/機密設定をCDNに混在させない。検索・NG・保存はサーバーへ送らない。Vercel Runtime Cacheはサーバーの自動設定を使用。キャッシュが使えない場合はログが出るので本番で確認する。
+一覧APIは `/api/articles`（クエリ不可）。本文APIは `/api/reader?article=<正規化記事URL>` で、既知のフィード記事・固定数値記事パス、または `&from=<元記事ID>` による確認済み関連記事だけを取得する。親キャッシュの有効期限/リンク完全一致を必須とし、任意URLプロキシは作らない。UI/機密設定をCDNに混在させない。NG・保存はサーバーへ送らない。全期間の検索語は検索APIと配信元に送信する。Vercel Runtime Cacheはサーバーの自動設定を使用。キャッシュが使えない場合はログが出るので本番で確認する。
 
 本文リーダーは認証付きPreview専用。Vercel Authenticationを外さない。本文APIはVERCEL_ENVがpreview以外なら403になる。一般公開・Productionへ拡大する際は、本文利用条件・許諾と認証を先に確認する。APIからのデプロイはtarget=`staging`でPreviewを明示する（初回にtargetを省くとProductionになる場合がある）。
 
@@ -123,3 +123,10 @@ Runtime Cache namespaceはromnoa-discovery-v1。人気/今日10分、過去日24
 ヒントはserver/hidden-catalog.tsの確認済み語だけ。保守時は `NODE_USE_ENV_PROXY=1 npm run check:hints`（プロキシ環境の場合）で実サイトの複数ヒットを確認。CIには入れず、配信元へ不要な反復アクセスをしない。確認に失敗/2件未満なら掲載対象を見直す。件数・確認日を更新する際は実測値だけを使い、総件数/常時ヒット保証と表現しない。0/1件の候補は掲載しない。
 
 隠しメニューの解除は端末へ永続化しない。通常の履歴/保存は共通であることを画面に示す。ソース閲覧者からコード自体を隠す仕組みではない。PINの平文やブラウザ認証情報をテスト成果物へ含めない。
+
+
+## 検索結果に関係ない記事が出る場合
+
+「検索対象」を確認。タイトルのみが初期値で、本文を含む場合もおすすめリンクや広告は除く。配信元候補を無条件で表示しない。未確認件数があるときは時間をおいて更新（失敗キャッシュ1分）。0件でも「さらに過去の記事」が有効なら次の配信元検索ページを確認する。検索語が本文内のリンク文字だけの場合は保守的に一致しない。
+
+APIにscope=title|bodyを追加。bodyは認証付きPreview限定。検索テキストは独立cache romnoa-search-text-v1（正常24h/失敗60s）、本文表示v3や既存保存はクリア不要。Function maxDuration40s、ブラウザ45s、本文確認22s、1記事6s、最大6並列。期限切れや構造変更時は記事を未確認として除外し、件数をUIへ返す。新しい抽出規則の検証はtests/search-scope.test.ts、UI切替/空ページ/競合はtests/e2e/search.spec.ts。check:hintsはタイトルAND判定と見出し除外後に3件以上を必要とする。

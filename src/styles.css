@@ -2457,3 +2457,9 @@ button {
 .search-scope > span { min-width: 0; overflow-wrap: anywhere; }
 .list-heading h2 { min-width: 0; overflow-wrap: anywhere; }
 .article-search input, .my-search input, .date-filter input, .calendar-month select { font-size: 16px; }
+
+.search-target { border: 0; padding: 6px 0 0; margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0 16px; font-size: 12px; }
+.search-target legend { color: var(--muted); font-size: 11px; padding: 0; }
+.search-target label { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; cursor: pointer; }
+.search-target input { accent-color: var(--accent); width: 17px; height: 17px; }
+.search-target p { flex-basis: 100%; margin: 0 0 5px; color: var(--muted); font-size: 11px; line-height: 1.7; }

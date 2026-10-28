@@ -1,9 +1,11 @@
 import { Search, X, ArrowUpRight } from "lucide-react";
-import { validSearch } from "../lib/search-model";
+import { validSearch, type SearchScope } from "../lib/search-model";
 
 export function ArticleSearch({
   query,
   active,
+  scope,
+  onScope,
   onQuery,
   onSubmit,
   onClear,
@@ -11,6 +13,8 @@ export function ArticleSearch({
 }: {
   query: string;
   active: string;
+  scope: SearchScope;
+  onScope: (scope: SearchScope) => void;
   onQuery: (value: string) => void;
   onSubmit: () => void;
   onClear: () => void;
@@ -49,6 +53,32 @@ export function ArticleSearch({
           検索
         </button>
       </form>
+      <fieldset className="search-target">
+        <legend>検索対象</legend>
+        <label>
+          <input
+            type="radio"
+            name="search-scope"
+            value="title"
+            checked={scope === "title"}
+            onChange={() => onScope("title")}
+          />
+          タイトルのみ
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="search-scope"
+            value="body"
+            checked={scope === "body"}
+            onChange={() => onScope("body")}
+          />
+          本文を含む
+        </label>
+        <p>
+          おすすめ・関連記事リンクは対象外。本文を含む検索は確認に時間がかかります。
+        </p>
+      </fieldset>
       <div className="search-scope">
         {active ? (
           <>
@@ -59,7 +89,7 @@ export function ArticleSearch({
           </>
         ) : (
           <>
-            <span>入力するとこの一覧を絞り込みます</span>
+            <span>入力中はこの一覧のタイトルを絞り込みます</span>
             {validSearch(query) ? (
               <button className="text-button" onClick={onSubmit}>
                 過去の記事も検索

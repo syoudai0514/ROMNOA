@@ -32,7 +32,11 @@ import { MySearch } from "./components/MySearch";
 import { HiddenUnlock, HiddenSearch } from "./components/HiddenSearch";
 import { hiddenTitleAllowed, type HiddenGroups } from "./lib/hidden-model";
 import { useSearch, savedSearchCollection } from "./lib/use-search";
-import { normalizeSearch, validSearch } from "./lib/search-model";
+import {
+  normalizeSearch,
+  validSearch,
+  type SearchScope,
+} from "./lib/search-model";
 import { useDiscovery } from "./lib/use-discovery";
 import { japanDay } from "./lib/discovery-model";
 import {
@@ -87,6 +91,7 @@ export default function App() {
   const [sort, setSort] = useState<Sort>("newest");
   const [date, setDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchScope, setSearchScope] = useState<SearchScope>("title");
   const [mySearchOpen, setMySearchOpen] = useState(false);
   const [hiddenUnlock, setHiddenUnlock] = useState(false);
   const [hiddenGroups, setHiddenGroups] = useState<HiddenGroups | null>(null);
@@ -110,7 +115,7 @@ export default function App() {
     refresh: refreshFeed,
   } = useFeed();
   const searchActive = tab === "home" && !!searchTerm;
-  const pastSearch = useSearch(searchActive ? searchTerm : "");
+  const pastSearch = useSearch(searchActive ? searchTerm : "", searchScope);
   const discoveryMode =
     tab === "home" && !searchActive
       ? sort === "popular"
@@ -168,7 +173,7 @@ export default function App() {
     },
   });
   const scrollPositions = useRef<Record<string, number>>({});
-  const viewKey = `${tab}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${pastSearch.page}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
+  const viewKey = `${tab}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${searchScope}:${pastSearch.page}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
   const previousView = useRef(viewKey);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dark =
@@ -647,6 +652,11 @@ export default function App() {
                       <ArticleSearch
                         query={query}
                         active={searchTerm}
+                        scope={searchScope}
+                        onScope={(scope) => {
+                          pastSearch.reset();
+                          setSearchScope(scope);
+                        }}
                         onQuery={(value) => {
                           setQuery(value);
                           if (!value) {
@@ -736,6 +746,33 @@ export default function App() {
                   {searchActive && (
                     <div className="search-results-note" role="status">
                       <p>期間を絞らず、配信元の過去記事から検索しています。</p>
+                      <p>
+                        {searchScope === "title"
+                          ? "タイトルに検索語が含まれる記事だけを表示します。"
+                          : "タイトルと記事本文で照合しています。おすすめ欄・関連記事・広告・リンクの文字は検索対象から除外します。"}{" "}
+                        複数の語はすべて含む記事を探します。
+                      </p>
+                      {!!pastSearch.data?.excludedCount && (
+                        <p>
+                          検索語が一致しない候補 {pastSearch.data.excludedCount}
+                          件を除外しました。
+                        </p>
+                      )}
+                      {!!pastSearch.data?.unverifiedCount && (
+                        <p>
+                          本文を確認できなかった{" "}
+                          {pastSearch.data.unverifiedCount}
+                          件は表示していません。時間をおいて更新すると再確認できます。
+                        </p>
+                      )}
+                      {!loading &&
+                        pastSearch.data &&
+                        !pastSearch.data.articles.length &&
+                        !!pastSearch.data.nextSources.length && (
+                          <p>
+                            このページに一致する記事はありません。「さらに過去の記事」で続きを確認できます。
+                          </p>
+                        )}
                       <p>
                         人気順は、このページで取得できた記事のはてなブックマーク数順です。
                       </p>
