@@ -78,3 +78,17 @@ ReaderTextは画像リンクを外部aではなくImageViewerを開くbuttonと�
 X/Instagram投稿の正規URLだけをlinksから判別。メディアURLがない場合は取得不可の案内と外部リンク。公式oEmbedの調査では直接画像URLを得られず、投稿URLだけからの写真展開は実装しない。SDK/iframe・ログイン情報・非公式プロキシは使わない。CSPはimg-srcにInstagram CDN、media-srcに上記CDNを追加し、connect-src/script-srcはself、frame-srcはnoneを維持。メディアバイナリはオフライン保存しない。
 
 外部メディアへRefererを送らない。Vercelの既存Referrer-Policy: no-referrerに加え、HTMLメタで開発/別ホスト/PWAも統一する。Referer付きローカル動画要求の403と、no-referrerで実CDN再生成功を確認した。
+
+## 人気順・日付別探索（ADR 008）
+
+既存の新着APIを変えず、GET /api/discovery?mode=popular|date[&date=YYYY-MM-DD]を分離。dateモードは日付必須、popularの日付併用は現在順位と日付別記事IDの積集合。Articleの永続化スキーマは維持し、順位は別のranks配列（id/rank）で管理する。並び順はサイト別の掲載順位。フィルタ後も元の順位を保ち、人気表示中は類似記事を折りたたまない。
+
+ハムスター速報はサイト自身の人気ウィジェットが使う固定JSON URL（limit=5、rangetype=custom、range=6、画像サイズ指定は元ウィジェットと同じ）。画像データは表示しない。アルファルファモザイクは固定の自社ランキングJSに含まれるcontent.innerHTMLのJSON文字列だけをJSON.parseし、pickup_top3のheading-pickup/pickup_rankを抽出する。JavaScriptは一切実行しない。順位の欠落/重複/他ホストの記事を拒否し、表示順位やPVを推測しない。アルファ側は集計期間非公表。
+
+日付別は固定のhttps://<既知ホスト>/archives/YYYY-MM-DD.html。タイトルの日付、固定見出しと同一記事の公開日時を照合。ハムスター速報はarticle-outer/article-title/updatedのtitle、アルファはarticle/main_article_title/article_timeを使う。タイトル・URL・公開日時だけを返し、一覧の広告/本文HTML/スクリプト/画像は描画しない。最大100記事/配信元、2MB/8秒、DOM深さ120/6万ノード、リダイレクト拒否。ページ送り/上限に当たった場合はlimitedSourcesで一部取得を示す。
+
+DiscoveryServiceは配信元×人気/日付でキャッシュ・同時取得を統合。Runtime Cacheはromnoa-discovery-v1、成功値24時間保持。今日/人気は10分、過去日は24時間、失敗は1分の再試行抑制。障害時の24時間以内の最終正常値はcachedと表示し、全ソース失敗は503。APIはno-store、CDNへ個人用の探索結果を共有キャッシュしない。新着/本文の既存namespaceは維持。
+
+useDiscoveryは条件ごとのキャッシュ（端末内の最大8条件・24時間）とAbortController/条件キーで競合を防ぐ。別の日のデータを代替表示しない。DateFilterは日付確定後に取得し、日本時間・2005年以降〜今日の実在日をサーバーでも検証。日付/人気の表示位置を独立管理する。取得失敗/一部障害/一部取得/前回情報を説明する。
+
+本文APIへ任意URLの認可を追加しない。collection=popular|date:YYYY-MM-DDは検索ヒントにすぎず、対応するサーバーキャッシュが24時間以内で対象ID/配信元が完全一致した場合だけ取得。保存画面では掲載日をヒントに使い、同じ配信元の新鮮な人気キャッシュもcache-onlyで照合する。キャッシュがない/失効した場合は一覧の開き直しを案内し、指定された日付を新規に取得して認可する処理はない。既存の親記事認可・Preview限定・本文schemaVersion=3を維持する。

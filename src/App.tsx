@@ -25,6 +25,9 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { ArticleRow } from "./components/ArticleRow";
 import { Reader } from "./components/Reader";
+import { DateFilter } from "./components/DateFilter";
+import { useDiscovery } from "./lib/use-discovery";
+import { japanDay } from "./lib/discovery-model";
 import {
   articleDate,
   categories,
@@ -59,7 +62,12 @@ const categoryDescriptions: Record<string, string> = {
   話題: "思わず誰かに話したい",
 };
 
-type ReaderSelection = { articles: Article[]; index: number; from?: string };
+type ReaderSelection = {
+  articles: Article[];
+  index: number;
+  from?: string;
+  collection?: string;
+};
 
 export default function App() {
   const [initial] = useState(loadPreferences);
@@ -70,6 +78,7 @@ export default function App() {
   const [category, setCategory] = useState<Category>("すべて");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
+  const [date, setDate] = useState("");
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
   const [ngInput, setNgInput] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -78,8 +87,39 @@ export default function App() {
   const [systemDark, setSystemDark] = useState(
     () => matchMedia("(prefers-color-scheme: dark)").matches,
   );
-  const { feed, loading, error, offline, cached, storageError, refresh } =
-    useFeed();
+  const {
+    feed,
+    loading: feedLoading,
+    error: feedError,
+    offline,
+    cached: feedCached,
+    storageError: feedStorageError,
+    refresh: refreshFeed,
+  } = useFeed();
+  const discoveryMode =
+    tab === "home"
+      ? sort === "popular"
+        ? "popular"
+        : date
+          ? "date"
+          : null
+      : null;
+  const discovery = useDiscovery(discoveryMode, date);
+  const viewFeed = discoveryMode ? discovery.data : feed;
+  const loading = discoveryMode ? discovery.loading : feedLoading;
+  const error = discoveryMode ? discovery.error : feedError;
+  const cached = discoveryMode ? discovery.cached : feedCached;
+  const storageError = discoveryMode
+    ? discovery.storageError
+    : feedStorageError;
+  const refresh = discoveryMode ? discovery.refresh : refreshFeed;
+  const ranks = useMemo(
+    () =>
+      Object.fromEntries(
+        (discovery.data?.ranks || []).map((r) => [r.id, r.rank]),
+      ),
+    [discovery.data],
+  );
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
@@ -89,7 +129,7 @@ export default function App() {
     },
   });
   const scrollPositions = useRef<Record<string, number>>({});
-  const viewKey = `${tab}:${category}:${savedView}`;
+  const viewKey = `${tab}:${category}:${savedView}${discoveryMode ? `:${sort}:${date}` : ""}`;
   const previousView = useRef(viewKey);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dark =
@@ -171,7 +211,9 @@ export default function App() {
       ? savedView === "saved"
         ? prefs.saved
         : prefs.history.map((h) => h.article)
-      : all;
+      : discoveryMode
+        ? discovery.data?.articles || []
+        : all;
   const articles = useMemo(() => {
     const filtered = filterArticles(base, {
       category,
@@ -180,6 +222,7 @@ export default function App() {
       read: prefs.read,
       hiddenSources: prefs.hiddenSources,
       ngWords: prefs.ngWords,
+      ranks,
     });
     if (tab === "saved" && savedView === "history")
       return filtered.sort(
@@ -188,10 +231,10 @@ export default function App() {
           prefs.history.find((h) => h.article.id === a.id)!.at,
       );
     return filtered;
-  }, [base, category, query, sort, prefs, tab, savedView]);
+  }, [base, category, query, sort, prefs, tab, savedView, ranks]);
   const groups = useMemo(
-    () => groupArticles(articles, prefs.groupSimilar),
-    [articles, prefs.groupSimilar],
+    () => groupArticles(articles, prefs.groupSimilar && sort !== "popular"),
+    [articles, prefs.groupSimilar, sort],
   );
   const savedIds = new Set(prefs.saved.map((a) => a.id));
   const selected = selection?.articles[selection.index];
@@ -209,6 +252,8 @@ export default function App() {
     setTab(next);
     setQuery("");
     setCategory("すべて");
+    setDate("");
+    if (next !== "home" && sort === "popular") setSort("newest");
   }
   function chooseCategory(next: Category) {
     scrollPositions.current[viewKey] = window.scrollY;
@@ -236,6 +281,15 @@ export default function App() {
     setSelection({
       articles: sequence,
       index: sequence.findIndex((a) => a.id === article.id),
+      collection: discoveryMode
+        ? date
+          ? `date:${date}`
+          : "popular"
+        : tab === "saved"
+          ? article.publishedAt
+            ? `date:${japanDay(article.publishedAt)}`
+            : "popular"
+          : undefined,
     });
   }
   function toggleRead(article: Article) {
@@ -420,9 +474,9 @@ export default function App() {
                 </button>
               </div>
             )}
-            {feed?.sources.some((s) => s.status !== "ok") && (
+            {viewFeed?.sources.some((s) => s.status !== "ok") && (
               <div className="status-banner warning" role="status">
-                {feed.sources
+                {viewFeed.sources
                   .filter((s) => s.status !== "ok")
                   .map(
                     (s) =>
@@ -534,17 +588,60 @@ export default function App() {
                       </button>
                     ))}
                   </div>
+                  {tab === "home" && (
+                    <DateFilter key={date} date={date} onChange={setDate} />
+                  )}
+                  {discoveryMode && (
+                    <div className="discovery-note" role="status">
+                      {sort === "popular" ? (
+                        <>
+                          <p>
+                            配信元の現在の人気順を、サイト別に表示しています。
+                          </p>
+                          <p>
+                            ハムスター速報：直近1週間／アルファルファモザイク：掲載中のTOP6（集計期間非公表）
+                          </p>
+                          {date && (
+                            <p>
+                              {date}
+                              掲載の記事で絞り込み中。過去の人気順位ではありません。
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p>
+                          {date}
+                          （日本時間）の記事を、配信元の日付別ページから取得しています。
+                        </p>
+                      )}
+                      {discovery.data?.limitedSources.length ? (
+                        <p>
+                          配信元の一覧の一部を表示しています。全件の取得は保証していません。
+                        </p>
+                      ) : null}
+                      {cached && <p>前回取得した情報を表示しています。</p>}
+                      {error && (
+                        <button className="text-button" onClick={refresh}>
+                          この一覧を再試行
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div className="list-heading">
                     <h2>
                       {tab === "saved"
                         ? savedView === "history"
                           ? "最近読んだ記事"
                           : "保存した記事"
-                        : query
-                          ? "検索結果"
-                          : category === "すべて"
-                            ? "新着記事"
-                            : category}
+                        : sort === "popular"
+                          ? "人気記事（サイト別）"
+                          : date
+                            ? `${date}の記事`
+                            : query
+                              ? "検索結果"
+                              : category === "すべて"
+                                ? "新着記事"
+                                : category}
                       <span>{groups.length}</span>
                     </h2>
                     {!(tab === "saved" && savedView === "history") && (
@@ -558,6 +655,9 @@ export default function App() {
                           <option value="newest">新着順</option>
                           <option value="unread">未読優先</option>
                           <option value="category">カテゴリ別</option>
+                          {tab === "home" && (
+                            <option value="popular">人気順（サイト別）</option>
+                          )}
                         </select>
                       </label>
                     )}
@@ -567,8 +667,11 @@ export default function App() {
                       取得済みの記事から検索しています。
                     </p>
                   )}
-                  <div className="article-list" aria-busy={loading && !feed}>
-                    {loading && !feed ? (
+                  <div
+                    className="article-list"
+                    aria-busy={loading && !viewFeed}
+                  >
+                    {loading && !viewFeed ? (
                       <div
                         className="skeleton-list"
                         role="status"
@@ -602,12 +705,13 @@ export default function App() {
                             ? "記事のしおりをタップすると、あとで読む記事を保存できます。"
                             : "検索・カテゴリ・配信元・NGワードの設定をご確認ください。"}
                         </p>
-                        {(query || category !== "すべて") && (
+                        {(query || category !== "すべて" || date) && (
                           <button
                             className="button secondary"
                             onClick={() => {
                               setQuery("");
                               setCategory("すべて");
+                              setDate("");
                             }}
                           >
                             絞り込みを解除
@@ -626,6 +730,18 @@ export default function App() {
                     ) : (
                       groups.map((group) => (
                         <div className="article-group" key={group[0].id}>
+                          {sort === "popular" && (
+                            <div className="rank-label">
+                              <span>
+                                {
+                                  sourceInfo.find(
+                                    (s) => s.id === group[0].sourceId,
+                                  )!.name
+                                }
+                              </span>
+                              <strong>{ranks[group[0].id]}位</strong>
+                            </div>
+                          )}
                           <ArticleRow
                             article={group[0]}
                             saved={savedIds.has(group[0].id)}
@@ -673,10 +789,14 @@ export default function App() {
                       <span
                         className={`connection-dot ${offline || error ? "disconnected" : ""}`}
                       />
-                      {feed
-                        ? `${cached ? "端末キャッシュ · " : ""}${articleDate(feed.generatedAt)} 更新情報`
+                      {viewFeed
+                        ? `${cached ? "端末キャッシュ · " : ""}${articleDate(viewFeed.generatedAt)} 更新情報`
                         : "配信元の新着をお届けします"}
-                      <span>取得間隔 約10分</span>
+                      <span>
+                        {date && date !== japanDay() && sort !== "popular"
+                          ? "過去の日付は最大24時間キャッシュ"
+                          : "取得間隔 約10分"}
+                      </span>
                     </footer>
                   )}
                 </section>
@@ -733,7 +853,7 @@ export default function App() {
                     <BookOpen size={20} strokeWidth={1.4} />
                     <h3>気持ちよく、読むために。</h3>
                     <p>
-                      記事はアプリ内リーダーで開きます。広告・動画・埋め込みは表示しません。配信元のページを開く操作は任意です。
+                      記事はアプリ内リーダーで開きます。広告や外部の埋め込みを除き、記事の画像・動画を読みやすく表示します。配信元のページを開く操作は任意です。
                     </p>
                   </section>
                 </aside>
@@ -1007,6 +1127,7 @@ export default function App() {
         <Reader
           article={selected}
           from={selection.from}
+          collection={selection.collection}
           onRelated={(article) => {
             setReaderTrail((trail) => [...trail, selection].slice(-50));
             update((p) => markRead(p, article));

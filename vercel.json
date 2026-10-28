@@ -6,7 +6,8 @@
   "regions": ["hnd1"],
   "functions": {
     "api/articles.ts": { "maxDuration": 15 },
-    "api/reader.ts": { "maxDuration": 25 }
+    "api/reader.ts": { "maxDuration": 25 },
+    "api/discovery.ts": { "maxDuration": 20 }
   },
   "headers": [
     {

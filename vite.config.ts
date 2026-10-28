@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { handleArticles } from "./server/handler";
 import { handleReader } from "./server/reader";
+import { handleDiscovery } from "./server/discovery";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
@@ -11,6 +12,7 @@ const api = (): Plugin => ({
     for (const [path, handler] of [
       ["/api/articles", handleArticles],
       ["/api/reader", handleReader],
+      ["/api/discovery", handleDiscovery],
     ] as const) {
       server.middlewares.use(path, async (req, res) => {
         try {

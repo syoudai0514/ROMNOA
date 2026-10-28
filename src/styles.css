@@ -2379,3 +2379,16 @@ button {
 .social-posts .button {
   margin: 6px 0;
 }
+
+.date-filter { margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
+.date-filter form { display: flex; gap: 10px; align-items: center; }
+.date-filter label { display: flex; align-items: center; gap: 6px; font-size: 12px; white-space: nowrap; }
+.date-filter input { min-width: 0; width: 100%; max-width: 190px; min-height: 44px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; padding: 6px; font: inherit; font-size: 14px; }
+.date-filter form .button { flex-shrink: 0; padding: 8px 14px; min-height: 44px; }
+.date-shortcuts { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-top: 8px; }
+.date-shortcuts .button, .date-shortcuts .text-button { min-height: 44px; }
+.date-shortcuts > span { font-size: 11px; color: var(--muted); margin-left: auto; }
+.discovery-note { padding: 12px 14px; margin: 12px 0 16px; background: var(--soft); border-radius: 8px; color: var(--muted); font-size: 11px; line-height: 1.9; }
+.discovery-note p { margin: 3px 0; }
+.rank-label { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; padding: 14px 16px 0; }
+.rank-label strong { font-size: 13px; color: var(--green); }

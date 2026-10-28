@@ -399,7 +399,7 @@ describe("Personal article reader", () => {
     expect(load).toHaveBeenCalledTimes(1);
     await expect(
       service.get("https://hamusoku.com/archives/11999999.html"),
-    ).rejects.toThrow("確認済みの関連記事にもない");
+    ).rejects.toThrow("確認済みの一覧にない");
     expect(load).toHaveBeenCalledTimes(1);
   });
   it("cools down upstream failures and does not repeatedly hit a broken source", async () => {
@@ -478,6 +478,6 @@ describe("Personal article reader", () => {
         )
       ).status,
     ).toBe(200);
-    expect(service.get).toHaveBeenLastCalledWith(a.id, from);
+    expect(service.get).toHaveBeenLastCalledWith(a.id, from, undefined);
   });
 });

@@ -73,7 +73,7 @@ export const feedResponseSchema = z.object({
   generatedAt: z.iso.datetime(),
 });
 export type FeedResponse = z.infer<typeof feedResponseSchema>;
-export type Sort = "newest" | "unread" | "category";
+export type Sort = "newest" | "unread" | "category" | "popular";
 
 export function classify(text: string): Article["category"] {
   if (/ゲーム|ポケモン|ドラクエ|任天堂|PS5|スイッチ|モンハン/i.test(text))
@@ -110,6 +110,7 @@ export function filterArticles(
     ngWords: string[];
     sort: Sort;
     read: Record<string, number>;
+    ranks?: Record<string, number>;
   },
 ) {
   const query = options.query.normalize("NFKC").trim().toLocaleLowerCase();
@@ -117,6 +118,7 @@ export function filterArticles(
     .filter((a) => {
       const text = a.title.normalize("NFKC").toLocaleLowerCase();
       return (
+        (options.sort !== "popular" || options.ranks?.[a.id] !== undefined) &&
         !options.hiddenSources.includes(a.sourceId) &&
         (options.category === "すべて" || a.category === options.category) &&
         (!query ||
@@ -131,6 +133,12 @@ export function filterArticles(
       );
     })
     .sort((a, b) => {
+      if (options.sort === "popular")
+        return (
+          sourceInfo.findIndex((s) => s.id === a.sourceId) -
+            sourceInfo.findIndex((s) => s.id === b.sourceId) ||
+          options.ranks![a.id] - options.ranks![b.id]
+        );
       if (options.sort === "unread")
         return (
           Number(!!options.read[a.id]) - Number(!!options.read[b.id]) ||

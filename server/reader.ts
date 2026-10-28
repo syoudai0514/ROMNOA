@@ -1,4 +1,6 @@
 import { readerVideoUrl, socialPostUrl } from "../src/lib/reader-media.js";
+import { discoveryService } from "./discovery.js";
+import { validCollection } from "../src/lib/discovery-model.js";
 import { parseDocument, DomUtils } from "htmlparser2";
 import { getCache } from "@vercel/functions";
 import {
@@ -612,14 +614,22 @@ export class ReaderService {
     private feeds: Pick<FeedService, "get"> = feedService,
     private load = fetchArticle,
     private now = Date.now,
+    private discovered: Pick<
+      typeof discoveryService,
+      "findKnown"
+    > = discoveryService,
   ) {}
-  async get(id: string, from?: string): Promise<ReaderDocument> {
+  async get(
+    id: string,
+    from?: string,
+    collection?: string,
+  ): Promise<ReaderDocument> {
     if (!articleTarget(id))
       throw new ReaderError("not_found", "対応していない記事です。");
-    const key = `${id}\n${from || ""}`;
+    const key = `${id}\n${from || ""}\n${collection || ""}`;
     const pending = this.pending.get(key);
     if (pending) return pending;
-    const work = this.read(id, from);
+    const work = this.read(id, from, collection);
     this.pending.set(key, work);
     try {
       return await work;
@@ -627,7 +637,11 @@ export class ReaderService {
       this.pending.delete(key);
     }
   }
-  private async read(id: string, from?: string): Promise<ReaderDocument> {
+  private async read(
+    id: string,
+    from?: string,
+    collection?: string,
+  ): Promise<ReaderDocument> {
     let old: ReaderEntry | undefined;
     try {
       old = await this.cache.get(id);
@@ -649,6 +663,8 @@ export class ReaderService {
       );
     const feed = await this.feeds.get();
     let article = feed.articles.find((a) => a.id === id);
+    if (!article && collection && validCollection(collection, now))
+      article = await this.discovered.findKnown(id, collection);
     if (!article && from && articleTarget(from)) {
       // A client-provided parent is not proof: verify the exact link in a fresh,
       // server-extracted parent document. Do not recursively fetch supplied URLs.
@@ -671,7 +687,7 @@ export class ReaderService {
     if (!article)
       throw new ReaderError(
         "not_found",
-        "配信フィードにも、確認済みの関連記事にもない記事です。元の記事を開き直してからお試しください。",
+        "確認済みの一覧にない記事です。元の記事・人気順・日付一覧を開き直してからお試しください。",
       );
     try {
       const document = await this.load(article);
@@ -727,10 +743,15 @@ export async function handleReader(
   const params = new URL(request.url).searchParams;
   const id = params.get("article") || "";
   const from = params.get("from") || undefined;
+  const collection = params.get("collection") ?? undefined;
   if (
     params.getAll("article").length !== 1 ||
     params.getAll("from").length > 1 ||
-    [...params.keys()].some((key) => key !== "article" && key !== "from") ||
+    params.getAll("collection").length > 1 ||
+    (collection !== undefined && !validCollection(collection)) ||
+    [...params.keys()].some(
+      (key) => key !== "article" && key !== "from" && key !== "collection",
+    ) ||
     (params.has("from") &&
       (!from || from.length > 2048 || !articleTarget(from) || from === id)) ||
     id.length > 2048 ||
@@ -741,7 +762,7 @@ export async function handleReader(
       { status: 400, headers },
     );
   try {
-    return Response.json(await service.get(id, from), { headers });
+    return Response.json(await service.get(id, from, collection), { headers });
   } catch (error) {
     const problem =
       error instanceof ReaderError

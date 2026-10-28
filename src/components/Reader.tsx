@@ -27,6 +27,7 @@ export function Reader({
   onRead,
   onMove,
   from,
+  collection,
   onRelated,
   onBack,
   hiddenSources,
@@ -42,6 +43,7 @@ export function Reader({
   onRead: () => void;
   onMove: (delta: number) => void;
   from?: string;
+  collection?: string;
   onRelated: (article: Article) => void;
   onBack?: () => void;
   hiddenSources: string[];
@@ -50,7 +52,7 @@ export function Reader({
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
-  const reading = useReader(article.id, from);
+  const reading = useReader(article.id, from, collection);
   const [textFor, setTextFor] = useState<Set<string>>(() => new Set());
   const allPictures = reading.document ? readerPictures(reading.document) : [];
   const bodyPictures = allPictures.filter((b) => b.role !== "cover");

@@ -52,3 +52,12 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 - X公式oEmbed: https://publish.twitter.com/oembed （公式資料: https://developer.x.com/en/docs/x-for-websites/oembed-api ）。報告記事の公開投稿URLにomit_script=true/dnt=trueで200を確認。応答にthumbnail_urlなし、html内imgタグ0。直接画像URLを得られなかった。第三者プロキシ・非公式guest APIは利用しない。
 - Instagram公式oEmbed: https://graph.facebook.com/instagram_oembed （公式資料: https://developers.facebook.com/docs/instagram/oembed/ ）。配信元の公開記事11101860.htmlに含まれる実在投稿URLで200を確認。返却キーはversion/provider_name/provider_url/type/width/html、thumbnail_urlなし。html内imgタグ・cdninstagram URLは0。公式応答は埋込用マークアップであり、この確認では直接写真URLを得られなかった。トークン必須という未検証の説明はしない。
 - 記事に含まれるXの画像/MP4、Instagram CDNの直接URLは表示対象にする。投稿URLだけから写真や全添付メディアを展開する機能は未実装。公式ウィジェットの自動実行は採用しない。実際のInstagram CDNの写真読込は別途確認が必要で、合成fixtureの成功を実通信成功と扱わない。
+
+## 2026-10-28: 人気順と日付別の根拠
+
+- ハムスター速報のホームにpopular_rankingウィジェットを確認。公式livedoor部品 https://parts.blog.livedoor.jp/plugin/popular_articles_with_image_plugin.js?v=20130911 はrangetype=custom/range=6/count=5の設定から同サイトのarchives/popular_articles.jsonを使用する。実際の https://hamusoku.com/archives/popular_articles.json?limit=5&with_image=1&image_width=320&image_height=290&rangetype=custom&range=6 が200で5記事、url/title/created_at_ymdhm/count等を返すことを確認。順位配列だけを使用し、PVは表示しない。スクリプトは調査用に文字列として読み、実行しない。
+- アルファルファモザイクのホームから自社ウィジェット https://alfalfalfa.com/js/blogparts/pc_pop_ranking.async.js への参照を確認。200。JSON文字列内の人気記事TOP6/明示的pickup_rankが1〜6、同サイトの記事URLが6件。コメントにはPVのTOP6とあるが集計期間・各PV値は非公表のため「掲載中TOP6」と表示する。
+- 実在する日付別ページ https://hamusoku.com/archives/2026-10-20.html と https://alfalfalfa.com/archives/2026-10-20.html は双方200、ページタイトルは2026年10月20日。記事の見出しと公開日時を照合して9件/50件、計59件を取得。今回の確認ページではページ送りなし。RSSの掲載範囲にない記事も含む。架空のRSSや検索APIを追加したわけではない。
+- 上記は公開ページ/公開ウィジェットのメタデータ利用の技術的確認であり、一般公開サービスへの集約許諾を確認済みとは扱わない。既存の個人用認証Previewで検証する。
+
+- 集計期間の単位は[livedoor公式ヘルプ](https://support.livedoor.info/hc/ja/articles/9656884021903)で照合。range=6は「6=一週間分」（今日と前6日を含む）と明記される。ハムスター速報は直近1週間の順位と表示する。数値6から時間や日数を推測しない。

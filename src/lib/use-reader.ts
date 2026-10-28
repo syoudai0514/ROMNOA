@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { cacheReader, cachedReader } from "./reader-cache";
 import { readerDocumentSchema, type ReaderDocument } from "./reader-model";
 
-export function useReader(id: string, from?: string) {
+export function useReader(id: string, from?: string, collection?: string) {
   const [state, setState] = useState<{
     id: string;
     document: ReaderDocument | null;
@@ -38,7 +38,7 @@ export function useReader(id: string, from?: string) {
       }
       try {
         const response = await fetch(
-          `/api/reader?article=${encodeURIComponent(id)}${from ? `&from=${encodeURIComponent(from)}` : ""}`,
+          `/api/reader?article=${encodeURIComponent(id)}${from ? `&from=${encodeURIComponent(from)}` : ""}${collection ? `&collection=${encodeURIComponent(collection)}` : ""}`,
           { signal: abort.signal },
         );
         const value = await response.json();
@@ -85,7 +85,7 @@ export function useReader(id: string, from?: string) {
       clearTimeout(timeout);
       abort.abort();
     };
-  }, [id, from, attempt]);
+  }, [id, from, collection, attempt]);
   return {
     ...(state.id === id
       ? state
