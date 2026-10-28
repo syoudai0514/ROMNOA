@@ -4,6 +4,7 @@ import {
   readerArticleTarget,
   readerDocumentSchema,
   readerImageUrl,
+  readerImageFromLink,
   readerLinkUrl,
   type ReaderDocument,
 } from "../src/lib/reader-model.js";
@@ -312,6 +313,17 @@ export function extractArticle(
     for (let i = 0; i < clean.length; i += 12000)
       blocks.push({ type: "text", text: clean.slice(i, i + 12000) });
   };
+  const addImage = (url: string, alt = "記事内の画像", cover = false) => {
+    if (images.has(url) || images.size >= 80) return;
+    flush();
+    images.add(url);
+    blocks.push({
+      type: "image",
+      url,
+      alt: alt.slice(0, 160),
+      ...(cover ? { role: "cover" as const } : {}),
+    });
+  };
   const walk = (node: Node, depth = 0) => {
     if (depth > 120)
       throw new ReaderError(
@@ -320,6 +332,23 @@ export function extractArticle(
       );
     if (node.type === "text") {
       text += node.data;
+      // Some articles publish images as text URLs rather than img elements.
+      // Do not promote the label of an unrelated/redirecting anchor.
+      let parent = node.parent;
+      let anchored = false;
+      while (parent) {
+        if (parent.type === "tag" && parent.name === "a") anchored = true;
+        parent = parent.parent;
+      }
+      if (!anchored)
+        for (const match of node.data.matchAll(/https?:\/\/[^\s<>"']+/g)) {
+          const raw = match[0].replace(/[)\]｝）、，。.,;!?]+$/, "");
+          const image = readerImageUrl(raw, article.sourceId);
+          if (image) {
+            addImage(image);
+            if (links.size < 40) links.set(raw, { url: raw, title: raw });
+          }
+        }
       return;
     }
     if (node.type !== "tag") return;
@@ -349,6 +378,12 @@ export function extractArticle(
       const indirect = pageKind === "roundup" && !direct;
       if (url && url !== article.url && !indirect && links.size < 40)
         links.set(url, { url, title: label.slice(0, 300) });
+      const image = readerImageFromLink(url || "", article.sourceId, [label]);
+      if (
+        image &&
+        !DomUtils.findAll((el) => el.name === "img", node.children).length
+      )
+        addImage(image);
     }
     if (node.name === "br") {
       text += "\n";
@@ -396,16 +431,7 @@ export function extractArticle(
         if (selected.some((root) => root === context)) break;
         context = context.parent;
       }
-      if (!images.has(image) && images.size < 80) {
-        flush();
-        images.add(image);
-        blocks.push({
-          type: "image",
-          url: image,
-          alt: (a.alt || "記事内の画像").slice(0, 160),
-          ...(cover ? { role: "cover" as const } : {}),
-        });
-      }
+      addImage(image, a.alt || "記事内の画像", cover);
       return;
     }
     if (BLOCK_TAGS.has(node.name)) flush();

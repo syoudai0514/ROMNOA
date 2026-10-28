@@ -1,14 +1,16 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Expand, X } from "lucide-react";
 
-type Picture = { url: string; alt: string; role?: "cover" | "body" };
+export type Picture = { url: string; alt: string; role?: "cover" | "body" };
 
 function Picture({
   picture,
   onOpen,
+  eager,
 }: {
   picture: Picture;
   onOpen: () => void;
+  eager: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   return failed ? (
@@ -24,7 +26,8 @@ function Picture({
       <img
         src={picture.url}
         alt={picture.alt}
-        loading="lazy"
+        loading={eager ? "eager" : "lazy"}
+        fetchPriority={eager ? "high" : "auto"}
         decoding="async"
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
@@ -37,7 +40,7 @@ function Picture({
   );
 }
 
-function ImageViewer({
+export function ImageViewer({
   pictures,
   initial,
   onClose,
@@ -123,7 +126,11 @@ export function ArticleImages({ pictures }: { pictures: Picture[] }) {
     <section className="article-gallery" aria-label="この記事の画像">
       {pictures.map((picture, index) => (
         <figure key={picture.url}>
-          <Picture picture={picture} onOpen={() => setExpanded(index)} />
+          <Picture
+            picture={picture}
+            eager={index === 0}
+            onOpen={() => setExpanded(index)}
+          />
           <figcaption>
             {picture.role === "cover" ? "記事の見出し画像" : "記事内の画像"}{" "}
             {index + 1} / {pictures.length}

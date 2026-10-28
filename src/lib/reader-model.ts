@@ -36,6 +36,10 @@ export function readerImageUrl(raw: string, sourceId: string): string | null {
         : sourceId === "alfalfa"
           ? "amosaic"
           : "";
+    const imgurHost = ["imgur.com", "www.imgur.com", "i.imgur.com"].includes(
+      u.hostname,
+    );
+    if (imgurHost && u.protocol === "http:") u.protocol = "https:";
     if (
       !folder ||
       u.protocol !== "https:" ||
@@ -67,7 +71,12 @@ export function readerImageUrl(raw: string, sourceId: string): string | null {
         /^(?:orig|large|medium|small|thumb|[1-9]\d{0,3}x[1-9]\d{0,3})$/.test(
           u.searchParams.get("name")!,
         ));
-    if (!publisher && !socialImage) return null;
+    const imgurImage =
+      imgurHost &&
+      !u.search &&
+      /^\/[A-Za-z0-9]{5,12}\.(?:jpe?g|png|gif|webp)$/i.test(u.pathname);
+    if (!publisher && !socialImage && !imgurImage) return null;
+    if (imgurImage) u.hostname = "i.imgur.com";
     u.hash = "";
     return u.href;
   } catch {
@@ -173,3 +182,50 @@ export const readerDocumentSchema = z
     );
   });
 export type ReaderDocument = z.infer<typeof readerDocumentSchema>;
+
+export function readerImageFromLink(
+  raw: string,
+  sourceId: string,
+  hints: readonly string[] = [],
+) {
+  const direct = readerImageUrl(raw, sourceId);
+  if (direct) return direct;
+  try {
+    const u = new URL(raw);
+    if (
+      !/^https?:$/.test(u.protocol) ||
+      !["imgur.com", "www.imgur.com", "i.imgur.com"].includes(u.hostname) ||
+      u.port ||
+      u.username ||
+      u.password ||
+      u.search ||
+      !/^\/[A-Za-z0-9]{5,12}$/.test(u.pathname)
+    )
+      return null;
+    for (const hint of hints) {
+      const image = readerImageUrl(hint, sourceId);
+      if (image && image.startsWith(`https://i.imgur.com${u.pathname}.`))
+        return image;
+    }
+  } catch {
+    /* invalid URL */
+  }
+  return null;
+}
+
+// Reinterpret validated image links in existing reader caches as well as new feeds.
+// Never infer an image from an unrelated anchor's label or from a redirect target.
+export function readerPictures(document: ReaderDocument) {
+  const pictures = document.blocks
+    .filter((block) => block.type === "image")
+    .slice(0, 80);
+  const seen = new Set(pictures.map((picture) => picture.url));
+  for (const link of document.links) {
+    const url = readerImageFromLink(link.url, document.sourceId, [link.title]);
+    if (url && !seen.has(url) && pictures.length < 80) {
+      pictures.push({ type: "image", url, alt: "記事内の画像" });
+      seen.add(url);
+    }
+  }
+  return pictures;
+}

@@ -2314,3 +2314,30 @@ button {
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
+
+.inline-image-link {
+  display: inline;
+  border: 0;
+  background: none;
+  color: var(--green);
+  font: inherit;
+  text-align: left;
+  padding: 6px 0;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.reader-actions {
+  flex-wrap: wrap;
+  margin: 14px 0 8px;
+}
+.reader-source-link {
+  margin-top: 0;
+}
+.external-link-note {
+  margin: 0 0 16px;
+}
+.article-picture {
+  min-height: 150px;
+}

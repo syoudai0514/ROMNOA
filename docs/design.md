@@ -56,3 +56,13 @@ ReaderDocument v3はpageKind（article/roundup）とlinks（最大40件のURL/�
 X画像はpbs.twimg.comの/media/画像ファイル、またはformat=jpg/png/webp形式だけを許可し、nameの値・クエリ重複も検証する。外部スクリプト・埋込・プロフィール画像・任意ホストは許可しない。CSPのimg-srcへ同ホストだけを追加する。本文画像が存在する場合は見出し画像をギャラリーから除く。モザイクの除去・推測復元・画像編集は行わない。
 
 サーバーの本文namespaceはv3へ移行し、端末本文スキーマもv3を要求する。保存・既読などのメタデータは維持する。PWAはautoUpdate/skipWaitingで修正を反映し、登録時にも更新を確認する。既に開いている旧版には更新/再起動が必要な場合がある。
+
+## 本文内の画像リンク（ADR 006）
+
+本文のa要素だけでなく、アンカー外のプレーン画像URLも画像ブロックへ追加する。既存の広告/非表示/関連記事の除外を先に適用し、無関係なアンカーのラベルから画像を推測しない。同じ画像はURLで重複排除し80枚まで。
+
+imgur.com/www.imgur.com/i.imgur.comの単一ファイル（5〜12文字の英数字ID＋jpg/jpeg/png/gif/webp、クエリ・認証情報・ポートなし）をhttps://i.imgur.comへ正規化する。IDの大文字小文字を維持する。album/gallery/任意パス/SVG/取得先指定パラメータは拒否。拡張子なしのページURLは本文で同じIDの画像ファイルが確認できた場合だけ対応付ける。ImgurのHTMLや広告・SDKを読み込まず、CSPへ追加するのは画像用i.imgur.comだけ。
+
+readerPicturesは既存の本文画像と検証済みlinksから表示画像を構築する。型の変更はないためschemaVersion=3とRuntime Cache v3を維持し、既に取得した記事と親リンク認可を破棄しない。既存の端末キャッシュ内の画像リンクも自動表示する。
+
+ReaderTextは画像リンクを外部aではなくImageViewerを開くbuttonとして表示。既知の関連記事もonRelatedを通じて開く。通常の外部リンクだけをaとして残し外部記号を付ける。展開画像のインデックスと本文画像の配列を統一し、見出し画像へ誤って戻らない。最初の画像をeager/high、後続はlazyとし、元ページ/保存/既読の操作欄をまとめる。

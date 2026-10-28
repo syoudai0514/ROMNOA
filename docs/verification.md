@@ -101,3 +101,14 @@ Vercelの `romnoa` プロジェクト（Node24、hnd1、Preview認証保護）�
 - 実ブラウザの再現: Pickupギャラリー0枚→本編画像10枚、最初の画像はpbs.twimg.comから実読込（幅768px）、本文の実リンク4個、元ページリンクは11089177.html。ページ例外0、390pxで横はみ出しなし。外部要求先は配信元画像CDNとpbs.twimg.comだけ。
 - ビルド/Native Node ESMと、本番PWAのmanifest/アイコン/Service Worker/オフライン再起動/本文・保存保持の検証は成功。修正の実際のHEAD・Preview URL・クラウド確認・CIはPRと作業報告に記録する。
 - モザイクの編集・復元や、一般公開の権利条件・iPhone Safari実機確認を完了と扱わない。Preview認証を維持する。
+
+## 2026-10-28: 本文のImgurリンクが外部へ移動する問題（MEDIA01〜MEDIA04）
+
+- 開始HEAD: `2071df2a34fda41ae1dabbf63c674316a3fe80df`、ブランチfeat/romnoa-mvp、作業前の変更なし。AGENTS.mdなしを確認。
+- 報告の本編は11065781.html。公開ページでImgurの画像リンク4件を確認。既存デプロイのAPIも200で、見出し画像1枚、本文linksにはImgurのページURLとファイルURLが含まれていた。リンクを外部aで描画したことと、img要素以外を画像として扱わなかったことが原因。
+- 修正: 単一画像リンク・プレーンURLの抽出、Imgurの直接画像CDNへの正規化とCSP、同じIDの既知ファイルに限るページURLの対応付け、リンク/画像の重複排除、既存キャッシュの画像リンク再認識、本文画像URLのアプリ内拡大、既知記事リンクのアプリ内移動、最初の画像の優先読込、操作欄の集約。
+- 単体53件が成功。全39 E2Eシナリオが成功した後、拡張子のないImgurページURLのケースを追加し、モバイルChromium/WebKit・デスクトップChromiumの該当3件も成功。アサーションや待機時間の緩和なし。ビルド・Native Node ESM・本番PWA（SW、offline、保存/本文保持）も成功。最終HEADのCI結果はPR/作業報告に記録する。
+- 公開記事HTMLの実抽出データを390pxのブラウザに表示し、Imgur写真4枚がクリック不要で読込成功。実画像サイズは1109×1479、1109×1479、1479×1109、750×940。本文の画像リンクを押してアプリ内の拡大を確認。ページURLは同じ、popup 0、pageerror 0、横はみ出しなし。外部接続先はi.imgur.comと配信元画像CDNのみ。本文APIのクラウド確認は別途記録する。
+- schemaVersion=3とRuntime Cache namespaceを維持。既にユーザーが開いた記事と親記事の認可を破棄せず、保存/既読を削除しない。画像ファイル・拡張子・異なるIDを推測して探索する処理はない。
+- 日常利用は固定URL https://romnoa-syoudai1984.vercel.app/ を案内。過去のデプロイ固有URLは旧版のままであり、新版への更新先として扱わない。
+- iPhone Safari実機・一般公開の権利条件は未確認。個人用Preview認証、Production本文API拒否を維持する。

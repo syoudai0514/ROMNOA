@@ -11,6 +11,8 @@ import {
 import {
   readerDocumentSchema,
   readerImageUrl,
+  readerImageFromLink,
+  readerPictures,
   readerLinkUrl,
 } from "../src/lib/reader-model";
 import { article, feed } from "./fixtures";
@@ -21,6 +23,87 @@ const html = `<html><body><nav>サイトナビ</nav><div class="article-body-inn
 const document = () => extractArticle(html, a);
 
 describe("Personal article reader", () => {
+  it("normalizes direct Imgur image links to the static image host without changing the case-sensitive image ID", () => {
+    for (const host of ["imgur.com", "www.imgur.com", "i.imgur.com"])
+      expect(readerImageUrl(`https://${host}/Vwjr2FI.jpg`, "alfalfa")).toBe(
+        "https://i.imgur.com/Vwjr2FI.jpg",
+      );
+    expect(readerImageUrl("http://imgur.com/y4sbRgx.jpg", "alfalfa")).toBe(
+      "https://i.imgur.com/y4sbRgx.jpg",
+    );
+    for (const url of [
+      "https://imgur.com/gallery/Example",
+      "https://imgur.com/a/Example",
+      "https://imgur.com/Example",
+      "https://imgur.com.evil.test/Example.jpg",
+      "https://imgur.com/Example.svg",
+      "https://user@imgur.com/Example.jpg",
+      "https://imgur.com/Example.jpg?url=evil",
+      "https://imgur.com:8080/Example.jpg",
+    ])
+      expect(readerImageUrl(url, "alfalfa")).toBeNull();
+  });
+  it("promotes linked and plain-text image URLs into body images and deduplicates an equivalent img element", () => {
+    const d = extractArticle(
+      `<div class="article-body-inner"><p><a href="https://imgur.com/Vwjr2FI.jpg">https://imgur.com/Vwjr2FI.jpg</a></p>
+      <p>https://imgur.com/y4sbRgx.jpg</p><a href="https://i.imgur.com/Vwjr2FI.jpg"><img src="https://i.imgur.com/Vwjr2FI.jpg"></a>
+      <p><a href="https://ads.example/redirect">https://imgur.com/Hidden1.jpg</a></p>
+      <div class="advertisement"><a href="https://imgur.com/Hidden2.jpg">advert</a></div></div>`,
+      a,
+    );
+    expect(
+      d.blocks.filter((b) => b.type === "image").map((b) => b.url),
+    ).toEqual([
+      "https://i.imgur.com/Vwjr2FI.jpg",
+      "https://i.imgur.com/y4sbRgx.jpg",
+    ]);
+    expect(d.links).toContainEqual({
+      url: "https://imgur.com/y4sbRgx.jpg",
+      title: "https://imgur.com/y4sbRgx.jpg",
+    });
+    expect(readerDocumentSchema.safeParse(d).success).toBe(true);
+    expect(
+      readerDocumentSchema.safeParse({ ...d, schemaVersion: 2 }).success,
+    ).toBe(false);
+  });
+  it("shows images from already-saved v3 reader links without discarding the article or its navigation history", () => {
+    const d = readerDocumentSchema.parse({
+      ...document(),
+      blocks: [{ type: "image", url: picture, alt: "見出し", role: "cover" }],
+      links: [
+        {
+          url: "https://imgur.com/Vwjr2FI.jpg",
+          title: "https://imgur.com/Vwjr2FI.jpg",
+        },
+        { url: "https://i.imgur.com/Vwjr2FI.jpg", title: "同じ画像" },
+      ],
+    });
+    expect(readerPictures(d).map((image) => image.url)).toEqual([
+      picture,
+      "https://i.imgur.com/Vwjr2FI.jpg",
+    ]);
+    expect(d.schemaVersion).toBe(3);
+  });
+  it("resolves an Imgur page link only when a matching image file is already identified", () => {
+    expect(
+      readerImageFromLink("https://imgur.com/Vwjr2FI", "alfalfa", [
+        "https://imgur.com/Vwjr2FI.jpg",
+      ]),
+    ).toBe("https://i.imgur.com/Vwjr2FI.jpg");
+    expect(
+      readerImageFromLink("https://imgur.com/Vwjr2FI", "alfalfa", [
+        "https://i.imgur.com/Other01.jpg",
+      ]),
+    ).toBeNull();
+    expect(
+      readerImageFromLink("https://imgur.com/Vwjr2FI", "alfalfa"),
+    ).toBeNull();
+    expect(
+      readerImageFromLink("https://imgur.com/Vwjr2FI?redirect=1", "alfalfa", [
+        "https://i.imgur.com/Vwjr2FI.jpg",
+      ]),
+    ).toBeNull();
+  });
   it("recognizes Pickup pages and keeps their actual story links instead of presenting cover images as the body", () => {
     const url = "https://alfalfalfa.com/articles/11110000.html";
     const story = "https://alfalfalfa.com/articles/11089177.html";

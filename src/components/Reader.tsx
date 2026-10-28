@@ -9,9 +9,10 @@ import {
   X,
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
+import { readerPictures } from "../lib/reader-model";
 import { useReader } from "../lib/use-reader";
 import { ReaderText } from "./ReaderText";
-import { ArticleImages } from "./ArticleImages";
+import { ArticleImages, ImageViewer } from "./ArticleImages";
 
 export function Reader({
   article,
@@ -49,11 +50,18 @@ export function Reader({
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
   const reading = useReader(article.id, from);
   const [textFor, setTextFor] = useState<Set<string>>(() => new Set());
-  const allPictures =
-    reading.document?.blocks.filter((b) => b.type === "image") || [];
+  const allPictures = reading.document ? readerPictures(reading.document) : [];
   const bodyPictures = allPictures.filter((b) => b.role !== "cover");
   const pictures = bodyPictures.length ? bodyPictures : allPictures;
   const roundup = reading.document?.pageKind === "roundup";
+  const [expandedImage, setExpandedImage] = useState<{
+    articleId: string;
+    url: string;
+  } | null>(null);
+  const expandedIndex =
+    expandedImage?.articleId === article.id
+      ? pictures.findIndex((picture) => picture.url === expandedImage.url)
+      : -1;
   const related =
     reading.document?.related.filter(
       (r) =>
@@ -162,6 +170,14 @@ export function Reader({
         }
       }}
     >
+      {expandedIndex >= 0 && (
+        <ImageViewer
+          key={`${article.id}:${expandedImage!.url}`}
+          pictures={pictures}
+          initial={expandedIndex}
+          onClose={() => setExpandedImage(null)}
+        />
+      )}
       <div className="reader-inner">
         <header className="reader-toolbar">
           {onBack ? (
@@ -211,20 +227,18 @@ export function Reader({
             <span>·</span>
             {articleDate(article.publishedAt)}
           </p>
-          <a
-            className="button secondary reader-source-link"
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={rememberPosition}
-          >
-            元ページを開く
-            <ExternalLink size={16} />
-          </a>
-          <p className="external-link-note">
-            元ページや外部リンクでは広告が表示される場合があります。
-          </p>
           <div className="reader-actions">
+            <a
+              className="button secondary reader-source-link"
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="元ページを開く"
+              onClick={rememberPosition}
+            >
+              元ページ
+              <ExternalLink size={16} />
+            </a>
             <button
               className={`button secondary ${saved ? "is-saved" : ""}`}
               aria-pressed={saved}
@@ -242,6 +256,9 @@ export function Reader({
               {read ? "未読に戻す" : "既読にする"}
             </button>
           </div>
+          <p className="external-link-note">
+            元ページや外部リンクでは広告が表示される場合があります。
+          </p>
           {reading.loading && (
             <div className="reader-loading" role="status">
               <BookOpen size={28} />
@@ -319,6 +336,16 @@ export function Reader({
                           <ReaderText
                             text={block.text}
                             links={reading.document!.links}
+                            sourceId={article.sourceId}
+                            imageUrls={pictures.map((picture) => picture.url)}
+                            onImageOpen={(url) =>
+                              setExpandedImage({ articleId: article.id, url })
+                            }
+                            articles={related.map((item) => item.article)}
+                            onArticleOpen={(next) => {
+                              rememberPosition();
+                              onRelated(next);
+                            }}
                           />
                         </p>
                       ) : null,

@@ -572,3 +572,102 @@ test("Pickup title opens its real story with X photos; original-page and body li
   );
   await destination.close();
 });
+
+test("Imgur photos load without a body toggle, and inline image/article clicks stay in the app", async ({
+  page,
+}) => {
+  await fixture(page);
+  const first = feed.articles[0];
+  const next = article(92, { title: "[テスト用] 次の画像まとめ" });
+  const originals = ["PhotoA1", "PhotoB2", "PhotoC3"].map(
+    (id) => `https://imgur.com/${id}.jpg`,
+  );
+  const photos = originals.map((url) =>
+    url.replace("https://imgur.com/", "https://i.imgur.com/"),
+  );
+  const requests: string[] = [];
+  let popups = 0;
+  page.on("popup", () => popups++);
+  page.on("request", (request) => {
+    if (new URL(request.url()).hostname !== "127.0.0.1")
+      requests.push(request.url());
+  });
+  await page.route("https://i.imgur.com/**", (route) =>
+    route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="750"><rect width="600" height="750" fill="#759685"/></svg>',
+    }),
+  );
+  await page.route("**/api/reader**", (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    if (params.get("article") === next.id) {
+      expect(params.get("from")).toBe(first.id);
+      return route.fulfill({ json: readerFixture(next) });
+    }
+    return route.fulfill({
+      json: {
+        ...readerFixture(first),
+        related: [{ article: next, thumbnail: null }],
+        links: [
+          ...originals.map((url) => ({
+            url: url.replace(/\.jpg$/, ""),
+            title: url,
+          })),
+          { url: next.url, title: "次の画像まとめ" },
+        ],
+        blocks: [
+          {
+            type: "image",
+            url: "https://livedoor.blogimg.jp/hamusoku/imgs/1/2/cover.jpg",
+            alt: "紹介画像",
+            role: "cover",
+          },
+          ...photos.map((url, i) => ({
+            type: "image",
+            url,
+            alt: `本文写真${i + 1}`,
+          })),
+          { type: "text", text: originals.join("\n") + "\n次の画像まとめ" },
+        ],
+      },
+    });
+  });
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  const reader = page.getByRole("dialog");
+  const gallery = reader.getByRole("region", {
+    name: "この記事の画像",
+    exact: true,
+  });
+  await expect(gallery.locator("img")).toHaveCount(3);
+  await expect(gallery.locator("img").first()).toHaveAttribute(
+    "loading",
+    "eager",
+  );
+  await expect(gallery.locator("img").first()).toHaveJSProperty(
+    "naturalWidth",
+    600,
+  );
+  await expect(
+    reader.getByRole("button", { name: "本文も読む", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
+  await reader.getByRole("button", { name: "本文も読む", exact: true }).click();
+  const body = reader.getByRole("region", { name: "記事本文", exact: true });
+  await expect(body.locator('a[href*="imgur.com"]')).toHaveCount(0);
+  await body.getByRole("button", { name: "画像1を拡大", exact: true }).click();
+  const viewer = page.getByRole("dialog", { name: "記事画像の拡大表示" });
+  await expect(viewer.locator("img")).toHaveAttribute("src", photos[0]);
+  await viewer.getByRole("button", { name: "拡大画像を閉じる" }).click();
+  await body
+    .getByRole("button", { name: "次の画像まとめ", exact: true })
+    .click();
+  await expect(reader.getByRole("heading", { level: 1 })).toHaveText(
+    next.title,
+  );
+  expect(new URL(page.url()).hostname).toBe("127.0.0.1");
+  expect(popups).toBe(0);
+  expect(requests.every((url) => photos.includes(url))).toBe(true);
+});
