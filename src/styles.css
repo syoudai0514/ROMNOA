@@ -2392,3 +2392,68 @@ button {
 .discovery-note p { margin: 3px 0; }
 .rank-label { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; padding: 14px 16px 0; }
 .rank-label strong { font-size: 13px; color: var(--green); }
+
+.article-search { margin-bottom: 16px; }
+.search-box.search-form { padding-right: 6px; }
+.search-submit { border: 0; border-radius: 6px; background: var(--green); color: white; padding: 0 14px; min-height: 40px; font-size: 12px; flex-shrink: 0; }
+.search-submit:disabled { opacity: .4; }
+.search-scope { display: flex; flex-wrap: wrap; gap: 5px 12px; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; line-height: 1.7; margin: 6px 2px 0; }
+.search-scope .text-button { min-height: 36px; }
+.date-filter { background: var(--surface); }
+.date-filter form { gap: 6px; }
+.date-filter input { flex: 1; font-size: 13px; }
+.date-calendar-open { flex-shrink: 0; }
+.date-presets { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 12px; }
+.date-presets button, .my-search-presets button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 7px; min-height: 40px; padding: 6px 10px; font-size: 11px; }
+.date-presets button[aria-pressed="true"] { background: var(--soft); border-color: var(--green); color: var(--green); }
+.date-help { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); margin: 6px 0 0; }
+.date-help .text-button { min-height: 36px; }
+.date-picker { width: min(390px,calc(100% - 20px)); max-height: 90dvh; padding: 20px 14px max(20px,env(safe-area-inset-bottom)); border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); position: fixed; inset: auto 0 16px; margin: 0 auto; }
+.date-picker::backdrop { background: rgb(16 25 21 / .4); backdrop-filter: blur(3px); }
+.date-picker header, .my-search header { display: flex; justify-content: space-between; align-items: center; }
+.date-picker h2, .my-search h2 { font-size: 18px; font-weight: 650; margin: 6px 0 12px; }
+.calendar-month { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+.calendar-month select { background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; min-height: 44px; padding: 4px 6px; font-size: 15px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); }
+.calendar-grid .weekday { text-align: center; font-size: 11px; color: var(--muted); padding: 8px 0; }
+.calendar-grid button { min-height: 44px; border: 0; border-radius: 8px; color: var(--ink); background: transparent; font-size: 15px; }
+.calendar-grid button[aria-pressed="true"] { color: white; background: var(--green); }
+.calendar-grid .is-today { box-shadow: inset 0 0 0 1px var(--green); }
+.calendar-grid button:disabled { opacity: .25; }
+.date-picker > p { color: var(--muted); font-size: 11px; text-align: center; margin: 15px 0 0; }
+.my-search { padding: 18px; margin-bottom: 20px; border: 1px solid var(--line); background: var(--soft); border-radius: 12px; }
+.my-search > p { font-size: 12px; color: var(--muted); margin: 5px 0 14px; line-height: 1.8; }
+.my-search-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+.my-search form { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px 4px 10px; margin: 12px 0; }
+.my-search input { background: transparent; color: var(--ink); border: 0; min-width: 0; width: 100%; min-height: 44px; font-size: 13px; }
+.my-search-words { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.my-search-words > div { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 7px; }
+.my-search-words > div > button:first-child { min-height: 44px; padding: 4px 10px; color: var(--ink); background: transparent; border: 0; }
+.my-search small { font-size: 10px; color: var(--muted); line-height: 1.8; display: block; }
+.app-information { border: 0; background: transparent; color: var(--muted); text-align: left; font-size: 12px; padding: 14px 0; min-height: 44px; touch-action: manipulation; }
+.search-pagination { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 18px 0; font-size: 11px; color: var(--muted); }
+.my-search-toggle { min-height: 44px; margin: -4px 0 8px; }
+.search-results-note { padding: 12px; margin: 10px 0; color: var(--muted); background: var(--soft); border-radius: 8px; font-size: 11px; line-height: 1.8; }
+.search-results-note p { margin: 3px 0; }
+.bookmark-metric { color: var(--green); font-size: 10px; padding: 12px 16px 0; margin: 0; }
+.hidden-unlock { position: fixed; inset: 0; margin: auto; padding: 24px; width: min(340px,calc(100% - 32px)); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); }
+.hidden-unlock::backdrop { background: rgb(16 25 21 / .5); backdrop-filter: blur(4px); }
+.hidden-unlock header, .hidden-search-panel header { display: flex; align-items: center; justify-content: space-between; }
+.hidden-unlock h2, .hidden-search-panel h2 { font-size: 18px; margin: 16px 0; font-weight: 650; }
+.hidden-unlock input { width: 100%; min-height: 48px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 20px; letter-spacing: .5em; margin: 0 0 14px; }
+.hidden-unlock form .button { width: 100%; }
+.hidden-unlock [role="alert"] { font-size: 12px; margin-top: 12px; color: var(--muted); }
+.hidden-search-panel { padding: 18px; margin: 10px 0 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.hidden-search-panel > p { color: var(--muted); font-size: 11px; line-height: 1.8; }
+.hidden-word-group { margin-top: 20px; }
+.hidden-word-group h3 { font-size: 12px; margin: 0 0 10px; }
+.hidden-word-group > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.hidden-word-group button { min-height: 44px; padding: 6px 10px; font-size: 12px; border: 1px solid var(--line); background: var(--soft); color: var(--ink); border-radius: 8px; }
+.page-footer { min-height: 85px; touch-action: manipulation; }
+.hidden-word-group button small { display: block; font-size: 9px; color: var(--muted); margin-top: 4px; }
+.verified-hints { font-size: 10px; }
+.my-search-words > div { max-width: 100%; min-width: 0; }
+.my-search-words > div > button:first-child { min-width: 0; overflow-wrap: anywhere; text-align: left; }
+.search-scope > span { min-width: 0; overflow-wrap: anywhere; }
+.list-heading h2 { min-width: 0; overflow-wrap: anywhere; }
+.article-search input, .my-search input, .date-filter input, .calendar-month select { font-size: 16px; }

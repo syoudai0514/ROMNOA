@@ -5,6 +5,8 @@ import { VitePWA } from "vite-plugin-pwa";
 import { handleArticles } from "./server/handler";
 import { handleReader } from "./server/reader";
 import { handleDiscovery } from "./server/discovery";
+import { handleSearch } from "./server/search";
+import { handleHiddenSearch } from "./server/hidden-search";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
@@ -13,18 +15,52 @@ const api = (): Plugin => ({
       ["/api/articles", handleArticles],
       ["/api/reader", handleReader],
       ["/api/discovery", handleDiscovery],
+      ["/api/search", handleSearch],
+      ["/api/hidden-search", handleHiddenSearch],
     ] as const) {
       server.middlewares.use(path, async (req, res) => {
         try {
+          let body: Buffer | undefined;
+          if (req.method === "POST") {
+            const chunks: Buffer[] = [];
+            let size = 0;
+            for await (const chunk of req) {
+              const data = Buffer.from(chunk);
+              size += data.length;
+              if (size > 512) {
+                res.statusCode = 413;
+                res.end(JSON.stringify({ error: "入力が長すぎます。" }));
+                return;
+              }
+              chunks.push(data);
+            }
+            body = Buffer.concat(chunks);
+          }
           const result = await handler(
             new Request(`http://localhost${path}${req.url ?? ""}`, {
               method: req.method,
+              headers: Object.fromEntries(
+                Object.entries(req.headers).flatMap(([key, value]) =>
+                  value === undefined
+                    ? []
+                    : [[key, Array.isArray(value) ? value.join(",") : value]],
+                ),
+              ),
+              body: body?.toString("utf8"),
             }),
           );
           res.statusCode = result.status;
           result.headers.forEach((value, key) => res.setHeader(key, value));
           res.end(await result.text());
-        } catch {
+        } catch (error) {
+          console.error(
+            "ROMNOA development_api_failed",
+            path,
+            error instanceof Error ? error.name : "unknown",
+            error instanceof Error
+              ? error.stack?.split("\n").slice(1, 5).join("\n")
+              : "",
+          );
           res.statusCode = 500;
           res.end(JSON.stringify({ error: "記事を取得できませんでした。" }));
         }
@@ -34,6 +70,9 @@ const api = (): Plugin => ({
 });
 
 export default defineConfig({
+  server: {
+    watch: { awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 } },
+  },
   plugins: [
     react(),
     tailwindcss(),

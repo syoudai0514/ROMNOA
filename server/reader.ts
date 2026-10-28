@@ -1,5 +1,6 @@
 import { readerVideoUrl, socialPostUrl } from "../src/lib/reader-media.js";
 import { discoveryService } from "./discovery.js";
+import { searchService } from "./search.js";
 import { validCollection } from "../src/lib/discovery-model.js";
 import { parseDocument, DomUtils } from "htmlparser2";
 import { getCache } from "@vercel/functions";
@@ -614,10 +615,12 @@ export class ReaderService {
     private feeds: Pick<FeedService, "get"> = feedService,
     private load = fetchArticle,
     private now = Date.now,
-    private discovered: Pick<
-      typeof discoveryService,
-      "findKnown"
-    > = discoveryService,
+    private discovered: Pick<typeof discoveryService, "findKnown"> = {
+      findKnown: (id, collection) =>
+        collection.startsWith("search:")
+          ? searchService.findKnown(id, collection)
+          : discoveryService.findKnown(id, collection),
+    },
   ) {}
   async get(
     id: string,

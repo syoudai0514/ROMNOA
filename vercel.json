@@ -7,7 +7,9 @@
   "functions": {
     "api/articles.ts": { "maxDuration": 15 },
     "api/reader.ts": { "maxDuration": 25 },
-    "api/discovery.ts": { "maxDuration": 20 }
+    "api/discovery.ts": { "maxDuration": 20 },
+    "api/search.ts": { "maxDuration": 20 },
+    "api/hidden-search.ts": { "maxDuration": 10 }
   },
   "headers": [
     {

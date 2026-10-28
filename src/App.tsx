@@ -23,9 +23,16 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import type { MouseEvent } from "react";
 import { ArticleRow } from "./components/ArticleRow";
 import { Reader } from "./components/Reader";
 import { DateFilter } from "./components/DateFilter";
+import { ArticleSearch } from "./components/ArticleSearch";
+import { MySearch } from "./components/MySearch";
+import { HiddenUnlock, HiddenSearch } from "./components/HiddenSearch";
+import { hiddenTitleAllowed, type HiddenGroups } from "./lib/hidden-model";
+import { useSearch, savedSearchCollection } from "./lib/use-search";
+import { normalizeSearch, validSearch } from "./lib/search-model";
 import { useDiscovery } from "./lib/use-discovery";
 import { japanDay } from "./lib/discovery-model";
 import {
@@ -79,6 +86,12 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("newest");
   const [date, setDate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [mySearchOpen, setMySearchOpen] = useState(false);
+  const [hiddenUnlock, setHiddenUnlock] = useState(false);
+  const [hiddenGroups, setHiddenGroups] = useState<HiddenGroups | null>(null);
+  const [hiddenResult, setHiddenResult] = useState(false);
+  const blankTaps = useRef({ count: 0, at: 0 });
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
   const [ngInput, setNgInput] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -96,8 +109,10 @@ export default function App() {
     storageError: feedStorageError,
     refresh: refreshFeed,
   } = useFeed();
+  const searchActive = tab === "home" && !!searchTerm;
+  const pastSearch = useSearch(searchActive ? searchTerm : "");
   const discoveryMode =
-    tab === "home"
+    tab === "home" && !searchActive
       ? sort === "popular"
         ? "popular"
         : date
@@ -105,14 +120,38 @@ export default function App() {
           : null
       : null;
   const discovery = useDiscovery(discoveryMode, date);
-  const viewFeed = discoveryMode ? discovery.data : feed;
-  const loading = discoveryMode ? discovery.loading : feedLoading;
-  const error = discoveryMode ? discovery.error : feedError;
-  const cached = discoveryMode ? discovery.cached : feedCached;
+  const viewFeed = searchActive
+    ? pastSearch.data
+    : discoveryMode
+      ? discovery.data
+      : feed;
+  const loading = searchActive
+    ? pastSearch.loading
+    : discoveryMode
+      ? discovery.loading
+      : feedLoading;
+  const error = searchActive
+    ? pastSearch.error
+    : discoveryMode
+      ? discovery.error
+      : feedError;
+  const cached = searchActive
+    ? false
+    : discoveryMode
+      ? discovery.cached
+      : feedCached;
   const storageError = discoveryMode
     ? discovery.storageError
     : feedStorageError;
-  const refresh = discoveryMode ? discovery.refresh : refreshFeed;
+  const refresh = searchActive
+    ? pastSearch.refresh
+    : discoveryMode
+      ? discovery.refresh
+      : refreshFeed;
+  const effectiveSort =
+    searchActive && sort === "popular" && !pastSearch.data?.bookmarks
+      ? "newest"
+      : sort;
   const ranks = useMemo(
     () =>
       Object.fromEntries(
@@ -129,7 +168,7 @@ export default function App() {
     },
   });
   const scrollPositions = useRef<Record<string, number>>({});
-  const viewKey = `${tab}:${category}:${savedView}${discoveryMode ? `:${sort}:${date}` : ""}`;
+  const viewKey = `${tab}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${pastSearch.page}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
   const previousView = useRef(viewKey);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dark =
@@ -211,27 +250,48 @@ export default function App() {
       ? savedView === "saved"
         ? prefs.saved
         : prefs.history.map((h) => h.article)
-      : discoveryMode
-        ? discovery.data?.articles || []
-        : all;
+      : searchActive
+        ? pastSearch.data?.articles || []
+        : discoveryMode
+          ? discovery.data?.articles || []
+          : all;
   const articles = useMemo(() => {
     const filtered = filterArticles(base, {
       category,
-      query,
-      sort,
+      query: searchActive ? "" : query,
+      sort: effectiveSort,
       read: prefs.read,
       hiddenSources: prefs.hiddenSources,
       ngWords: prefs.ngWords,
       ranks,
+      popularity: searchActive
+        ? pastSearch.data?.bookmarks || undefined
+        : undefined,
     });
+    const visible =
+      hiddenResult && searchActive
+        ? filtered.filter((a) => hiddenTitleAllowed(a.title))
+        : filtered;
     if (tab === "saved" && savedView === "history")
-      return filtered.sort(
+      return visible.sort(
         (a, b) =>
           prefs.history.find((h) => h.article.id === b.id)!.at -
           prefs.history.find((h) => h.article.id === a.id)!.at,
       );
-    return filtered;
-  }, [base, category, query, sort, prefs, tab, savedView, ranks]);
+    return visible;
+  }, [
+    base,
+    category,
+    query,
+    effectiveSort,
+    prefs,
+    tab,
+    savedView,
+    ranks,
+    searchActive,
+    pastSearch.data,
+    hiddenResult,
+  ]);
   const groups = useMemo(
     () => groupArticles(articles, prefs.groupSimilar && sort !== "popular"),
     [articles, prefs.groupSimilar, sort],
@@ -253,6 +313,9 @@ export default function App() {
     setQuery("");
     setCategory("すべて");
     setDate("");
+    setSearchTerm("");
+    setHiddenResult(false);
+    if (next !== "home") setHiddenGroups(null);
     if (next !== "home" && sort === "popular") setSort("newest");
   }
   function chooseCategory(next: Category) {
@@ -281,15 +344,18 @@ export default function App() {
     setSelection({
       articles: sequence,
       index: sequence.findIndex((a) => a.id === article.id),
-      collection: discoveryMode
-        ? date
-          ? `date:${date}`
-          : "popular"
-        : tab === "saved"
-          ? article.publishedAt
-            ? `date:${japanDay(article.publishedAt)}`
+      collection: searchActive
+        ? pastSearch.data?.collection
+        : discoveryMode
+          ? date
+            ? `date:${date}`
             : "popular"
-          : undefined,
+          : tab === "saved"
+            ? article.publishedAt
+              ? savedSearchCollection(article.id) ||
+                `date:${japanDay(article.publishedAt)}`
+              : "popular"
+            : undefined,
     });
   }
   function toggleRead(article: Article) {
@@ -311,6 +377,28 @@ export default function App() {
     setNgInput("");
   }
   const showList = tab === "home" || tab === "saved";
+  function startSearch(value: string, hidden = false) {
+    const term = normalizeSearch(value);
+    if (!validSearch(term)) return;
+    pastSearch.reset();
+    setQuery(term);
+    setSearchTerm(term);
+    setDate("");
+    setCategory("すべて");
+    setTab("home");
+    setHiddenResult(hidden);
+  }
+  function blankTap(event: MouseEvent<HTMLElement>) {
+    if (event.target !== event.currentTarget) return;
+    const now = Date.now();
+    const taps = blankTaps.current;
+    taps.count = now - taps.at < 1500 ? taps.count + 1 : 1;
+    taps.at = now;
+    if (taps.count === 3) {
+      taps.count = 0;
+      setHiddenUnlock(true);
+    }
+  }
   return (
     <>
       <a className="skip-link" href="#main">
@@ -386,7 +474,7 @@ export default function App() {
               </button>
             </div>
           </header>
-          <main id="main" className="main-content">
+          <main onClick={blankTap} id="main" className="main-content">
             <div className="page-heading">
               <div>
                 <span className="eyebrow">
@@ -554,25 +642,79 @@ export default function App() {
                       </button>
                     </div>
                   )}
-                  <div className="search-box">
-                    <Search size={18} />
-                    <input
-                      type="search"
-                      placeholder="気になるキーワードを検索"
-                      aria-label="記事を検索"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                    {query && (
+                  {tab === "home" ? (
+                    <>
+                      <ArticleSearch
+                        query={query}
+                        active={searchTerm}
+                        onQuery={(value) => {
+                          setQuery(value);
+                          if (!value) {
+                            setSearchTerm("");
+                            setHiddenResult(false);
+                          }
+                        }}
+                        onSubmit={() => startSearch(query)}
+                        onClear={() => {
+                          setQuery("");
+                          setSearchTerm("");
+                          setHiddenResult(false);
+                        }}
+                        onLocal={() => {
+                          setQuery("");
+                          setSearchTerm("");
+                          setHiddenResult(false);
+                        }}
+                      />
                       <button
-                        className="icon-button"
-                        aria-label="検索をクリア"
-                        onClick={() => setQuery("")}
+                        className="text-button my-search-toggle"
+                        aria-expanded={mySearchOpen}
+                        onClick={() => setMySearchOpen(!mySearchOpen)}
                       >
-                        <X size={16} />
+                        マイ検索
                       </button>
-                    )}
-                  </div>
+                      {mySearchOpen && (
+                        <MySearch
+                          onSearch={(term) => startSearch(term)}
+                          onClose={() => setMySearchOpen(false)}
+                        />
+                      )}
+                      {hiddenGroups && (
+                        <HiddenSearch
+                          groups={hiddenGroups}
+                          onSearch={(term) => startSearch(term, true)}
+                          onClose={() => {
+                            setHiddenGroups(null);
+                            if (hiddenResult) {
+                              setSearchTerm("");
+                              setQuery("");
+                              setHiddenResult(false);
+                            }
+                          }}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <div className="search-box">
+                      <Search size={18} />
+                      <input
+                        type="search"
+                        placeholder="気になるキーワードを検索"
+                        aria-label="記事を検索"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                      {query && (
+                        <button
+                          className="icon-button"
+                          aria-label="検索をクリア"
+                          onClick={() => setQuery("")}
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <div
                     className="category-chips"
                     aria-label="カテゴリで絞り込み"
@@ -588,8 +730,26 @@ export default function App() {
                       </button>
                     ))}
                   </div>
-                  {tab === "home" && (
+                  {tab === "home" && !searchActive && (
                     <DateFilter key={date} date={date} onChange={setDate} />
+                  )}
+                  {searchActive && (
+                    <div className="search-results-note" role="status">
+                      <p>期間を絞らず、配信元の過去記事から検索しています。</p>
+                      <p>
+                        人気順は、このページで取得できた記事のはてなブックマーク数順です。
+                      </p>
+                      {pastSearch.data?.bookmarks === null && (
+                        <p>
+                          人気データを取得できませんでした。新着順で表示しています。
+                        </p>
+                      )}
+                      {hiddenResult && (
+                        <p>
+                          未成年を示す見出しなど、候補に適さない記事は表示から除いています。
+                        </p>
+                      )}
+                    </div>
                   )}
                   {discoveryMode && (
                     <div className="discovery-note" role="status">
@@ -619,6 +779,16 @@ export default function App() {
                           配信元の一覧の一部を表示しています。全件の取得は保証していません。
                         </p>
                       ) : null}
+                      {discovery.data?.unavailableSources.length ? (
+                        <p>
+                          {discovery.data.unavailableSources
+                            .map(
+                              (id) => sourceInfo.find((s) => s.id === id)!.name,
+                            )
+                            .join("・")}
+                          には、この日付の一覧がありません。上のキーワード検索なら全期間から探せます。
+                        </p>
+                      ) : null}
                       {cached && <p>前回取得した情報を表示しています。</p>}
                       {error && (
                         <button className="text-button" onClick={refresh}>
@@ -633,15 +803,17 @@ export default function App() {
                         ? savedView === "history"
                           ? "最近読んだ記事"
                           : "保存した記事"
-                        : sort === "popular"
-                          ? "人気記事（サイト別）"
-                          : date
-                            ? `${date}の記事`
-                            : query
-                              ? "検索結果"
-                              : category === "すべて"
-                                ? "新着記事"
-                                : category}
+                        : searchActive
+                          ? `「${searchTerm}」の検索結果`
+                          : sort === "popular"
+                            ? "人気記事（サイト別）"
+                            : date
+                              ? `${date}の記事`
+                              : query
+                                ? "検索結果"
+                                : category === "すべて"
+                                  ? "新着記事"
+                                  : category}
                       <span>{groups.length}</span>
                     </h2>
                     {!(tab === "saved" && savedView === "history") && (
@@ -656,13 +828,23 @@ export default function App() {
                           <option value="unread">未読優先</option>
                           <option value="category">カテゴリ別</option>
                           {tab === "home" && (
-                            <option value="popular">人気順（サイト別）</option>
+                            <option
+                              value="popular"
+                              disabled={
+                                searchActive &&
+                                pastSearch.data?.bookmarks === null
+                              }
+                            >
+                              {searchActive
+                                ? "人気順（ブックマーク数）"
+                                : "人気順（サイト別）"}
+                            </option>
                           )}
                         </select>
                       </label>
                     )}
                   </div>
-                  {query && (
+                  {query && !searchActive && (
                     <p className="search-note">
                       取得済みの記事から検索しています。
                     </p>
@@ -730,7 +912,7 @@ export default function App() {
                     ) : (
                       groups.map((group) => (
                         <div className="article-group" key={group[0].id}>
-                          {sort === "popular" && (
+                          {sort === "popular" && !searchActive && (
                             <div className="rank-label">
                               <span>
                                 {
@@ -741,6 +923,12 @@ export default function App() {
                               </span>
                               <strong>{ranks[group[0].id]}位</strong>
                             </div>
+                          )}
+                          {searchActive && pastSearch.data?.bookmarks && (
+                            <p className="bookmark-metric">
+                              はてなブックマーク{" "}
+                              {pastSearch.data.bookmarks[group[0].id]}件
+                            </p>
                           )}
                           <ArticleRow
                             article={group[0]}
@@ -784,6 +972,30 @@ export default function App() {
                       ))
                     )}
                   </div>
+                  {searchActive && (
+                    <nav
+                      className="search-pagination"
+                      aria-label="検索結果のページ移動"
+                    >
+                      <button
+                        className="button secondary"
+                        onClick={pastSearch.previous}
+                        disabled={loading || pastSearch.page <= 1}
+                      >
+                        前の検索結果
+                      </button>
+                      <span>{pastSearch.page}ページ目</span>
+                      <button
+                        className="button secondary"
+                        onClick={pastSearch.next}
+                        disabled={
+                          loading || !pastSearch.data?.nextSources.length
+                        }
+                      >
+                        さらに過去の記事
+                      </button>
+                    </nav>
+                  )}
                   {tab === "home" && (
                     <footer className="feed-footer">
                       <span
@@ -1100,7 +1312,7 @@ export default function App() {
                 </aside>
               </div>
             )}
-            <footer className="page-footer">
+            <footer className="page-footer" onClick={blankTap}>
               <span>
                 ROMNOA <span>—</span> Read freely.
               </span>
@@ -1123,6 +1335,17 @@ export default function App() {
           </button>
         ))}
       </nav>
+      {hiddenUnlock && (
+        <HiddenUnlock
+          onClose={() => setHiddenUnlock(false)}
+          onUnlock={(groups) => {
+            setHiddenUnlock(false);
+            setHiddenGroups(groups);
+            setTab("home");
+            window.scrollTo(0, 0);
+          }}
+        />
+      )}
       {selected && selection && (
         <Reader
           article={selected}

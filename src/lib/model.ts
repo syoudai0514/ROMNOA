@@ -111,6 +111,7 @@ export function filterArticles(
     sort: Sort;
     read: Record<string, number>;
     ranks?: Record<string, number>;
+    popularity?: Record<string, number>;
   },
 ) {
   const query = options.query.normalize("NFKC").trim().toLocaleLowerCase();
@@ -118,7 +119,9 @@ export function filterArticles(
     .filter((a) => {
       const text = a.title.normalize("NFKC").toLocaleLowerCase();
       return (
-        (options.sort !== "popular" || options.ranks?.[a.id] !== undefined) &&
+        (options.sort !== "popular" ||
+          options.ranks?.[a.id] !== undefined ||
+          options.popularity?.[a.id] !== undefined) &&
         !options.hiddenSources.includes(a.sourceId) &&
         (options.category === "すべて" || a.category === options.category) &&
         (!query ||
@@ -133,6 +136,11 @@ export function filterArticles(
       );
     })
     .sort((a, b) => {
+      if (options.sort === "popular")
+        if (options.popularity)
+          return (
+            options.popularity[b.id] - options.popularity[a.id] || newest(a, b)
+          );
       if (options.sort === "popular")
         return (
           sourceInfo.findIndex((s) => s.id === a.sourceId) -

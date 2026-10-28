@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { feedResponseSchema } from "./model.js";
+import { searchCollection } from "./search-model.js";
 
 export function japanDay(value: string | number = Date.now()) {
   const ms = typeof value === "number" ? value : Date.parse(value);
@@ -24,9 +25,19 @@ export function shiftDay(day: string, delta: number) {
     .toISOString()
     .slice(0, 10);
 }
+export function shiftMonth(day: string, delta: number) {
+  const value = new Date(`${day}T00:00:00Z`);
+  const year = value.getUTCFullYear(),
+    month = value.getUTCMonth() + delta;
+  const last = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month, Math.min(value.getUTCDate(), last)))
+    .toISOString()
+    .slice(0, 10);
+}
 export function validCollection(value: string, now = Date.now()) {
   return (
     value === "popular" ||
+    searchCollection.test(value) ||
     (value.startsWith("date:") && validDay(value.slice(5), now))
   );
 }
@@ -42,5 +53,9 @@ export const discoveryResponseSchema = feedResponseSchema.extend({
     )
     .max(20),
   limitedSources: z.array(z.enum(["hamusoku", "alfalfa"])).max(2),
+  unavailableSources: z
+    .array(z.enum(["hamusoku", "alfalfa"]))
+    .max(2)
+    .default([]),
 });
 export type DiscoveryResponse = z.infer<typeof discoveryResponseSchema>;

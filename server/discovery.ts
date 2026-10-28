@@ -40,6 +40,7 @@ const dataSchema = z.object({
     )
     .max(10),
   limited: z.boolean(),
+  unavailable: z.boolean().optional(),
 });
 const entrySchema = dataSchema.extend({
   fetchedAt: z.number(),
@@ -106,7 +107,11 @@ function article(
   sourceId: SourceId,
   publishedAt: string | null,
 ): Article | null {
-  const target = readerArticleTarget(raw);
+  // The publisher's search page decorates its direct article links with ?cate.
+  // Remove that exact empty marker; retain strict rejection of other queries.
+  const target = readerArticleTarget(
+    sourceId === "alfalfa" && raw.endsWith("?cate") ? raw.slice(0, -5) : raw,
+  );
   if (!target || target.sourceId !== sourceId || !title) return null;
   const parsed = articleSchema.safeParse({
     id: target.url,
@@ -200,17 +205,8 @@ export function parsePopular(input: string, sourceId: SourceId): DiscoveryData {
     throw new Error("invalid_popular_articles");
   return dataSchema.parse({ articles, ranks, limited: false });
 }
-export function parseDateArchive(
-  html: string,
-  sourceId: SourceId,
-  day: string,
-): DiscoveryData {
-  if (!validDay(day)) throw new Error("invalid_day");
+export function parseIndexMetadata(html: string, sourceId: SourceId) {
   const doc = document(html);
-  const title = DomUtils.findOne((el) => el.name === "title", doc.children);
-  const [y, m, d] = day.split("-").map(Number);
-  if (!title || !text(title).includes(`${y}年${m}月${d}日`))
-    throw new Error("archive_structure_changed");
   const headings = DomUtils.findAll(
     (el) =>
       hasClass(
@@ -254,8 +250,7 @@ export function parseDateArchive(
       sourceId,
       publishedAt,
     );
-    if (!a || !a.publishedAt || japanDay(a.publishedAt) !== day)
-      throw new Error("invalid_archive_article");
+    if (!a || !a.publishedAt) throw new Error("invalid_archive_article");
     articles.push(a);
   }
   const pager = DomUtils.findAll(
@@ -275,12 +270,32 @@ export function parseDateArchive(
         ).length > 0,
     );
   return {
+    doc,
     articles: [...new Map(articles.map((a) => [a.id, a])).values()].sort(
       newest,
     ),
-    ranks: [],
     limited,
   };
+}
+export function parseDateArchive(
+  html: string,
+  sourceId: SourceId,
+  day: string,
+): DiscoveryData {
+  if (!validDay(day)) throw new Error("invalid_day");
+  const parsed = parseIndexMetadata(html, sourceId);
+  const title = DomUtils.findOne(
+    (el) => el.name === "title",
+    parsed.doc.children,
+  );
+  const [y, m, d] = day.split("-").map(Number);
+  if (
+    !title ||
+    !text(title).includes(`${y}年${m}月${d}日`) ||
+    parsed.articles.some((a) => japanDay(a.publishedAt!) !== day)
+  )
+    throw new Error("archive_structure_changed");
+  return { articles: parsed.articles, ranks: [], limited: parsed.limited };
 }
 export async function fetchDiscovery(
   sourceId: SourceId,
@@ -309,6 +324,10 @@ export async function fetchDiscovery(
           : "text/html, application/javascript",
     },
   });
+  if (kind === "date" && res.status === 404) {
+    await res.body?.cancel();
+    return { articles: [], ranks: [], limited: false, unavailable: true };
+  }
   if (!res.ok || !res.body) {
     await res.body?.cancel();
     throw new Error("discovery_unavailable");
@@ -401,6 +420,7 @@ export class DiscoveryService {
           articles: usable ? old.articles : [],
           ranks: usable ? old.ranks : [],
           limited: usable ? old.limited : false,
+          unavailable: usable ? old.unavailable : false,
           fetchedAt: usable ? old.fetchedAt : 0,
           checkedAt: now,
           failed: true,
@@ -454,6 +474,7 @@ export class DiscoveryService {
           articles,
           status,
           limited: primary.entry.limited || archive?.entry.limited,
+          unavailable: primary.entry.unavailable || archive?.entry.unavailable,
         };
       }),
     );
@@ -473,6 +494,9 @@ export class DiscoveryService {
           : null,
       })),
       limitedSources: results.filter((r) => r.limited).map((r) => r.source.id),
+      unavailableSources: results
+        .filter((r) => r.unavailable)
+        .map((r) => r.source.id),
       generatedAt: new Date(this.now()).toISOString(),
     };
   }
