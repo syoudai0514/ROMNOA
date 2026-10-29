@@ -1,3 +1,4 @@
+import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
 import { getCache } from "@vercel/functions";
@@ -335,7 +336,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v5" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v6" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -426,7 +427,8 @@ export class YahooPhotoService {
           ? parseYahooPhotoMetadata(html, url)
           : photoFeatureTarget(url)
             ? parseMantanPhotoPage(html, url)
-            : await collectLinkedPhotos(html, url, this.load);
+            : (await bunshunGallery(html, url)) ||
+              (await collectLinkedPhotos(html, url, this.load));
         entry = { data, fetchedAt: now, checkedAt: now, failed: false };
       } catch {
         entry = {
