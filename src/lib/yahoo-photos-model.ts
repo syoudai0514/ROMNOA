@@ -1,3 +1,4 @@
+import { publicPhotoUrl } from "./public-photo-url.js";
 import { z } from "zod";
 import { yahooArticleUrl, yahooImageUrl } from "./yahoo-model.js";
 
@@ -25,6 +26,26 @@ export function photoFeatureTarget(raw: string, base?: string) {
     return null;
   }
 }
+export function linkedPhotoTarget(raw: string, base?: string) {
+  const mantan = photoFeatureTarget(raw, base);
+  if (mantan) return mantan;
+  const url = publicPhotoUrl(raw, base);
+  if (!url) return null;
+  const u = new URL(url);
+  // Keep the strict adapter's validation for its own hosts.
+  if (
+    /(^|\.)mantan-web\.jp$/.test(u.hostname) ||
+    u.hostname === "news.yahoo.co.jp" ||
+    (u.hash && !/^#romnoa-photo-(?:[2-9]|[1-3][0-9]|40)$/.test(u.hash))
+  )
+    return null;
+  for (const key of [...u.searchParams.keys()])
+    if (key.startsWith("utm_") || key === "in") u.searchParams.delete(key);
+  return { url: u.href, host: u.hostname, family: "", page: "" };
+}
+export function linkedImageUrl(raw: string) {
+  return publicPhotoUrl(raw);
+}
 export function mantanPhotoUrl(raw: string, family?: string) {
   try {
     const u = new URL(raw);
@@ -50,7 +71,7 @@ export const yahooPictureSchema = z.object({
   url: z
     .string()
     .max(2048)
-    .refine((s) => yahooImageUrl(s) === s || mantanPhotoUrl(s) === s),
+    .refine((s) => yahooImageUrl(s) === s || linkedImageUrl(s) === s),
   alt: z.string().max(500),
   caption: z.string().max(500).optional(),
   credit: z.string().max(200).optional(),
@@ -60,8 +81,8 @@ export const photoFeatureSchema = z.object({
   title: z.string().min(1).max(500),
   url: z
     .string()
-    .max(400)
-    .refine((s) => photoFeatureTarget(s)?.url === s),
+    .max(2048)
+    .refine((s) => linkedPhotoTarget(s)?.url === s),
 });
 export type PhotoFeature = z.infer<typeof photoFeatureSchema>;
 export function yahooPhotoImagePath(
@@ -77,7 +98,7 @@ export const photoThumbnailSchema = z.object({
   url: z
     .string()
     .max(2048)
-    .refine((s) => mantanPhotoUrl(s) === s),
+    .refine((s) => linkedImageUrl(s) === s),
 });
 const common = {
   articleId: z

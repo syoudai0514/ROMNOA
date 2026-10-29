@@ -37,7 +37,7 @@ describe("closed same-origin photo delivery", () => {
     ]);
     for (const bad of [
       { url: "http://127.0.0.1/", referer: page },
-      { url, referer: "https://evil.example/" },
+      { url, referer: "https://localhost/" },
       { url: url.replace(family, "20260903dog00m200046000a"), referer: page },
     ])
       await expect(fetchPhotoImage(bad, fetcher)).rejects.toThrow(

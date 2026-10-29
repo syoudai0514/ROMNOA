@@ -1,6 +1,9 @@
+import { fetchPublicPhoto } from "./public-photo-fetch.js";
 import { yahooArticleUrl } from "../src/lib/yahoo-model.js";
 import {
   photoFeatureTarget,
+  linkedPhotoTarget,
+  linkedImageUrl,
   mantanPhotoUrl,
 } from "../src/lib/yahoo-photos-model.js";
 import {
@@ -13,10 +16,15 @@ const LIMIT = 2_000_000;
 type ImageData = { body: Uint8Array; type: string };
 export async function fetchPhotoImage(
   source: { url: string; referer: string },
-  fetcher: typeof fetch = fetch,
+  fetcher: typeof fetch = fetchPublicPhoto,
 ): Promise<ImageData> {
-  const target = photoFeatureTarget(source.referer);
-  if (!target || !mantanPhotoUrl(source.url, target.family))
+  const target = linkedPhotoTarget(source.referer);
+  if (
+    !target ||
+    !(photoFeatureTarget(source.referer)
+      ? mantanPhotoUrl(source.url, target.family)
+      : linkedImageUrl(source.url))
+  )
     throw new PhotoAccessError("image_not_allowed");
   // Preserve the context of the document that declared this exact image. The
   // client cannot supply an upstream URL or a Referer header.
@@ -139,8 +147,8 @@ export async function handleYahooPhotoImage(
     size = p.get("size") || "full";
   if (
     yahooArticleUrl(article) !== article ||
-    photoFeatureTarget(feature)?.url !== feature ||
-    photoFeatureTarget(page)?.url !== page ||
+    linkedPhotoTarget(feature)?.url !== feature ||
+    linkedPhotoTarget(page)?.url !== page ||
     !["full", "thumb"].includes(size) ||
     [...p.keys()].some(
       (k) =>

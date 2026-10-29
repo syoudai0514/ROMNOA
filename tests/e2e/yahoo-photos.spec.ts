@@ -67,7 +67,7 @@ function gallery(feature = pageUrl(), page = feature) {
     status: "ok",
   };
 }
-async function setup(page: Page) {
+async function setup(page: Page, generic = false) {
   const requests: URLSearchParams[] = [];
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo", (r) =>
@@ -86,6 +86,28 @@ async function setup(page: Page) {
   await page.route("**/api/yahoo-photos?**", (r) => {
     const p = new URL(r.request().url()).searchParams;
     requests.push(p);
+    if (generic) {
+      const url = "https://www.j-cast.com/photo/2026/10/25518638.html?num=2";
+      const pages = [url, `${url}#romnoa-photo-2`];
+      return r.fulfill({
+        json: p.has("feature")
+          ? {
+              ...gallery(),
+              featureUrl: url,
+              pageUrl: p.get("page") || url,
+              pages,
+              picture: {
+                url: "https://www.j-cast.com/images/2.jpg",
+                alt: "写真",
+              },
+              thumbnails: pages.map((pageUrl) => ({
+                pageUrl,
+                url: "https://www.j-cast.com/images/2.jpg",
+              })),
+            }
+          : { ...meta, features: [{ title: "【画像】リンク先", url }] },
+      });
+    }
     return r.fulfill({
       json: p.has("feature")
         ? gallery(p.get("feature")!, p.get("page") || p.get("feature")!)
@@ -171,7 +193,7 @@ test("full article photo and photo feature appear inline automatically, with fiv
     .getByRole("button", { name: "写真特集", exact: true })
     .click();
   await expect(
-    feature.getByRole("heading", { name: "写真特集", exact: true }),
+    feature.getByRole("heading", { name: "リンク先の写真", exact: true }),
   ).toBeInViewport();
   expect(page.context().pages()).toHaveLength(1);
   expect(errors).toEqual([]);
@@ -300,5 +322,33 @@ test("photo failures offer retry while keeping news readable, and a failed next 
   await expect(feature.locator(".photo-feature-stage img")).toHaveAttribute(
     "src",
     display(2),
+  );
+});
+
+test("ordinary publisher links render and switch synthetic photo pages", async ({
+  page,
+}) => {
+  const requests = await setup(page, true);
+  const region = page.getByRole("region", {
+    name: "写真特集の写真",
+    exact: true,
+  });
+  await expect(
+    region.getByRole("heading", { name: "リンク先の写真" }),
+  ).toBeVisible();
+  await expect(region.locator(".photo-feature-stage img")).toHaveJSProperty(
+    "naturalWidth",
+    1106,
+  );
+  await region
+    .getByRole("button", { name: "写真特集の次の写真", exact: true })
+    .click();
+  await expect(region).toContainText("2 / 2");
+  await expect(region.locator(".photo-feature-stage img")).toHaveAttribute(
+    "src",
+    /romnoa-photo-2/,
+  );
+  expect(requests.some((p) => p.get("page")?.endsWith("#romnoa-photo-2"))).toBe(
+    true,
   );
 });

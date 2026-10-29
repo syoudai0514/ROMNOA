@@ -56,7 +56,7 @@ export function YahooPhotoFeature({
       }}
     >
       <header>
-        <h2>写真特集</h2>
+        <h2>リンク先の写真</h2>
         <span aria-live="polite">
           {index >= 0 ? `${index + 1} / ${pages.length}` : "読み込み中…"}
         </span>

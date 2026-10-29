@@ -1,9 +1,13 @@
+import { parseLinkedPhotos } from "./linked-photo-parser.js";
+import { fetchPublicPhoto } from "./public-photo-fetch.js";
 import { getCache } from "@vercel/functions";
 import { Parser } from "htmlparser2";
 import { z } from "zod";
 import { yahooArticleUrl, yahooImageUrl } from "../src/lib/yahoo-model.js";
 import {
   photoFeatureTarget,
+  linkedPhotoTarget,
+  linkedImageUrl,
   mantanPhotoUrl,
   yahooPictureSchema,
   photoFeatureSchema,
@@ -41,6 +45,7 @@ const articleDataSchema = z.object({
 const galleryDataSchema = z.object({
   kind: z.literal("gallery"),
   picture: yahooPictureSchema,
+  pictures: z.array(yahooPictureSchema).max(40).optional(),
   pages: z.array(photoFeatureSchema.shape.url).min(1).max(80),
   thumbnails: z.array(photoThumbnailSchema).max(80).default([]),
   title: z.string().max(500),
@@ -115,13 +120,27 @@ export function parseYahooPhotoMetadata(
       });
   }
   const features: PhotoFeature[] = [];
-  function add(title: unknown, raw: unknown) {
+  function add(title: unknown, raw: unknown, inline = true) {
     if (typeof raw !== "string") return;
-    const target = photoFeatureTarget(raw),
+    const target = inline ? linkedPhotoTarget(raw) : photoFeatureTarget(raw),
       label = clean(title);
     if (target && label && !features.some((f) => f.url === target.url))
       features.push({ title: label, url: target.url });
   }
+  // New Yahoo rich-body trees may omit the legacy paragraph link fields.
+  let visited = 0;
+  function visit(raw: unknown, depth = 0): string {
+    if (++visited > 10000 || depth > 80) return "";
+    const node = object(raw);
+    const text =
+      clean(node.value) ||
+      array(node.children)
+        .map((c) => visit(c, depth + 1))
+        .join("");
+    if (node.tagName === "a") add(text, object(node.attributes).href);
+    return text.slice(0, 500);
+  }
+  for (const node of array(detail.richBody)) visit(node);
   // The inline photo-feature link is the primary destination. Related links
   // follow it; ranking/ad widgets and arbitrary anchors are never traversed.
   for (const paragraph of array(detail.paragraphs).slice(0, 100)) {
@@ -137,7 +156,7 @@ export function parseYahooPhotoMetadata(
   }
   for (const raw of array(detail.relatedLink).slice(0, 20)) {
     const l = object(raw);
-    add(l.title, l.uri);
+    add(l.title, l.uri, false);
   }
   return articleDataSchema.parse({
     kind: "article",
@@ -251,9 +270,9 @@ export function parseMantanPhotoPage(
 
 export async function fetchPhotoHtml(
   url: string,
-  fetcher: typeof fetch = fetch,
+  fetcher: typeof fetch = fetchPublicPhoto,
 ) {
-  if (yahooArticleUrl(url) !== url && photoFeatureTarget(url)?.url !== url)
+  if (yahooArticleUrl(url) !== url && linkedPhotoTarget(url)?.url !== url)
     throw Error("target_not_allowed");
   const res = await fetcher(url, {
     redirect: "error",
@@ -316,7 +335,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v1" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v2" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -361,9 +380,14 @@ export class YahooPhotoService {
       const selected = await this.get(articleId, feature, page);
       if (selected.kind === "gallery") url = selected.picture.url;
     }
-    if (!url || !mantanPhotoUrl(url, photoFeatureTarget(feature)?.family))
+    if (
+      !url ||
+      !(photoFeatureTarget(feature)
+        ? mantanPhotoUrl(url, photoFeatureTarget(feature)?.family)
+        : linkedImageUrl(url))
+    )
       throw Error("image_not_available");
-    return { url, referer: thumbnail ? feature : page };
+    return { url, referer: (thumbnail ? feature : page).split("#")[0] };
   }
   private async entry(url: string): Promise<Entry> {
     const pending = this.pending.get(url);
@@ -392,7 +416,9 @@ export class YahooPhotoService {
         const html = await this.load(url);
         const data = yahooArticleUrl(url)
           ? parseYahooPhotoMetadata(html, url)
-          : parseMantanPhotoPage(html, url);
+          : photoFeatureTarget(url)
+            ? parseMantanPhotoPage(html, url)
+            : parseLinkedPhotos(html, url);
         entry = { data, fetchedAt: now, checkedAt: now, failed: false };
       } catch {
         entry = {
@@ -426,8 +452,8 @@ export class YahooPhotoService {
       throw new PhotoAccessError("invalid_article");
     if (
       (page && !feature) ||
-      (feature && photoFeatureTarget(feature)?.url !== feature) ||
-      (page && photoFeatureTarget(page)?.url !== page)
+      (feature && linkedPhotoTarget(feature)?.url !== feature) ||
+      (page && linkedPhotoTarget(page)?.url !== page)
     )
       throw new PhotoAccessError("invalid_feature");
     const meta = await this.entry(articleId),
@@ -448,7 +474,10 @@ export class YahooPhotoService {
     const selected = page || feature;
     if (!gallery.pages.includes(selected))
       throw new PhotoAccessError("page_not_linked");
-    const current = selected === feature ? first : await this.entry(selected),
+    const current =
+        selected === feature || gallery.pictures
+          ? first
+          : await this.entry(selected),
       photo = current.data!;
     if (photo.kind !== "gallery") throw Error("wrong_cache_kind");
     return yahooPhotoGallerySchema.parse({
@@ -456,7 +485,9 @@ export class YahooPhotoService {
       articleId,
       featureUrl: feature,
       pageUrl: selected,
-      picture: photo.picture,
+      picture: gallery.pictures
+        ? gallery.pictures[gallery.pages.indexOf(selected)]
+        : photo.picture,
       pages: gallery.pages,
       thumbnails: gallery.thumbnails,
       title: photo.title,
@@ -489,8 +520,8 @@ export async function handleYahooPhotos(
     page = p.get("page") || undefined;
   if (
     yahooArticleUrl(article) !== article ||
-    (feature && photoFeatureTarget(feature)?.url !== feature) ||
-    (page && (!feature || photoFeatureTarget(page)?.url !== page)) ||
+    (feature && linkedPhotoTarget(feature)?.url !== feature) ||
+    (page && (!feature || linkedPhotoTarget(page)?.url !== page)) ||
     [...p.keys()].some(
       (k) =>
         !["article", "feature", "page"].includes(k) || p.getAll(k).length !== 1,
