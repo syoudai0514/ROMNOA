@@ -87,3 +87,13 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 公開検索ページ/search?p=岡田紗佳の実HTMLでsearch.totalResults243、先頭50ニュース、広告10枠を確認。serialized search.contentsはviewType0の記事とviewType1の広告枠が混在する。タイトルだけで照合25件、短い検索抜粋を含め50件。ランキング欄に別記事があるため全文書内の全リンク抽出は使用しない。
 
 公開URLのb=51/page=2/start=51は実応答でstartIndex1・同一先頭記事のままだったため、次ページ取得として採用しない。内部/apiの呼出しを追加せず、続きは公式検索画面へ。検索サムネイルは192pxとして提供された正確なURLを使用し、未確認の高解像度URLへ置換しない。検索表示日時には年がないため年を推定しない。以上は観測時の数値で常時243件や全文検索成功を保証しない。
+
+
+## 2026-10-29 指定記事と写真特集
+
+指定Yahoo記事bbc2204d43c6ab024f4ea97bf054093be008d32dのarticleDetail.richObjectItems.viewに1083×812の元画像URIが実在。検索側の192×192のクロップとは異なる。本文最初の写真リンクはgravure.mantan-web.jp/article/20260902dog00m200045000a/photopage/001.htmlで、写真特集5ページと各サムネイルが静的HTMLに実在。現在の写真は.photo__photo--minh内の.photo__image、srcsetに1106px（2ページ目は1142px）の実URL。広告/おすすめ画像やサイトロゴと区別できる。本文の元写真と写真特集は別の画像群として表示する。
+
+公開の写真ページは通常のHTML取得で200、写真CDNの公開画像を使用する。sourceの広告script/iframeは実行せず、アクセス制限の回避を追加しない。これを一般公開・二次利用の許諾の確認結果と同一視しない。
+
+
+MANTAN storage画像は参照元なしで403（404画面）だったが、当該画像を掲載する実際の写真ページを参照元とする文脈で200 image/webpを確認。画像URLや参照元をクライアント任意入力にせず、記事と写真特集の検証済み関係からサーバーで解決する。元サイトをiframeとして表示する方式や広告scriptの実行は不要。

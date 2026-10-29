@@ -47,6 +47,32 @@ if (
   ).status !== 400
 )
   throw new Error("Native Yahoo search query rejection failed");
+const { GET: yahooPhotos } = await import(
+  new URL("api/yahoo-photos.js", output)
+);
+if (
+  (
+    await yahooPhotos(
+      new Request(
+        "http://localhost/api/yahoo-photos?article=http://127.0.0.1/",
+      ),
+    )
+  ).status !== 400
+)
+  throw new Error("Native Yahoo photo target rejection failed");
+const { GET: photoImage } = await import(
+  new URL("api/yahoo-photo-image.js", output)
+);
+if (
+  (
+    await photoImage(
+      new Request(
+        "http://localhost/api/yahoo-photo-image?url=http://127.0.0.1/",
+      ),
+    )
+  ).status !== 400
+)
+  throw new Error("Native photo image rejection failed");
 const invalidDiscovery = await discover(
   new Request("http://localhost/api/discovery?mode=date&date=2026-02-30"),
 );

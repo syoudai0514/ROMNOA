@@ -22,6 +22,12 @@
     },
     "api/yahoo-search.ts": {
       "maxDuration": 20
+    },
+    "api/yahoo-photos.ts": {
+      "maxDuration": 30
+    },
+    "api/yahoo-photo-image.ts": {
+      "maxDuration": 30
     }
   },
   "headers": [

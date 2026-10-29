@@ -164,3 +164,15 @@ APIのrankingBasis/bookmarks/partialSources/collectionを確認。集合署名�
 /api/yahoo-search?q=&scope=title|summary、Preview限定、maxDuration20秒・ブラウザ15秒。公開検索HTML8秒/2MB、固定ホストのみ。Yahoo内部/apiやログイン・CAPTCHAの回避は実装しない。取得失敗503は正常0件とは区別し、cache romnoa-yahoo-search-v1の1分backoff後に再試行。前回成功24h以内ならcached表示。外部サイトの構造が変わった場合は構造検証失敗として止める。本文取得・全文配信の機能追加ではない。
 
 「個人用でも必ず許諾が必要」とは説明しない。[文化庁の私的使用の説明](https://pf.bunka.go.jp/chosaku/1tyosaku/kyouiku/sidoujireishu/index.html)と[Yahooの二次利用案内](https://support.yahoo-net.jp/PccNews/s/article/H000006460)を区別する。具体的なサーバー利用が私的複製の例外に当たるかを一律に断定しない。
+
+
+## Yahoo原画像・MANTAN写真特集
+
+指定記事で大きい元写真と、その直下の写真特集が自動表示されることを確認。写真一覧の各サムネイル・前後・スワイプ・拡大、ほかの写真特集、上部の「ニュースへ」で元ニュースに戻れることを確認する。広告/ランキング画像は表示しない。外部ブラウザの広告ブロック設定を操作して直す方式ではない。
+
+/api/yahoo-photos はPreview限定GET、article/feature/pageの重複・未知パラメータを拒否。Yahoo記事と、そこに実在するMANTAN特集・特集に実在する写真ページだけを取得。Yahoo画像はCDN直接、MANTANは出典ページを確認する専用画像APIで読み込む。画像URLの失効や提供終了時には再試行/元ページを案内。Runtime Cache romnoa-yahoo-photos-v1（1h成功/1m失敗/24h最終成功）、reader v3は消さない。HTMLの広告scriptを実行したりアクセス制限・CAPTCHAを迂回しない。
+
+新しく対応する出版社は、URL規則/画像ドメイン/特集と本文の紐づけ/広告除外/利用条件を確認し、正本と受入テストを同時に追加。一般公開へ変更する権利・認証の確認は別であり、この変更では既存の個人用Preview認証を維持する。
+
+
+特集画像が403になる場合は、写真メタデータの応答と/api/yahoo-photo-imageの応答を分けて確認。専用APIはURLを受けず、親記事/特集/写真ページに実在する画像だけを解決し、出典ページの読み込み文脈を維持する。画像2MB/8秒、private/no-store方針とMIME検証を守る。プロセス内画像cacheは32枚/16MB/1h。任意URL・任意参照元の受入、Cookieや認証情報の転送、アクセス制限を解除する仕組みには拡張しない。

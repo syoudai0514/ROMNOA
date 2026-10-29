@@ -22,6 +22,9 @@ import {
 import { ArticleImages } from "./ArticleImages";
 import { useYahooSearch } from "../lib/use-yahoo-search";
 import { normalizeSearch, validSearch } from "../lib/search-model";
+import { useYahooPhotos } from "../lib/use-yahoo-photos";
+import type { PhotoFeature } from "../lib/yahoo-photos-model";
+import { YahooPhotoFeature } from "./YahooPhotoFeature";
 
 const STORE = "romnoa:yahoo-library:v1";
 const FEED = "romnoa:yahoo-feed:v1";
@@ -571,6 +574,20 @@ function YahooReader({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const photos = useRef<HTMLDivElement>(null);
+  const featureSection = useRef<HTMLDivElement>(null);
+  const newsHeading = useRef<HTMLHeadingElement>(null);
+  const restoring = useRef(false);
+  const mediaRequest = useYahooPhotos(article.id);
+  const media =
+    mediaRequest.resource?.kind === "article" ? mediaRequest.resource : null;
+  const [chosenFeature, setChosenFeature] = useState<PhotoFeature | null>(null);
+  const feature = chosenFeature || media?.features[0];
+  const fullPictures = media?.pictures || [];
+  function jump(element: HTMLElement | null) {
+    restoring.current = false;
+    element?.scrollIntoView({ block: "start" });
+  }
   useLayoutEffect(() => {
     const element = dialog.current!;
     const previous = document.body.style.overflow;
@@ -584,14 +601,14 @@ function YahooReader({
       /* optional */
     }
     content.current!.scrollTop = y;
-    let restore = y > 0;
+    restoring.current = y > 0;
     const node = content.current!;
     const observer = new ResizeObserver(() => {
-      if (restore) node.scrollTop = y;
+      if (restoring.current) node.scrollTop = y;
     });
     observer.observe(node.firstElementChild!);
     const finish = () => {
-      restore = false;
+      restoring.current = false;
     };
     node.addEventListener("touchstart", finish, { passive: true });
     node.addEventListener("wheel", finish, { passive: true });
@@ -613,7 +630,7 @@ function YahooReader({
   return (
     <dialog
       ref={dialog}
-      className={`reader yahoo-reader ${article.origin === "search" ? "yahoo-search-reader" : ""}`}
+      className={`reader yahoo-reader ${fullPictures.length ? "has-full-photos" : article.origin === "search" ? "yahoo-search-reader" : ""}`}
       aria-labelledby="yahoo-reader-title"
       onCancel={(e) => {
         e.preventDefault();
@@ -639,19 +656,84 @@ function YahooReader({
             <X size={21} />
           </button>
         </header>
+        {!!feature && (
+          <nav className="yahoo-detail-sections" aria-label="ニュース内の移動">
+            <button onClick={() => jump(photos.current)}>記事の写真</button>
+            <button onClick={() => jump(featureSection.current)}>
+              写真特集
+            </button>
+            <button onClick={() => jump(newsHeading.current)}>
+              ニュースへ
+            </button>
+          </nav>
+        )}
         <div className="reader-content" ref={content}>
           <div>
-            {article.image && (
-              <ArticleImages
-                pictures={[
-                  { url: article.image, alt: article.title, role: "cover" },
-                ]}
-              />
+            <div ref={photos} className="yahoo-photo-section">
+              {fullPictures.length ? (
+                <>
+                  <ArticleImages
+                    key="full-article-photos"
+                    pictures={fullPictures.map((p) => ({
+                      url: p.url,
+                      alt: p.alt || article.title,
+                      role: "cover",
+                    }))}
+                  />
+                  {fullPictures.some((p) => p.caption || p.credit) && (
+                    <p className="yahoo-note photo-credit">
+                      {fullPictures
+                        .map((p) =>
+                          [p.caption, p.credit].filter(Boolean).join(" / "),
+                        )
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
+                </>
+              ) : (
+                article.image && (
+                  <ArticleImages
+                    pictures={[
+                      { url: article.image, alt: article.title, role: "cover" },
+                    ]}
+                  />
+                )
+              )}
+              {mediaRequest.loading && (
+                <p className="yahoo-note" role="status">
+                  記事の大きい写真と写真特集を確認中…
+                </p>
+              )}
+              {mediaRequest.error && (
+                <p className="yahoo-note" role="status">
+                  {mediaRequest.error}
+                  <button className="text-button" onClick={mediaRequest.retry}>
+                    写真情報を再取得
+                  </button>
+                </p>
+              )}
+              {media?.status === "cached" && (
+                <p className="yahoo-note" role="status">
+                  前回確認した写真情報を表示しています。
+                </p>
+              )}
+            </div>
+            {feature && (
+              <div ref={featureSection} className="yahoo-feature-section">
+                <YahooPhotoFeature
+                  key={feature.url}
+                  articleId={article.id}
+                  feature={feature}
+                />
+              </div>
             )}
             <span className="pill">
               {yahooCategories.find((c) => c.id === article.category)?.label}
             </span>
-            <h1 id="yahoo-reader-title">{article.title}</h1>
+            <h1 id="yahoo-reader-title" ref={newsHeading}>
+              {article.title}
+            </h1>
             <p className="reader-byline">
               Yahoo!ニュース {article.provider ? ` / ${article.provider}` : ""}{" "}
               · {article.displayDate || articleDate(article.publishedAt)}
@@ -670,9 +752,11 @@ function YahooReader({
               </p>
             </section>
             <p className="yahoo-note">
-              {article.origin === "search"
-                ? "検索結果に表示されているサムネイルと抜粋です。全文・記事内の写真は元記事でご確認ください。"
-                : "ここまでが公式RSSで配信された記事冒頭です。全文は元記事でご確認ください。"}
+              {fullPictures.length
+                ? "記事側で確認した写真を表示しています。写真特集もこの画面で閲覧できます。"
+                : article.origin === "search"
+                  ? "検索結果に表示されているサムネイルと抜粋です。全文・記事内の写真は元記事でご確認ください。"
+                  : "ここまでが公式RSSで配信された記事冒頭です。全文は元記事でご確認ください。"}
             </p>
             <div className="reader-actions">
               <a
@@ -693,6 +777,28 @@ function YahooReader({
                 {saved ? "保存済み" : "あとで読む"}
               </button>
             </div>
+            {!!media?.features.length && (
+              <section
+                className="yahoo-photo-features"
+                aria-label="この記事の写真特集"
+              >
+                <h2>ほかの写真特集</h2>
+                {media.features.map((f) => (
+                  <button
+                    className="yahoo-related"
+                    key={f.url}
+                    aria-pressed={feature?.url === f.url}
+                    onClick={() => {
+                      setChosenFeature(f);
+                      jump(featureSection.current);
+                    }}
+                  >
+                    <span>{f.title}</span>
+                    <ArrowRight size={16} />
+                  </button>
+                ))}
+              </section>
+            )}
             <p className="yahoo-note">
               元記事では広告が表示される場合があります。Safariでは対応する記事でページメニューからリーダー表示を利用できます。
             </p>

@@ -48,6 +48,18 @@ const response = {
 async function setup(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo", (r) => r.fulfill({ json: response }));
+  await page.route("**/api/yahoo-photos?**", (r) =>
+    r.fulfill({
+      json: {
+        kind: "article",
+        articleId: new URL(r.request().url()).searchParams.get("article"),
+        pictures: [],
+        features: [],
+        status: "ok",
+        fetchedAt: new Date().toISOString(),
+      },
+    }),
+  );
   await page.route("**/api/yahoo-search?**", (r) => {
     const params = new URL(r.request().url()).searchParams,
       q = params.get("q")!,

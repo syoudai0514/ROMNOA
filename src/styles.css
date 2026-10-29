@@ -2530,3 +2530,25 @@ button {
 .yahoo-reader .reader-footer > span { font-size: 10px; color: var(--muted); }
 
 .yahoo-search-reader .article-gallery { max-width: 192px; margin-left: auto; margin-right: auto; }
+.yahoo-reader.has-full-photos .article-gallery { max-width: none; width: 100%; }
+.yahoo-detail-sections { display: flex; flex-shrink: 0; justify-content: space-around; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.yahoo-detail-sections button { min-height: 44px; padding: 8px 12px; font-size: 12px; color: var(--green); }
+.inline-photo-feature { padding: 16px 0 20px; margin: 16px 0 24px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.inline-photo-feature > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.inline-photo-feature h2, .yahoo-photo-features h2 { font-size: 16px; margin: 0; }
+.inline-photo-feature header > span { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.photo-feature-title { font-size: 12px; line-height: 1.6; margin: 8px 0 14px; color: var(--muted); }
+.photo-feature-stage { touch-action: pan-y; min-height: 180px; }
+.photo-feature-stage figure { margin: 0; }
+.photo-feature-stage img { width: 100%; max-height: 62dvh; object-fit: contain; }
+.photo-feature-stage figcaption { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 6px 0 10px; }
+.photo-feature-navigation { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.photo-feature-navigation .button { min-height: 44px; font-size: 12px; padding: 8px 12px; }
+.photo-feature-navigation > span { font-size: 11px; color: var(--muted); }
+.photo-feature-thumbnails { display: flex; overflow-x: auto; gap: 8px; margin-top: 12px; padding: 3px; }
+.photo-feature-thumbnails button { width: 64px; height: 64px; flex-shrink: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; }
+.photo-feature-thumbnails button[aria-pressed="true"] { border-color: var(--green); }
+.photo-feature-thumbnails img { width: 100%; height: 100%; object-fit: cover; }
+.photo-feature-error { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.photo-feature-error .text-button { display: inline-flex; gap: 5px; min-height: 44px; margin: 8px; align-items: center; }
+.yahoo-photo-features { margin-top: 22px; }

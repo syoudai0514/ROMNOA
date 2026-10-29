@@ -8,6 +8,8 @@ import { handleDiscovery } from "./server/discovery";
 import { handleSearch } from "./server/search";
 import { handleYahoo } from "./server/yahoo";
 import { handleYahooSearch } from "./server/yahoo-search";
+import { handleYahooPhotos } from "./server/yahoo-photos";
+import { handleYahooPhotoImage } from "./server/yahoo-photo-image";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
@@ -19,6 +21,8 @@ const api = (): Plugin => ({
       ["/api/search", handleSearch],
       ["/api/yahoo", handleYahoo],
       ["/api/yahoo-search", handleYahooSearch],
+      ["/api/yahoo-photos", handleYahooPhotos],
+      ["/api/yahoo-photo-image", handleYahooPhotoImage],
     ] as const) {
       server.middlewares.use(path, async (req, res) => {
         try {
@@ -36,7 +40,7 @@ const api = (): Plugin => ({
           );
           res.statusCode = result.status;
           result.headers.forEach((value, key) => res.setHeader(key, value));
-          res.end(await result.text());
+          res.end(Buffer.from(await result.arrayBuffer()));
         } catch (error) {
           console.error(
             "ROMNOA development_api_failed",
@@ -61,7 +65,10 @@ const api = (): Plugin => ({
 
 export default defineConfig({
   server: {
-    watch: { awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 } },
+    watch: {
+      awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
+      ignored: ["**/playwright-report/**", "**/test-results/**"],
+    },
   },
   plugins: [
     react(),

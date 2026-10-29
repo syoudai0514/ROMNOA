@@ -163,3 +163,21 @@ Yahoo検索タブで確定した語は/api/yahoo-search?q=&scope=title|summary�
 YahooArticleへoptional origin=search/displayDate/providerを追加し既存RSS保存との互換を維持。検索用日時は年がないためpublishedAt=null、元の表示文字をdisplayDateへ。検索結果の掲載順を維持し、年月を捏造してソートしない。検索由来はサムネイル最大192px/検索抜粋として表示、RSSの原画像・記事本文とは区別。既存allowlistの画像ホストのみ、記事URLを新たな本文取得権限にはしない。
 
 YahooSearchServiceはqのSHA256をキーに、Runtime Cache romnoa-yahoo-search-v1（10分成功/1分失敗/24時間最終成功）、local128件・同一要求共有。scopeは同じ候補を再利用。Previewのみ、GET/80文字/既知scope/重複・未知パラメータ拒否。失敗を空の正常応答で返さない。本文v3と既存RSScacheは変更しない。
+
+
+## 記事原画像とMANTAN写真特集（ADR016）
+
+YahooReaderは/api/yahoo-photos?article=<canonical Yahoo URL>で写真メタデータを取得し、articleDetail.contentId/newsLinkの一致、richObjectItems.view.uriを検証して表示する。検索192pxクロップを推測で拡大しない。paragraphs.textDetails.linkの特集を先頭に、relatedLinkの対応フォトページを続ける。本文文章は保存/応答に含めず、ランキング/広告stateは対象外。
+
+主な写真特集をYahooPhotoFeatureとして記事画像の直下に自動表示。別ダイアログ/外部ブラウザは必須でない。特集の親URLをfeature、写真一覧内のURLをpageとして同じAPIへ渡す。サーバーは親記事にfeatureが存在し、最初の特集ページで取得した写真一覧にpageが存在することを確認する。MANTANの現在写真.photo__photo--minh内の.photo__imageを読み、srcsetの実在する最大画像URLを選択。同特集IDのphoto__photolist-itemと画像だけをサムネイル一覧へ。広告/関連/非表示要素を除外し、連番画像やURLを推測生成しない。
+
+固定URL検証: Yahooの40hex記事URL、MANTAN2ホストのarticle/<date-dog-id>/photopage/<3digits>.html、storage.mantan-web.jpの同特集ID画像のみ。tracking ext_m=yだけ除去。任意URL/host/credentials/port/redirectを拒否、HTML2MB/8秒/深さ160/要素60000、写真一覧80/特集12/記事画像40。Previewのみ、Function30秒/ブラウザ25秒。CSPはstorage.mantan-web.jpをimg-srcへ追加、script/frame/connectは広げない。
+
+YahooPhotoServiceは専用Runtime Cache romnoa-yahoo-photos-v1、正常1時間/失敗1分/最後の成功24時間、メモリ120件・同一URLの要求共有。写真ページの取得は選択したものだけ。ブラウザは写真URLメタデータをメモリ100件/1時間保持。MANTAN画像は/api/yahoo-photo-imageの閉じた配信を使用し、独自DB/Blobへ保存しない。既存reader v3キャッシュを変更しない。
+
+写真特集は左右スワイプ/前後/サムネイル/拡大に対応し、原画像とキャプション・出典を維持。「記事の写真／写真特集／ニュースへ」をReaderのスクロール領域の外へ配置、長い写真一覧でもニュースへ直接移動できる。画像取得失敗は再試行と元写真ページへの明示リンクを表示し、失敗した写真の代わりに前の写真を現在画像として表示しない。
+
+
+MANTAN画像配信は、ブラウザからCDNへ参照元なしで取得すると403の404画面を返すが、画像が明示された写真ページの文脈を保つ通常の画像取得では200になることを実通信で確認した。/api/yahoo-photo-image?article=&feature=&page=&size=full|thumbは、YahooPhotoServiceで記事/特集/写真一覧への所属を毎回確認し、サーバーが取得済みの正確な画像URLと参照ページだけを解決。クライアントは任意URL/Refererを入力できない。出典ページをRefererとして使い、実在するsrc/srcsetの画像を取得する。ログイン/認証情報/ユーザーのCookieやUA偽装は使わない。
+
+画像は8秒/2MB/redirect:error、JPEG/PNG/WebP/GIFだけ許可し、HTML/SVGを返さない。Preview限定、nosniff/CORP same-origin、private max-age3600、Vercel CDN no-store。プロセス内の画像キャッシュ32枚/16MB/1時間・同一要求共有、永続画像ストレージは追加しない。Yahoo見出し写真の既存no-referrerは維持する。
