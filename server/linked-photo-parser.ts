@@ -184,6 +184,119 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
       if (page) linkedPages.add(page);
     }
   }
+  // A declared thumbnail roster can describe many photos on one document.
+  // Match it against the article's structured image list; ignore every other
+  // linked image, recommendation and publisher logo.
+  const base = new URL(pageUrl);
+  const lists = DomUtils.findAll(
+    (n) =>
+      (n.name === "ul" || n.name === "div") &&
+      /thumb/i.test(n.attribs.class || ""),
+    doc.children,
+  );
+  const scripts = DomUtils.findAll(
+    (n) => n.name === "script" && n.attribs.type === "application/ld+json",
+    doc.children,
+  );
+  for (const list of lists) {
+    const roster = DomUtils.findAll((n) => n.name === "a", list.children)
+      .map((a) => {
+        const link = publicPhotoUrl(a.attribs.href || "", pageUrl);
+        const img = DomUtils.findOne((n) => n.name === "img", a.children);
+        const src =
+          img &&
+          publicPhotoUrl(
+            img.attribs.src || img.attribs["data-src"] || "",
+            pageUrl,
+          );
+        if (!link || !src) return null;
+        const u = new URL(link);
+        if (
+          u.origin !== base.origin ||
+          u.pathname !== base.pathname ||
+          !u.searchParams.get("p")
+        )
+          return null;
+        return {
+          id: u.searchParams.get("p"),
+          src,
+          alt: img?.attribs.alt || "",
+        };
+      })
+      .filter(
+        (v): v is { id: string; src: string; alt: string } =>
+          !!v?.id && !!v.src,
+      );
+    if (
+      roster.length < 2 ||
+      roster.length > 40 ||
+      new Set(roster.map((r) => r.id)).size !== roster.length
+    )
+      continue;
+    for (const script of scripts) {
+      let data: any;
+      try {
+        data = JSON.parse(DomUtils.textContent(script));
+      } catch {
+        continue;
+      }
+      if (
+        !data ||
+        !["NewsArticle", "Article"].includes(data["@type"]) ||
+        !Array.isArray(data.image)
+      )
+        continue;
+      const images = data.image
+        .map((item: any) =>
+          publicPhotoUrl(
+            typeof item === "string" ? item : item?.url || "",
+            pageUrl,
+          ),
+        )
+        .filter(Boolean) as string[];
+      const stem = (url: string) =>
+        new URL(url).pathname.replace(/_\d+px(?=\.[a-z]+$)/i, "");
+      const matches = roster.map((r) =>
+        images.find(
+          (url) =>
+            new URL(url).origin === new URL(r.src).origin &&
+            stem(url) === stem(r.src),
+        ),
+      );
+      const current = roster.findIndex(
+        (r) => r.id === base.searchParams.get("p"),
+      );
+      if (
+        current < 0 ||
+        matches.some((url) => !url) ||
+        new Set(matches).size !== roster.length
+      )
+        continue;
+      const ordered = matches.map((url, i) => ({
+        url: url!,
+        alt: roster[i].alt.slice(0, 500),
+        caption: roster[i].alt.slice(0, 500),
+      }));
+      const rosterPages = ordered.map((_, i) =>
+        i === current
+          ? pageUrl
+          : `${pageUrl}#romnoa-photo-${i < current ? i + 2 : i + 1}`,
+      );
+      return {
+        kind: "gallery" as const,
+        picture: ordered[current],
+        pictures: ordered,
+        pages: rosterPages,
+        thumbnails: roster.map((r, i) => ({
+          pageUrl: rosterPages[i],
+          url: r.src,
+        })),
+        title,
+        linkedPages: [] as string[],
+        hasPrimaryPhoto: true,
+      };
+    }
+  }
   const pages = pictures.map((_, i) =>
     i ? `${pageUrl}#romnoa-photo-${i + 1}` : pageUrl,
   );

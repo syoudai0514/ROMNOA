@@ -178,3 +178,36 @@ describe("scoped multi-page galleries", () => {
     ).rejects.toThrow("failed");
   });
 });
+
+describe("gallery with a verified thumbnail roster", () => {
+  const feature =
+    "https://yorozoonews.jp/article/16991264?p=31481228&ro=16991264&ri=0";
+  const html = readFileSync(
+    new URL("./fixtures/yoro-gallery.html", import.meta.url),
+    "utf8",
+  );
+  it("matches all 18 declared full-size photos to the article's thumbnail links", async () => {
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) => (url === article ? metadata(feature) : html),
+    );
+    const gallery = await service.get(article, feature);
+    if (gallery.kind !== "gallery") throw Error("gallery");
+    expect(gallery.pages).toHaveLength(18);
+    expect(gallery.thumbnails).toHaveLength(18);
+    expect(gallery.pages.indexOf(feature)).toBe(1);
+    expect(new Set(gallery.pages).size).toBe(18);
+    for (const p of gallery.pages) {
+      const source = await service.imageSource(article, feature, p, false);
+      expect(source.url).toMatch(/^https:\/\/p\.potaufeu\.asahi\.com\//);
+      expect(source.url).not.toMatch(/_200px/);
+    }
+  });
+  it("rejects an unrelated structured image that has no matching thumbnail", () => {
+    const changed = html.replace(
+      "8758e5a6cbb371c51fafca6548b7ea87.jpg",
+      "unrelated.jpg",
+    );
+    expect(parseLinkedPhotos(changed, feature).pages).toHaveLength(1);
+  });
+});
