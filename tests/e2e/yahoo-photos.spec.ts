@@ -387,3 +387,56 @@ test("adjacent photos are prefetched and the photo area stays stable during navi
     .evaluate((el) => el.getBoundingClientRect().height);
   expect(Math.abs(before - after)).toBeLessThan(2);
 });
+
+test("enlarged gallery supports buttons and swipe, and restores the selected photo", async ({
+  page,
+}) => {
+  await setup(page);
+  const feature = page.getByRole("region", {
+    name: "写真特集の写真",
+    exact: true,
+  });
+  await feature
+    .getByRole("button", { name: "写真特集の3枚目を表示", exact: true })
+    .click();
+  await expect(feature.locator(".photo-feature-stage img")).toHaveAttribute(
+    "src",
+    display(3),
+  );
+  await feature
+    .getByRole("button", { name: "写真特集の写真を拡大", exact: true })
+    .click();
+  const viewer = page.getByRole("dialog", {
+    name: "記事画像の拡大表示",
+    exact: true,
+  });
+  await expect(viewer).toContainText("3 / 5");
+  await viewer.getByRole("button", { name: "次の画像", exact: true }).click();
+  await expect(viewer.locator(".image-viewer-canvas img")).toHaveAttribute(
+    "src",
+    display(4),
+  );
+  await viewer.getByRole("button", { name: "前の画像", exact: true }).click();
+  await expect(viewer).toContainText("3 / 5");
+  await viewer.locator(".image-viewer-canvas").evaluate((el) => {
+    const start = new Event("touchstart", { bubbles: true });
+    Object.defineProperty(start, "touches", {
+      value: [{ clientX: 200, clientY: 100 }],
+    });
+    el.dispatchEvent(start);
+    const end = new Event("touchend", { bubbles: true });
+    Object.defineProperty(end, "changedTouches", {
+      value: [{ clientX: 30, clientY: 110 }],
+    });
+    el.dispatchEvent(end);
+  });
+  await expect(viewer).toContainText("4 / 5");
+  await viewer
+    .getByRole("button", { name: "拡大画像を閉じる", exact: true })
+    .click();
+  await expect(feature.locator(".photo-feature-stage img")).toHaveAttribute(
+    "src",
+    display(4),
+  );
+  await expect(feature).toContainText("4 / 5");
+});

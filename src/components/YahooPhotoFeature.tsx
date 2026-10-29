@@ -217,14 +217,18 @@ export function YahooPhotoFeature({
       )}
       {zoom && picture && (
         <ImageViewer
-          pictures={[
-            {
-              url: yahooPhotoImagePath(articleId, feature.url, page),
-              alt: picture.alt,
-            },
-          ]}
-          initial={0}
-          onClose={() => setZoom(false)}
+          pictures={pages.map((url, i) => ({
+            url: yahooPhotoImagePath(articleId, feature.url, url),
+            alt: i === index ? picture.alt : `${feature.title} ${i + 1}枚目`,
+          }))}
+          initial={Math.max(0, index)}
+          onClose={(selected) => {
+            setZoom(false);
+            if (pages[selected]) {
+              setPage(pages[selected]);
+              setFailedImage("");
+            }
+          }}
         />
       )}
     </section>

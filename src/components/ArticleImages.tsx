@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Expand, X } from "lucide-react";
 
 export type Picture = { url: string; alt: string; role?: "cover" | "body" };
@@ -47,10 +47,25 @@ export function ImageViewer({
 }: {
   pictures: Picture[];
   initial: number;
-  onClose: () => void;
+  onClose: (index: number) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(initial);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const images = [pictures[index - 1], pictures[index + 1]]
+      .filter(Boolean)
+      .map((p) => {
+        const image = new Image();
+        image.src = p.url;
+        return image;
+      });
+    return () => {
+      images.forEach((image) => {
+        image.src = "";
+      });
+    };
+  }, [index, pictures]);
   useLayoutEffect(() => {
     const element = dialog.current!;
     element.showModal();
@@ -64,7 +79,7 @@ export function ImageViewer({
       onCancel={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        onClose();
+        onClose(index);
       }}
       onKeyDown={(event) => {
         if (event.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
@@ -78,14 +93,32 @@ export function ImageViewer({
         </span>
         <button
           className="icon-button"
-          onClick={onClose}
+          onClick={() => onClose(index)}
           aria-label="拡大画像を閉じる"
           autoFocus
         >
           <X />
         </button>
       </header>
-      <div className="image-viewer-canvas">
+      <div
+        className="image-viewer-canvas"
+        onTouchStart={(event) => {
+          const t = event.touches[0];
+          touch.current = t ? { x: t.clientX, y: t.clientY } : null;
+        }}
+        onTouchEnd={(event) => {
+          const start = touch.current,
+            end = event.changedTouches[0];
+          touch.current = null;
+          if (!start || !end) return;
+          const x = end.clientX - start.x,
+            y = end.clientY - start.y;
+          if (Math.abs(x) > 50 && Math.abs(x) > Math.abs(y) * 1.2)
+            setIndex((i) =>
+              Math.max(0, Math.min(pictures.length - 1, i + (x < 0 ? 1 : -1))),
+            );
+        }}
+      >
         <img
           key={pictures[index].url}
           src={pictures[index].url}
