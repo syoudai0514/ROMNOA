@@ -23,22 +23,17 @@ if (response.status !== 400)
 const { GET: read } = await import(new URL("api/reader.js", output));
 const { GET: discover } = await import(new URL("api/discovery.js", output));
 const { GET: search } = await import(new URL("api/search.js", output));
-const { POST: hidden } = await import(new URL("api/hidden-search.js", output));
 if (
   (await search(new Request("http://localhost/api/search?q=x&page=0")))
     .status !== 400
 )
   throw new Error("Native search query rejection failed");
+const { GET: yahoo } = await import(new URL("api/yahoo.js", output));
 if (
-  ![400, 403].includes(
-    (
-      await hidden(
-        new Request("http://localhost/api/hidden-search", { method: "POST" }),
-      )
-    ).status,
-  )
+  (await yahoo(new Request("http://localhost/api/yahoo?url=http://127.0.0.1/")))
+    .status !== 400
 )
-  throw new Error("Native hidden input rejection failed");
+  throw new Error("Native Yahoo query rejection failed");
 const invalidDiscovery = await discover(
   new Request("http://localhost/api/discovery?mode=date&date=2026-02-30"),
 );

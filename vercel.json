@@ -5,11 +5,21 @@
   "outputDirectory": "dist",
   "regions": ["hnd1"],
   "functions": {
-    "api/articles.ts": { "maxDuration": 15 },
-    "api/reader.ts": { "maxDuration": 25 },
-    "api/discovery.ts": { "maxDuration": 30 },
-    "api/search.ts": { "maxDuration": 40 },
-    "api/hidden-search.ts": { "maxDuration": 10 }
+    "api/articles.ts": {
+      "maxDuration": 15
+    },
+    "api/reader.ts": {
+      "maxDuration": 25
+    },
+    "api/discovery.ts": {
+      "maxDuration": 30
+    },
+    "api/search.ts": {
+      "maxDuration": 40
+    },
+    "api/yahoo.ts": {
+      "maxDuration": 30
+    }
   },
   "headers": [
     {
@@ -17,10 +27,16 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://livedoor.blogimg.jp https://pbs.twimg.com https://i.imgur.com https://*.cdninstagram.com; media-src 'self' https://video.twimg.com https://i.imgur.com https://livedoor.blogimg.jp https://*.cdninstagram.com; connect-src 'self'; font-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://newsatcl-pctr.c.yimg.jp https://livedoor.blogimg.jp https://pbs.twimg.com https://i.imgur.com https://*.cdninstagram.com; media-src 'self' https://video.twimg.com https://i.imgur.com https://livedoor.blogimg.jp https://*.cdninstagram.com; connect-src 'self'; font-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
@@ -29,7 +45,12 @@
     },
     {
       "source": "/sw.js",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
   ]
 }

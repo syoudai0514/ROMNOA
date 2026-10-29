@@ -21,15 +21,13 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { MouseEvent } from "react";
 import { ArticleRow } from "./components/ArticleRow";
 import { Reader } from "./components/Reader";
+import { YahooNews } from "./components/YahooNews";
 import { HomeFilters, CategoryChips } from "./components/HomeFilters";
 import { SortControl } from "./components/SortControl";
 import { ArticleSearch } from "./components/ArticleSearch";
 import { MySearch } from "./components/MySearch";
-import { HiddenUnlock, HiddenSearch } from "./components/HiddenSearch";
-import { hiddenTitleAllowed, type HiddenGroups } from "./lib/hidden-model";
 import { mergeLocalSearch, searchDay } from "./lib/search-results";
 import { useSearch, savedArticleCollection } from "./lib/use-search";
 import {
@@ -88,6 +86,7 @@ export default function App() {
   const prefsRef = useRef(prefs);
   const [notice, setNotice] = useState(initial.warning);
   const [tab, setTab] = useState<Tab>("home");
+  const [channel, setChannel] = useState<"roundup" | "yahoo">("roundup");
   const [category, setCategory] = useState<Category>("すべて");
   const [searchQuery, setSearchQuery] = useState("");
   const [shelfQuery, setShelfQuery] = useState("");
@@ -110,10 +109,6 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchScope, setSearchScope] = useState<SearchScope>("title");
   const [mySearchOpen, setMySearchOpen] = useState(false);
-  const [hiddenUnlock, setHiddenUnlock] = useState(false);
-  const [hiddenGroups, setHiddenGroups] = useState<HiddenGroups | null>(null);
-  const [hiddenResult, setHiddenResult] = useState(false);
-  const blankTaps = useRef({ count: 0, at: 0 });
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
   const [ngInput, setNgInput] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -131,10 +126,12 @@ export default function App() {
     storageError: feedStorageError,
     refresh: refreshFeed,
   } = useFeed();
-  const searchActive = tab === "search" && !!searchTerm;
+  const yahooActive =
+    channel === "yahoo" && ["home", "search", "saved"].includes(tab);
+  const searchActive = tab === "search" && !yahooActive && !!searchTerm;
   const pastSearch = useSearch(searchActive ? searchTerm : "", searchScope);
   const discoveryMode =
-    tab === "home" && !searchActive
+    tab === "home" && !yahooActive && !searchActive
       ? sort === "popular"
         ? "popular"
         : date
@@ -194,7 +191,7 @@ export default function App() {
     },
   });
   const scrollPositions = useRef<Record<string, number>>({});
-  const viewKey = `${tab}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${searchScope}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
+  const viewKey = `${tab}:${channel}:${category}:${savedView}${searchActive ? `:search:${searchTerm}:${searchScope}:${sort}` : discoveryMode ? `:${sort}:${date}` : ""}`;
   const previousView = useRef(viewKey);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const dark =
@@ -315,10 +312,7 @@ export default function App() {
           ? discovery.data?.bookmarks || undefined
           : undefined,
     });
-    const visible =
-      hiddenResult && searchActive
-        ? filtered.filter((a) => hiddenTitleAllowed(a.title))
-        : filtered;
+    const visible = filtered;
     if (tab === "saved" && savedView === "history")
       return visible.sort(
         (a, b) =>
@@ -339,7 +333,6 @@ export default function App() {
     fullPopularity,
     discovery.data,
     pastSearch.data,
-    hiddenResult,
   ]);
   const groups = useMemo(
     () => groupArticles(articles, prefs.groupSimilar && sort !== "popular"),
@@ -361,16 +354,9 @@ export default function App() {
     setTab(next);
     setShelfQuery("");
     setCategory("すべて");
-    if (next !== "search") {
-      setHiddenGroups(null);
-      if (hiddenResult) {
-        setSearchQuery("");
-        setSearchTerm("");
-        setHiddenResult(false);
-      }
-    }
   }
   function chooseCategory(next: Category) {
+    setChannel("roundup");
     scrollPositions.current[viewKey] = window.scrollY;
     setCategory(next);
     setTab("home");
@@ -436,7 +422,7 @@ export default function App() {
     setNgInput("");
   }
   const showList = tab === "home" || tab === "search" || tab === "saved";
-  function startSearch(value: string, hidden = false) {
+  function startSearch(value: string) {
     const term = normalizeSearch(value);
     if (!validSearch(term)) return;
     pastSearch.reset();
@@ -445,18 +431,6 @@ export default function App() {
     setDate("");
     setCategory("すべて");
     setTab("search");
-    setHiddenResult(hidden);
-  }
-  function blankTap(event: MouseEvent<HTMLElement>) {
-    if (event.target !== event.currentTarget) return;
-    const now = Date.now();
-    const taps = blankTaps.current;
-    taps.count = now - taps.at < 1500 ? taps.count + 1 : 1;
-    taps.at = now;
-    if (taps.count === 3) {
-      taps.count = 0;
-      setHiddenUnlock(true);
-    }
   }
   return (
     <>
@@ -516,10 +490,24 @@ export default function App() {
             </a>
             <span className="topbar-label">あなたの、読む時間。</span>
             <div className="topbar-tools">
-              <span className="ad-free">
-                <span />
-                アプリ内リーダー
-              </span>
+              {showList ? (
+                <select
+                  className="channel-select"
+                  aria-label="配信チャンネル"
+                  value={channel}
+                  onChange={(event) =>
+                    setChannel(event.target.value as "roundup" | "yahoo")
+                  }
+                >
+                  <option value="roundup">まとめ</option>
+                  <option value="yahoo">Yahoo!ニュース</option>
+                </select>
+              ) : (
+                <span className="ad-free">
+                  <span />
+                  アプリ内リーダー
+                </span>
+              )}
               <button
                 className="icon-button"
                 aria-label={
@@ -534,7 +522,6 @@ export default function App() {
             </div>
           </header>
           <main
-            onClick={blankTap}
             id="main"
             className={tab === "home" ? "main-content is-home" : "main-content"}
           >
@@ -543,7 +530,9 @@ export default function App() {
             >
               <h1 ref={headingRef}>
                 {tab === "home"
-                  ? "今日の記事"
+                  ? yahooActive
+                    ? "Yahoo!ニュース"
+                    : "今日の記事"
                   : tab === "search"
                     ? "記事を探す"
                     : tab === "categories"
@@ -552,7 +541,7 @@ export default function App() {
                         ? "あなたの本棚"
                         : "設定"}
               </h1>
-              {tab === "home" && (
+              {tab === "home" && !yahooActive && (
                 <div className="home-actions">
                   <div
                     className="segmented quick-sort"
@@ -623,7 +612,7 @@ export default function App() {
                 オフラインです。端末に残っている記事と保存内容を表示します。
               </div>
             )}
-            {error && (
+            {!yahooActive && error && (
               <div className="status-banner warning" role="status">
                 <span>{error}</span>
                 <button
@@ -635,19 +624,28 @@ export default function App() {
                 </button>
               </div>
             )}
-            {viewFeed?.sources.some((s) => s.status !== "ok") && (
-              <div className="status-banner warning" role="status">
-                {viewFeed.sources
-                  .filter((s) => s.status !== "ok")
-                  .map(
-                    (s) =>
-                      `${sourceInfo.find((x) => x.id === s.id)!.name}: ${s.status === "cached" ? "取得に失敗したため、前回の記事を表示中" : "現在取得できません"}`,
-                  )
-                  .join(" / ")}
-              </div>
-            )}
+            {!yahooActive &&
+              viewFeed?.sources.some((s) => s.status !== "ok") && (
+                <div className="status-banner warning" role="status">
+                  {viewFeed.sources
+                    .filter((s) => s.status !== "ok")
+                    .map(
+                      (s) =>
+                        `${sourceInfo.find((x) => x.id === s.id)!.name}: ${s.status === "cached" ? "取得に失敗したため、前回の記事を表示中" : "現在取得できません"}`,
+                    )
+                    .join(" / ")}
+                </div>
+              )}
 
-            {showList && (
+            <YahooNews
+              active={yahooActive}
+              mode={
+                tab === "search" ? "search" : tab === "saved" ? "saved" : "home"
+              }
+              onSearch={() => navigate("search")}
+              ngWords={prefs.ngWords}
+            />
+            {showList && !yahooActive && (
               <div className="reading-layout">
                 <section
                   className="feed-column"
@@ -693,19 +691,16 @@ export default function App() {
                           setQuery(value);
                           if (!value) {
                             setSearchTerm("");
-                            setHiddenResult(false);
                           }
                         }}
                         onSubmit={() => startSearch(query)}
                         onClear={() => {
                           setQuery("");
                           setSearchTerm("");
-                          setHiddenResult(false);
                         }}
                         onLocal={() => {
                           setQuery("");
                           setSearchTerm("");
-                          setHiddenResult(false);
                         }}
                       />
                       <button
@@ -719,20 +714,6 @@ export default function App() {
                         <MySearch
                           onSearch={(term) => startSearch(term)}
                           onClose={() => setMySearchOpen(false)}
-                        />
-                      )}
-                      {hiddenGroups && (
-                        <HiddenSearch
-                          groups={hiddenGroups}
-                          onSearch={(term) => startSearch(term, true)}
-                          onClose={() => {
-                            setHiddenGroups(null);
-                            if (hiddenResult) {
-                              setSearchTerm("");
-                              setQuery("");
-                              setHiddenResult(false);
-                            }
-                          }}
                         />
                       )}
                     </>
@@ -836,11 +817,6 @@ export default function App() {
                       {pastSearch.data?.bookmarks === null && (
                         <p>
                           人気データを取得できませんでした。新着順で表示しています。
-                        </p>
-                      )}
-                      {hiddenResult && (
-                        <p>
-                          未成年を示す見出しなど、候補に適さない記事は表示から除いています。
                         </p>
                       )}
                     </div>
@@ -1394,6 +1370,7 @@ export default function App() {
                         className="button danger"
                         onClick={() => {
                           update((p) => ({ ...p, history: [], read: {} }));
+                          window.dispatchEvent(new Event("romnoa:clear-read"));
                           setNotice("履歴と既読をリセットしました。");
                         }}
                       >
@@ -1433,7 +1410,7 @@ export default function App() {
                 </aside>
               </div>
             )}
-            <footer className="page-footer" onClick={blankTap}>
+            <footer className="page-footer">
               <span>
                 ROMNOA <span>—</span> Read freely.
               </span>
@@ -1456,17 +1433,6 @@ export default function App() {
           </button>
         ))}
       </nav>
-      {hiddenUnlock && (
-        <HiddenUnlock
-          onClose={() => setHiddenUnlock(false)}
-          onUnlock={(groups) => {
-            setHiddenUnlock(false);
-            setHiddenGroups(groups);
-            setTab("search");
-            window.scrollTo(0, 0);
-          }}
-        />
-      )}
       {selected && selection && (
         <Reader
           article={selected}

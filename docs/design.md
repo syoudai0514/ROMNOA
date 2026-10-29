@@ -105,15 +105,6 @@ useSearchは条件キー・AbortControllerで競合を防ぎ、ページを切�
 
 DateFilterはnative入力を維持しつつ年/月を選べるdialogカレンダー、今日/昨日/週/月/年前と前後日を提供。月末/うるう日は日付を丸める。古い日付の配信元404はunavailableSourcesを返し、ネットワーク障害と区別して全期間キーワード検索を案内する。既存キャッシュは省略フィールドを既定空配列で復元する。
 
-## 隠し操作と確認済み候補
-
-画面の空白（main自身の余白・最下部footerの余白）を1.5秒以内の間隔で3回クリック/タップするとPIN dialogを開く。子のボタン/リンク/文字をタップしても数えない。POST /api/hidden-searchが6桁入力をサーバーでscrypt/timingSafeEqual照合する。平文PINはコード/ブラウザ配布JS/端末保存/ログに保存しない。候補はserver/hidden-catalog.tsのみで保持し、成功後だけPOST応答で返す。POSTは512バイト、GET/未知形式/Productionを拒否、no-store。5失敗で60秒抑制（プロセス内の上限1000キー）。解除状態はメモリのみで再起動後に消える。
-
-このPINは表示用ロックであり、Vercel Authenticationの代替や全データの秘密性保証ではない。コードを閲覧できる人からサーバーソース自体を隠す仕組みではない。候補を開いた後も記事の履歴/保存は通常と共通で、その旨を画面に示す。
-
-候補は成人の非露骨なファッション/写真集に関する静的リスト。実サイトで検索し、共通の見出し除外後に3件以上見つかった11語を初回採用し、ADR010の厳密なタイトル判定で再確認して3語へ更新した。確認件数・日時を各語へ記録し、現在の全ヒット件数とは表示しない。明白な未成年・露骨な文脈は見出しで保守的に除くが、画像の年齢/意味を検証したとは表示しない。LLM APIや自動推薦は導入しない。
-
-
 ## 検索対象と本文の再照合（ADR 010）
 
 /api/searchはscope=title|body（既定title）を検証し、レスポンスもscopeを返す。配信元検索のメタデータcache/collectionの認可は維持。候補のタイトルをローカルと共通のNFKC/小文字/空白分割ANDで照合する。bodyだけ、タイトルで不足する語を固定本文領域から抽出した文字で補う。全anchor subtree、画像alt、script/iframe/nav/aside、広告・recommend/related/blogrollなど、非表示領域、クラスのない「おすすめ記事」等以降の同コンテナの末尾を除く。別のbody-more rootは引き続き検索する。既存表示用本文キャッシュの混入を引き継がないよう、検索用抽出を独立させる。
@@ -129,14 +120,14 @@ APIは候補全体からcandidateCountとsearchedRange={from,to}を返す。日�
 
 appendSearchPageは同語/同scope/単調増加ページのみ結合し、記事URL重複を除き、日付範囲・確認数・除外数・配信元状態を累積する。メトリクス障害を含む場合はnullを維持して新着順へ戻し、0を捏造しない。各記事のcollectionを別mapで保持し、ReaderSelectionは選択IDのcollectionを渡す。ページ追加をスクロール復元キーに含めず、読んでいる一覧位置を先頭へ戻さない。後続取得失敗は最終成功cursorを残す。query/scope/refreshキーとAbortControllerで古いバッチを遮断する。
 
-mergeLocalSearchは保存/履歴のタイトル一致だけを通常/本文モード双方に補完し、リモートとURLで統合、リモートの日付などを優先。端末本文cacheを検索しない。NG/配信元/カテゴリ/隠し見出し除外を統合後にも適用。includeUnmeasuredは検索画面だけに限定し、人気順の実測済み記事の後に端末候補を日付順で配置する。実測0と未測定を混同しない。本文の認可は既存ルールを維持し、端末の保存データを新しい許可証にしない。
+mergeLocalSearchは保存/履歴のタイトル一致だけを通常/本文モード双方に補完し、リモートとURLで統合、リモートの日付などを優先。端末本文cacheを検索しない。NG/配信元/カテゴリを統合後にも適用。includeUnmeasuredは検索画面だけに限定し、人気順の実測済み記事の後に端末候補を日付順で配置する。実測0と未測定を混同しない。本文の認可は既存ルールを維持し、端末の保存データを新しい許可証にしない。
 
 
 ## 一覧密度とタブ構成（ADR 012）
 
 ホームからwelcome-cardのDOMと検索フォームを除去。上部に今日の記事/新着/人気/更新を置き、HomeFiltersのnative detailsへカテゴリ・DateFilter・詳細SortControlを収納する。取得/順位の説明も開閉でき、取得障害・キャッシュ利用時は自動で開いて状態を説明する。検索タブは既存ArticleSearch/マイ検索/検索結果を受け持ち、サーバーAPIの条件・本文検索の除外基準は変更しない。
 
-homeSort/searchSort/shelfSortを分離し、検索語/入力語は検索タブに保持、保存内の入力とは独立。タブ往復時は通常検索を保持し、隠し結果から離れると候補と語を消す。PIN照合成功時は検索タブへ移る。下部/デスクトップ共通で5タブ。全期間検索の継続と記事別collectionは既存useSearch/ReaderSelectionを維持する。
+homeSort/searchSort/shelfSortを分離し、検索語/入力語は検索タブに保持、保存内の入力とは独立。タブ往復時は検索を保持する。下部/デスクトップ共通で5タブ。全期間検索の継続と記事別collectionは既存useSearch/ReaderSelectionを維持する。
 
 ArticleRowはタイトルを先頭、配信元/日時/既読と順位・ブックマーク実測・端末由来を単一メタデータ行へ配置。大きい配信元モノグラムを小さな色点に置き換え、source名は残す。標準文字15px・1.45行高・最大3行、記事ボタン最小64px/保存44px。全タイトルのaria-labelとReaderの見出しは省略しない。モバイルのsafe-areaを含む上部高と5タブ幅を調整し、Reader本文のレイアウトは変更しない。
 
@@ -150,3 +141,14 @@ ArticleRowはタイトルを先頭、配信元/日時/既読と順位・ブッ�
 collection=popular:<sha256(day+sorted article IDs)>のメタデータ集合を、配信元ごと最大110件で既存Runtime Cacheへ保存する。元の取得日時の最小値を持たせ、古い候補の認可期限を延長しない。findKnownは署名/配信元/IDの完全一致と元取得24時間以内だけをcache-onlyで照合。人気集合の端末参照は既存romnoa:search-contexts:v1へsearch/popular両形式として互換追加（最大1000件/24h、検索語なし）。useDiscoveryも参照を記録し、保存記事と検索内の端末候補を開くときに使う。任意ハッシュから新規に集合を取得する処理はない。本文cacheはv3のまま。
 
 Readerは本文テキストのpへreader-text-blockを付け、フォントサイズを変えず行高1.55/下余白6pxにする。compactReaderTextはCRLFを整え、空白だけの行を含む連続改行を単一改行へ整理する表示処理。非空行・字下げ・番号・URLを保持し、元のReaderDocument/cache内容は変更しない。画像/動画/関連記事UIと認可は維持する。
+
+
+## Yahooニュース公式RSS（ADR014）
+
+既存まとめのArticle/reader許可リストを拡張せず、独立したYahooArticle/YahooResponseを使う。GET /api/yahoo はパラメータを一切受けない。カテゴリdomestic/world/business/entertainment/sports/it/science/life/localの固定RSSだけ取得。URLはnews.yahoo.co.jp/articles/<40 hex>に限定、source=rssだけ除去。画像はRSS item.imageのnewsatcl-pctr.c.yimg.jp/t/amd-img/の画像だけ許可。channel.imageのロゴや記事HTML・広告・おすすめ欄は取得しない。RSS descriptionをReactのテキストとして表示し、HTMLは実行しない。画像は既存ArticleImagesで先頭に配置、CSPに当該画像ホストのみ追加。
+
+YahooServiceはRuntime Cache romnoa-yahoo-rss-v1、成功10分・失敗1分・最後の成功24時間、9カテゴリ/各50/最大450、1MB/6秒/redirect:error、最大3並列、重複要求共有。全カテゴリ失敗時503、部分失敗は他カテゴリを維持。外部アクセスはRSSと開いたニュースの配信画像だけ。ニュース本文URLや任意URLをサーバー取得するAPIはない。
+
+YahooNewsはホーム/検索/保存で共通インスタンスを使い、まとめ検索と独立した検索語/対象を保持。チャンネル変更でスクロールキーも分離。日付を課さないが検索母集団は配信中の最大450件だけ。タイトル/概要のNFKC・小文字AND一致、NG語を適用。過去全文検索とは明確に区別し公式検索の外部リンクを提供。同カテゴリ12件は配信中記事で、Yahooページの推薦取得ではない。
+
+端末romnoa:yahoo-library:v1に保存200/既読1000、romnoa:yahoo-feed:v1に検証済み一覧24時間。サーバーやブラウザで画像データを複製保存しない。sessionStorageに閲覧位置。既存の履歴既読リセットをYahooへも通知、保存は残す。通常の本文v3・保存キャッシュを消さない。廃止したシークレット機能のコード/候補/PIN/APIは配布しない。

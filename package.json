@@ -14,8 +14,7 @@
     "test:e2e": "playwright test",
     "test:pwa": "tsx scripts/test-pwa.ts",
     "check:feeds": "tsx scripts/check-feeds.ts",
-    "check:server": "node --no-experimental-require-module scripts/check-server.mjs",
-    "check:hints": "tsx scripts/check-hidden-hints.ts"
+    "check:server": "node --no-experimental-require-module scripts/check-server.mjs"
   },
   "dependencies": {
     "@vercel/functions": "^3.7.0",

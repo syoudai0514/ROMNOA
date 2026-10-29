@@ -6,7 +6,7 @@ import { handleArticles } from "./server/handler";
 import { handleReader } from "./server/reader";
 import { handleDiscovery } from "./server/discovery";
 import { handleSearch } from "./server/search";
-import { handleHiddenSearch } from "./server/hidden-search";
+import { handleYahoo } from "./server/yahoo";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
@@ -16,26 +16,10 @@ const api = (): Plugin => ({
       ["/api/reader", handleReader],
       ["/api/discovery", handleDiscovery],
       ["/api/search", handleSearch],
-      ["/api/hidden-search", handleHiddenSearch],
+      ["/api/yahoo", handleYahoo],
     ] as const) {
       server.middlewares.use(path, async (req, res) => {
         try {
-          let body: Buffer | undefined;
-          if (req.method === "POST") {
-            const chunks: Buffer[] = [];
-            let size = 0;
-            for await (const chunk of req) {
-              const data = Buffer.from(chunk);
-              size += data.length;
-              if (size > 512) {
-                res.statusCode = 413;
-                res.end(JSON.stringify({ error: "入力が長すぎます。" }));
-                return;
-              }
-              chunks.push(data);
-            }
-            body = Buffer.concat(chunks);
-          }
           const result = await handler(
             new Request(`http://localhost${path}${req.url ?? ""}`, {
               method: req.method,
@@ -46,7 +30,6 @@ const api = (): Plugin => ({
                     : [[key, Array.isArray(value) ? value.join(",") : value]],
                 ),
               ),
-              body: body?.toString("utf8"),
             }),
           );
           res.statusCode = result.status;
@@ -66,6 +49,11 @@ const api = (): Plugin => ({
         }
       });
     }
+    server.middlewares.use("/api", (_req, res) => {
+      res.statusCode = 404;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: "APIが見つかりません。" }));
+    });
   },
 });
 

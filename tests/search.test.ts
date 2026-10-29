@@ -8,12 +8,6 @@ import {
   handleSearch,
 } from "../server/search";
 import { fetchBookmarkCounts, BookmarkMetrics } from "../server/bookmarks";
-import {
-  handleHiddenSearch,
-  PinAttempts,
-  verifyHiddenPin,
-} from "../server/hidden-search";
-import { hiddenTitleAllowed } from "../src/lib/hidden-model";
 import { validCollection, shiftMonth } from "../src/lib/discovery-model";
 import { filterArticles, type Article } from "../src/lib/model";
 import { ReaderService, MemoryReaderCache } from "../server/reader";
@@ -320,93 +314,5 @@ describe("measured popularity", () => {
     expect(await m.get([hamu])).toBeNull();
     expect(await m.get([hamu])).toBeNull();
     expect(loader).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("concealed hint menu", () => {
-  const req = (pin: string) =>
-    new Request("https://app/api/hidden-search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin }),
-    });
-  it("requires a correct six-digit PIN before returning verified hints, and never caches them", async () => {
-    const limiter = new PinAttempts();
-    const verify = vi.fn((pin: string) => pin === "246810");
-    expect(
-      (await handleHiddenSearch(req("000000"), verify, limiter, true)).status,
-    ).toBe(401);
-    const good = await handleHiddenSearch(req("246810"), verify, limiter, true);
-    expect(good.status).toBe(200);
-    expect(good.headers.get("Cache-Control")).toContain("no-store");
-    const body = await good.json();
-    expect(body.groups.length).toBeGreaterThan(0);
-    for (const group of body.groups)
-      for (const word of group.words) {
-        expect(word.verifiedCount).toBeGreaterThanOrEqual(3);
-        expect(word.verifiedAt).toMatch(/^2026-/);
-      }
-    expect(verifyHiddenPin("000000")).toBe(false);
-    expect(verifyHiddenPin("123")).toBe(false);
-  });
-  it("limits repeated failures and rejects public/oversize/malformed requests", async () => {
-    let now = 0;
-    const limiter = new PinAttempts(() => now);
-    const verify = vi.fn(() => false);
-    for (let i = 0; i < 5; i++)
-      expect(
-        (await handleHiddenSearch(req("000000"), verify, limiter, true)).status,
-      ).toBe(401);
-    expect(
-      (await handleHiddenSearch(req("000000"), verify, limiter, true)).status,
-    ).toBe(429);
-    expect(verify).toHaveBeenCalledTimes(5);
-    now += 60001;
-    expect(
-      (await handleHiddenSearch(req("000000"), verify, limiter, true)).status,
-    ).toBe(401);
-    expect(
-      (
-        await handleHiddenSearch(
-          req("246810"),
-          () => true,
-          new PinAttempts(),
-          false,
-        )
-      ).status,
-    ).toBe(403);
-    expect(
-      (
-        await handleHiddenSearch(
-          new Request("https://app/api/hidden-search"),
-          verify,
-          new PinAttempts(),
-          true,
-        )
-      ).status,
-    ).toBe(405);
-    const large = new Request("https://app/api/hidden-search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "x".repeat(513),
-    });
-    expect(
-      (await handleHiddenSearch(large, verify, new PinAttempts(), true)).status,
-    ).toBe(400);
-  });
-  it("excludes clear minor/explicit contexts without treating an adult age as a minor", () => {
-    for (const title of [
-      "高校生のコーデ",
-      "17歳の写真集",
-      "JKの投稿",
-      "流出動画",
-    ])
-      expect(hiddenTitleAllowed(title)).toBe(false);
-    for (const title of [
-      "女優（25歳）のドレス",
-      "18歳以上の大人コーデ",
-      "モデルの美脚",
-    ])
-      expect(hiddenTitleAllowed(title)).toBe(true);
   });
 });
