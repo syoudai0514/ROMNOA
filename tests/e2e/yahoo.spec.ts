@@ -48,6 +48,9 @@ const response = {
 async function setup(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo", (r) => r.fulfill({ json: response }));
+  await page.route("**/api/yahoo-body?**", (r) =>
+    r.fulfill({ status: 502, json: { error: "unavailable" } }),
+  );
   await page.route("**/api/yahoo-photos?**", (r) =>
     r.fulfill({
       json: {
@@ -132,7 +135,7 @@ test("Yahoo opens image before the title and RSS lead; same-category links, back
   ).toBeVisible();
   await page.getByRole("button", { name: "拡大画像を閉じる" }).click();
   await expect(
-    reader.getByRole("link", { name: /本文の続きを元記事で読む/ }),
+    reader.getByRole("link", { name: /元記事を開く/ }),
   ).toHaveAttribute("href", articles[0].url);
   await reader
     .getByRole("region", { name: "同じカテゴリのニュース" })
@@ -332,7 +335,7 @@ test("person-name search finds a story outside every RSS category and preserves 
     remote.summary,
   );
   await expect(page.getByRole("dialog", { name: remote.title })).toContainText(
-    "検索結果に表示されているサムネイルと抜粋",
+    "本文を取得できませんでした",
   );
   await page.getByRole("button", { name: "ニュースを閉じる" }).click();
   await page.reload();
@@ -387,4 +390,32 @@ test("late Yahoo searches cannot replace a newer name and outages are shown as e
   await expect(page.getByTestId("yahoo-row")).toHaveCount(0);
   await page.getByRole("button", { name: "検索を再試行" }).click();
   await expect(page.getByRole("alert")).toContainText("検索できませんでした");
+});
+
+test("Yahoo article shows the full body in order and keeps the source link", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("**/api/yahoo-body?**", (r) =>
+    r.fulfill({
+      json: {
+        article: articles[0].id,
+        pages: ["本文1ページ目\n\n続きの段落", "本文2ページ目の最後"],
+        complete: true,
+      },
+    }),
+  );
+  await channel(page);
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${articles[0].title}`,
+      exact: true,
+    })
+    .click();
+  const body = page.getByRole("region", { name: "記事本文", exact: true });
+  await expect(body).toContainText("本文1ページ目");
+  await expect(body).toContainText("本文2ページ目の最後");
+  await expect(
+    page.getByRole("link", { name: /元記事を開く/ }),
+  ).toHaveAttribute("href", articles[0].url);
 });

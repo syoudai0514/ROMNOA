@@ -578,6 +578,46 @@ function YahooReader({
   const featureSection = useRef<HTMLDivElement>(null);
   const newsHeading = useRef<HTMLHeadingElement>(null);
   const restoring = useRef(false);
+  const [body, setBody] = useState<{
+    article: string;
+    pages: string[];
+    complete: boolean;
+  } | null>(null);
+  const currentBody = body?.article === article.id ? body : null;
+  const [bodyLoading, setBodyLoading] = useState(true);
+  const [bodyAttempt, setBodyAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setBody(null);
+    setBodyLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/yahoo-body?${new URLSearchParams({ article: article.id })}`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) throw Error("body_unavailable");
+        const value = await res.json();
+        if (
+          value.article !== article.id ||
+          !Array.isArray(value.pages) ||
+          !value.pages.length ||
+          value.pages.length > 10 ||
+          value.pages.some(
+            (p: unknown) => typeof p !== "string" || p.length > 100000,
+          ) ||
+          typeof value.complete !== "boolean"
+        )
+          throw Error("body_invalid");
+        if (!controller.signal.aborted) setBody(value);
+      } catch {
+        /* Retain the supplied excerpt on failure. */
+      } finally {
+        if (!controller.signal.aborted) setBodyLoading(false);
+      }
+    })();
+    return () => controller.abort();
+  }, [article.id, bodyAttempt]);
   const mediaRequest = useYahooPhotos(article.id);
   const media =
     mediaRequest.resource?.kind === "article" ? mediaRequest.resource : null;
@@ -741,23 +781,44 @@ function YahooReader({
             <section
               className="reading-body yahoo-summary"
               aria-label={
-                article.origin === "search"
-                  ? "検索結果の抜粋"
-                  : "配信された記事冒頭"
+                currentBody
+                  ? "記事本文"
+                  : article.origin === "search"
+                    ? "検索結果の抜粋"
+                    : "配信された記事冒頭"
               }
             >
-              <p className="reader-text-block">
-                {article.summary ||
-                  "このニュースには記事冒頭の配信がありません。"}
-              </p>
+              {currentBody ? (
+                currentBody.pages.map((text, i) => (
+                  <p className="reader-text-block yahoo-full-text" key={i}>
+                    {text}
+                  </p>
+                ))
+              ) : (
+                <p className="reader-text-block">
+                  {article.summary ||
+                    "このニュースには記事冒頭の配信がありません。"}
+                </p>
+              )}
             </section>
-            <p className="yahoo-note">
-              {fullPictures.length
-                ? "記事側で確認した写真を表示しています。写真特集もこの画面で閲覧できます。"
-                : article.origin === "search"
-                  ? "検索結果に表示されているサムネイルと抜粋です。全文・記事内の写真は元記事でご確認ください。"
-                  : "ここまでが公式RSSで配信された記事冒頭です。全文は元記事でご確認ください。"}
-            </p>
+            {bodyLoading && (
+              <p className="yahoo-note" role="status">
+                記事本文を読み込み中…
+              </p>
+            )}
+            {!bodyLoading && (!currentBody || !currentBody.complete) && (
+              <p className="yahoo-note" role="status">
+                {currentBody
+                  ? "本文の一部を取得できませんでした。続きは元記事で読めます。"
+                  : "本文を取得できませんでした。元記事で読めます。"}{" "}
+                <button
+                  className="text-button"
+                  onClick={() => setBodyAttempt((n) => n + 1)}
+                >
+                  本文を再取得
+                </button>
+              </p>
+            )}
             <div className="reader-actions">
               <a
                 className="button primary"
@@ -765,7 +826,7 @@ function YahooReader({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                本文の続きを元記事で読む
+                元記事を開く
                 <ExternalLink size={16} />
               </a>
               <button
