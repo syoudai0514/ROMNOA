@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it, expect, vi } from "vitest";
 import {
   photoFeatureTarget,
@@ -122,6 +123,52 @@ describe("private Yahoo article photos and linked MANTAN features", () => {
       parseMantanPhotoPage(`<div>${"<div>".repeat(161)}${gallery()}`, page()),
     ).toThrow("gallery_too_complex");
     expect(() => parseMantanPhotoPage("x".repeat(2_000_001), page())).toThrow();
+  });
+  it("accepts publisher-declared image filenames and preserves article-family isolation", () => {
+    for (const name of [
+      "001_size8",
+      "003_size9",
+      "004_size10",
+      "photo-original_2025",
+    ]) {
+      const url = img().replace("001.jpg", `${name}.jpg`);
+      expect(mantanPhotoUrl(url, family)).toBe(url);
+      expect(mantanPhotoUrl(url, other)).toBeNull();
+    }
+    for (const name of ["../001", "001.svg", "001%2fother", ".hidden"])
+      expect(
+        mantanPhotoUrl(img().replace("001.jpg", `${name}.jpg`), family),
+      ).toBeNull();
+  });
+  it("resolves the reported 11-photo gallery, including size suffixes in full images and thumbnails", async () => {
+    const feature =
+      "https://gravure.mantan-web.jp/article/20251206dog00m200056000c/photopage/001.html";
+    const html = readFileSync(
+      new URL("./fixtures/mantan-photo-suffix.html", import.meta.url),
+      "utf8",
+    );
+    const parsed = parseMantanPhotoPage(html, feature);
+    expect(parsed.pages).toHaveLength(11);
+    expect(parsed.thumbnails).toHaveLength(11);
+    expect(parsed.picture.url).toContain("h=984,f=webp:auto/");
+    expect(parsed.picture.url).toMatch(/001_size8\.jpg$/);
+    expect(parsed.thumbnails[10].url).toMatch(/011_size10\.jpg$/);
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) =>
+        url === article
+          ? metadata().replaceAll(`${page()}?ext_m=y`, feature)
+          : html,
+    );
+    const full = await service.imageSource(article, feature, feature, false);
+    expect(full.url).toBe(parsed.picture.url);
+    const thumb = await service.imageSource(
+      article,
+      feature,
+      parsed.pages[10],
+      true,
+    );
+    expect(thumb.url).toBe(parsed.thumbnails[10].url);
   });
   it("fetches bounded fixed HTML targets without redirects and never acts as an image/URL proxy", async () => {
     const load = vi.fn(

@@ -50,7 +50,7 @@ export function mantanPhotoUrl(raw: string, family?: string) {
   try {
     const u = new URL(raw);
     const match = u.pathname.match(
-      /^\/(?:[a-z]=[a-zA-Z0-9=,:_-]+\/)?images\/\d{4}\/\d{2}\/\d{2}\/(\d{8}dog\d{2}m\d{9}[a-z])\/\d{3}\.(?:jpg|jpeg|png|webp)$/,
+      /^\/(?:[a-z]=[a-zA-Z0-9=,:_-]+\/)?images\/\d{4}\/\d{2}\/\d{2}\/(\d{8}dog\d{2}m\d{9}[a-z])\/[a-zA-Z0-9][a-zA-Z0-9_-]{0,199}\.(?:jpg|jpeg|png|webp)$/,
     );
     return u.protocol === "https:" &&
       u.hostname === "storage.mantan-web.jp" &&
