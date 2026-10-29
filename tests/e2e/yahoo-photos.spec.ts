@@ -67,7 +67,7 @@ function gallery(feature = pageUrl(), page = feature) {
     status: "ok",
   };
 }
-async function setup(page: Page, generic = false) {
+async function setup(page: Page, generic = false, failNext?: () => boolean) {
   const requests: URLSearchParams[] = [];
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo", (r) =>
@@ -86,6 +86,8 @@ async function setup(page: Page, generic = false) {
   await page.route("**/api/yahoo-photos?**", (r) => {
     const p = new URL(r.request().url()).searchParams;
     requests.push(p);
+    if (p.get("page") === pageUrl(2) && failNext?.())
+      return r.fulfill({ status: 503, json: { error: "down" } });
     if (generic) {
       const url = "https://www.j-cast.com/photo/2026/10/25518638.html?num=2";
       const pages = [url, `${url}#romnoa-photo-2`];
@@ -282,25 +284,13 @@ test("feature next/previous, thumbnail choice, swipe and zoom work without leavi
 test("photo failures offer retry while keeping news readable, and a failed next photo never shows another photo as current", async ({
   page,
 }) => {
-  await setup(page);
+  let down = true;
+  await setup(page, false, () => down);
   const feature = page.getByRole("region", {
     name: "写真特集の写真",
     exact: true,
   });
   await expect(feature.locator(".photo-feature-stage img")).toBeVisible();
-  let down = true;
-  await page.route("**/api/yahoo-photos?**", (r) => {
-    const p = new URL(r.request().url()).searchParams;
-    return r.fulfill(
-      down
-        ? { status: 503, json: { error: "down" } }
-        : {
-            json: p.has("feature")
-              ? gallery(p.get("feature")!, p.get("page") || p.get("feature")!)
-              : meta,
-          },
-    );
-  });
   await feature
     .getByRole("button", { name: "写真特集の次の写真", exact: true })
     .click();
@@ -351,4 +341,49 @@ test("ordinary publisher links render and switch synthetic photo pages", async (
   expect(requests.some((p) => p.get("page")?.endsWith("#romnoa-photo-2"))).toBe(
     true,
   );
+});
+
+test("adjacent photos are prefetched and the photo area stays stable during navigation", async ({
+  page,
+}) => {
+  const images: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/yahoo-photo-image?"))
+      images.push(request.url());
+  });
+  const requests = await setup(page);
+  const region = page.getByRole("region", {
+    name: "写真特集の写真",
+    exact: true,
+  });
+  await expect(region.locator(".photo-feature-stage img")).toHaveJSProperty(
+    "naturalWidth",
+    1106,
+  );
+  await expect
+    .poll(() => requests.some((p) => p.get("page") === pageUrl(2)))
+    .toBe(true);
+  await expect
+    .poll(() =>
+      images.some((url) => {
+        const p = new URL(url).searchParams;
+        return p.get("page") === pageUrl(2) && p.get("size") === "full";
+      }),
+    )
+    .toBe(true);
+  const before = await region
+    .locator(".photo-feature-stage")
+    .evaluate((el) => el.getBoundingClientRect().height);
+  await region
+    .getByRole("button", { name: "写真特集の次の写真", exact: true })
+    .click();
+  await expect(region).toContainText("2 / 5");
+  await expect(region.locator(".photo-feature-stage img")).toHaveJSProperty(
+    "naturalWidth",
+    1106,
+  );
+  const after = await region
+    .locator(".photo-feature-stage")
+    .evaluate((el) => el.getBoundingClientRect().height);
+  expect(Math.abs(before - after)).toBeLessThan(2);
 });

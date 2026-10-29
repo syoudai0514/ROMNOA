@@ -8,6 +8,41 @@ import {
 
 type Resource = YahooPhotoMetadata | YahooPhotoGallery;
 const memory = new Map<string, Resource>();
+const prefetching = new Map<string, Promise<void>>();
+export function prefetchYahooPhoto(
+  articleId: string,
+  feature: string,
+  page: string,
+) {
+  const params = new URLSearchParams({ article: articleId, feature, page });
+  const key = params.toString();
+  const cached = memory.get(key);
+  if (cached && Date.now() - Date.parse(cached.fetchedAt) < 3_600_000)
+    return Promise.resolve();
+  const pending = prefetching.get(key);
+  if (pending) return pending;
+  const work = (async () => {
+    try {
+      const res = await fetch(`/api/yahoo-photos?${key}`, {
+        signal: AbortSignal.timeout(25000),
+      });
+      if (!res.ok) return;
+      const data = yahooPhotoGallerySchema.parse(await res.json());
+      if (
+        data.articleId !== articleId ||
+        data.featureUrl !== feature ||
+        data.pageUrl !== page
+      )
+        return;
+      memory.set(key, data);
+      if (memory.size > 100) memory.delete(memory.keys().next().value!);
+    } catch {
+      /* Normal loading and retry remain available. */
+    }
+  })().finally(() => prefetching.delete(key));
+  prefetching.set(key, work);
+  return work;
+}
 export function useYahooPhotos(
   articleId: string,
   feature?: string,

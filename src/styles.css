@@ -2538,10 +2538,10 @@ button {
 .inline-photo-feature h2, .yahoo-photo-features h2 { font-size: 16px; margin: 0; }
 .inline-photo-feature header > span { font-size: 12px; color: var(--muted); flex-shrink: 0; }
 .photo-feature-title { font-size: 12px; line-height: 1.6; margin: 8px 0 14px; color: var(--muted); }
-.photo-feature-stage { touch-action: pan-y; min-height: 180px; }
+.photo-feature-stage { touch-action: pan-y; min-height: calc(min(62dvh, 550px) + 48px); }
 .photo-feature-stage figure { margin: 0; }
-.photo-feature-stage img { width: 100%; max-height: 62dvh; object-fit: contain; }
-.photo-feature-stage figcaption { color: var(--muted); font-size: 10px; line-height: 1.6; margin: 6px 0 10px; }
+.photo-feature-stage img { width: 100%; height: min(62dvh, 550px); object-fit: contain; }
+.photo-feature-stage figcaption { color: var(--muted); font-size: 10px; line-height: 1.6; height: 32px; overflow-y: auto; margin: 6px 0 10px; }
 .photo-feature-navigation { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .photo-feature-navigation .button { min-height: 44px; font-size: 12px; padding: 8px 12px; }
 .photo-feature-navigation > span { font-size: 11px; color: var(--muted); }

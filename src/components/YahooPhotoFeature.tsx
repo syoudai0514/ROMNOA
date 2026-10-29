@@ -5,7 +5,7 @@ import type {
   YahooPhotoGallery,
 } from "../lib/yahoo-photos-model";
 import { yahooPhotoImagePath } from "../lib/yahoo-photos-model";
-import { useYahooPhotos } from "../lib/use-yahoo-photos";
+import { prefetchYahooPhoto, useYahooPhotos } from "../lib/use-yahoo-photos";
 import { ImageViewer } from "./ArticleImages";
 
 export function YahooPhotoFeature({
@@ -33,6 +33,27 @@ export function YahooPhotoFeature({
       setThumbnails(gallery.thumbnails);
     }
   }, [gallery]);
+  // Keep the next and previous images ready without downloading an entire gallery.
+  useEffect(() => {
+    if (index < 0) return;
+    let active = true;
+    const images: HTMLImageElement[] = [];
+    for (const next of [pages[index + 1], pages[index - 1]]) {
+      if (!next) continue;
+      void prefetchYahooPhoto(articleId, feature.url, next).then(() => {
+        if (!active) return;
+        const image = new Image();
+        images.push(image);
+        image.src = yahooPhotoImagePath(articleId, feature.url, next);
+      });
+    }
+    return () => {
+      active = false;
+      images.forEach((image) => {
+        image.src = "";
+      });
+    };
+  }, [articleId, feature.url, index, pages]);
   function choose(next: string) {
     if (!zoom && pages.includes(next)) {
       setPage(next);
@@ -62,7 +83,7 @@ export function YahooPhotoFeature({
         </span>
       </header>
       <p className="photo-feature-title">{feature.title}</p>
-      {request.loading && (
+      {request.loading && !pages.length && (
         <p role="status" className="yahoo-note">
           写真を読み込み中…
         </p>
