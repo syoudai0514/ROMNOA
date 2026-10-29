@@ -184,6 +184,73 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
       if (page) linkedPages.add(page);
     }
   }
+  // Some publishers expose explicit photo-page links next to thumbnail images.
+  // Validate the common article path and photo identity, then load each page's
+  // declared full-size image on demand instead of enlarging its thumbnail.
+  const origin = new URL(pageUrl);
+  const matchPage = origin.pathname.match(/^(.*\/)(\d+)\/$/);
+  if (matchPage && fallback.length) {
+    const lists = DomUtils.findAll(
+      (n) => n.name === "ul" && /thumb/i.test(n.attribs.class || ""),
+      doc.children,
+    );
+    for (const list of lists) {
+      const entries = DomUtils.findAll(
+        (n) => n.name === "li",
+        list.children,
+      ).flatMap((li) => {
+        const anchor = DomUtils.findOne((n) => n.name === "a", li.children);
+        const image = DomUtils.findOne((n) => n.name === "img", li.children);
+        const link =
+          anchor && publicPhotoUrl(anchor.attribs.href || "", pageUrl);
+        const thumb =
+          image &&
+          publicPhotoUrl(
+            image.attribs.src || image.attribs["data-src"] || "",
+            pageUrl,
+          );
+        if (!link || !thumb) return [];
+        const u = new URL(link),
+          src = new URL(thumb);
+        const m = u.pathname.match(/^(.*\/)(\d+)\/$/);
+        if (
+          !m ||
+          u.origin !== origin.origin ||
+          m[1] !== matchPage[1] ||
+          u.search ||
+          u.hash ||
+          !src.pathname.endsWith(`/${m[2]}.jpg`)
+        )
+          return [];
+        return [{ pageUrl: u.href, url: thumb, alt: image?.attribs.alt || "" }];
+      });
+      const current = entries.find((e) => e.pageUrl === pageUrl);
+      const full = new URL(fallback[0].url);
+      if (
+        entries.length < 2 ||
+        entries.length > 40 ||
+        !current ||
+        new Set(entries.map((e) => e.pageUrl)).size !== entries.length ||
+        full.origin !== new URL(current.url).origin ||
+        full.pathname !== new URL(current.url).pathname
+      )
+        continue;
+      return {
+        kind: "gallery" as const,
+        picture: {
+          url: full.href,
+          alt: current.alt.slice(0, 500),
+          caption: current.alt.slice(0, 500),
+        },
+        pages: entries.map((e) => e.pageUrl),
+        thumbnails: entries.map(({ pageUrl, url }) => ({ pageUrl, url })),
+        pictures: [] as YahooPicture[],
+        title,
+        linkedPages: [] as string[],
+        hasPrimaryPhoto: true,
+      };
+    }
+  }
   // A declared thumbnail roster can describe many photos on one document.
   // Match it against the article's structured image list; ignore every other
   // linked image, recommendation and publisher logo.

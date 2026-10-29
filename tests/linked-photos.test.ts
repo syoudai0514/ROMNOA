@@ -211,3 +211,36 @@ describe("gallery with a verified thumbnail roster", () => {
     expect(parseLinkedPhotos(changed, feature).pages).toHaveLength(1);
   });
 });
+
+describe("photo-page thumbnail rosters", () => {
+  const base = "https://thetv.jp/news/detail/1441703/";
+  const first = base + "18550634/",
+    third = base + "18550635/";
+  const fixture = (n: number) =>
+    readFileSync(
+      new URL(`./fixtures/thetv-${n}.html`, import.meta.url),
+      "utf8",
+    );
+  it("uses the publisher's original image page instead of a 116px thumbnail", async () => {
+    const engine = new YahooPhotoService(new MemoryPhotoCache(), async (url) =>
+      url === article ? metadata(first) : fixture(url === third ? 3 : 2),
+    );
+    const gallery = await engine.get(article, first);
+    if (gallery.kind !== "gallery") throw Error("gallery");
+    expect(gallery.pages).toHaveLength(21);
+    expect(gallery.picture.url).toContain("18550634.jpg?w=1284");
+    const picture = await engine.imageSource(article, first, third, false);
+    expect(picture.url).toContain("18550635.jpg?w=1284");
+    expect(picture.referer).toBe(third);
+    expect(
+      (await engine.imageSource(article, first, third, true)).url,
+    ).toContain("w=116");
+    await expect(
+      engine.get(
+        article,
+        first,
+        "https://thetv.jp/news/detail/999999/18550635/",
+      ),
+    ).rejects.toThrow();
+  });
+});

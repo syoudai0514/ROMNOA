@@ -335,7 +335,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v4" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v5" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -389,9 +389,12 @@ export class YahooPhotoService {
       throw Error("image_not_available");
     return {
       url,
-      referer: (gallery.pictures ? page : thumbnail ? feature : page).split(
-        "#",
-      )[0],
+      referer: (gallery.pictures?.length
+        ? page
+        : thumbnail
+          ? feature
+          : page
+      ).split("#")[0],
     };
   }
   private async entry(url: string): Promise<Entry> {
@@ -480,7 +483,7 @@ export class YahooPhotoService {
     if (!gallery.pages.includes(selected))
       throw new PhotoAccessError("page_not_linked");
     const current =
-        selected === feature || gallery.pictures
+        selected === feature || gallery.pictures?.length
           ? first
           : await this.entry(selected),
       photo = current.data!;
@@ -490,7 +493,7 @@ export class YahooPhotoService {
       articleId,
       featureUrl: feature,
       pageUrl: selected,
-      picture: gallery.pictures
+      picture: gallery.pictures?.length
         ? gallery.pictures[gallery.pages.indexOf(selected)]
         : photo.picture,
       pages: gallery.pages,
