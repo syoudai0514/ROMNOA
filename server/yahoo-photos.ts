@@ -1,4 +1,4 @@
-import { parseLinkedPhotos } from "./linked-photo-parser.js";
+import { collectLinkedPhotos } from "./linked-photo-parser.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
 import { getCache } from "@vercel/functions";
 import { Parser } from "htmlparser2";
@@ -335,7 +335,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v2" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v3" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -387,7 +387,12 @@ export class YahooPhotoService {
         : linkedImageUrl(url))
     )
       throw Error("image_not_available");
-    return { url, referer: (thumbnail ? feature : page).split("#")[0] };
+    return {
+      url,
+      referer: (gallery.pictures ? page : thumbnail ? feature : page).split(
+        "#",
+      )[0],
+    };
   }
   private async entry(url: string): Promise<Entry> {
     const pending = this.pending.get(url);
@@ -418,7 +423,7 @@ export class YahooPhotoService {
           ? parseYahooPhotoMetadata(html, url)
           : photoFeatureTarget(url)
             ? parseMantanPhotoPage(html, url)
-            : parseLinkedPhotos(html, url);
+            : await collectLinkedPhotos(html, url, this.load);
         entry = { data, fetchedAt: now, checkedAt: now, failed: false };
       } catch {
         entry = {

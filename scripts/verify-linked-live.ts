@@ -1,6 +1,7 @@
 import { YahooPhotoService, MemoryPhotoCache } from "../server/yahoo-photos.js";
 import { fetchPhotoImage } from "../server/yahoo-photo-image.js";
 const article =
+  process.argv[2] ||
   "https://news.yahoo.co.jp/articles/ddb6af1521c0d44e9d14001727af40a0fd82a6f8";
 const service = new YahooPhotoService(new MemoryPhotoCache());
 const meta = await service.get(article);
