@@ -2517,7 +2517,9 @@ button {
 .yahoo-categories button { min-height: 44px; flex-shrink: 0; padding: 8px 14px; border-radius: 9px; font-size: 12px; }
 .yahoo-result-heading { font-size: 13px; margin-top: 16px; }
 .yahoo-result-heading > span { color: var(--muted); font-size: 11px; }
-.yahoo-list .article-open { width: 100%; }
+.yahoo-list .article-open { width: 100%; flex-direction: row; justify-content: flex-start; align-items: center; gap: 10px; min-width: 0; }
+.yahoo-list-thumbnail { width: 72px; height: 56px; flex: 0 0 72px; object-fit: cover; border-radius: 5px; background: var(--line); }
+.yahoo-list-copy { display: block; flex: 1; min-width: 0; }
 .yahoo-empty { padding: 24px 12px; color: var(--muted); font-size: 13px; }
 .yahoo-reader .article-gallery { margin-top: 0; }
 .yahoo-summary { margin: 18px 0 10px; }

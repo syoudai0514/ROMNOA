@@ -108,6 +108,18 @@ test("Yahoo opens image before the title and RSS lead; same-category links, back
   await setup(page);
   await channel(page);
   await expect(page.getByTestId("yahoo-row")).toHaveCount(3);
+  const firstRow = page.getByTestId("yahoo-row").first();
+  await expect(firstRow.locator(".yahoo-list-thumbnail")).toHaveAttribute(
+    "src",
+    image,
+  );
+  await expect(firstRow.locator(".yahoo-list-thumbnail")).toHaveJSProperty(
+    "naturalWidth",
+    192,
+  );
+  await expect(
+    page.getByTestId("yahoo-row").nth(1).locator(".yahoo-list-thumbnail"),
+  ).toHaveCount(0);
   await page
     .getByRole("button", {
       name: `ニュースを開く: ${articles[0].title}`,

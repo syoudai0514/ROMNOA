@@ -434,22 +434,37 @@ export function YahooNews({
               aria-label={`ニュースを開く: ${a.title}`}
               onClick={() => open(a)}
             >
-              <h3>{a.title}</h3>
-              <span className="article-meta">
-                <span>
-                  {yahooCategories.find((c) => c.id === a.category)?.label}
-                </span>
-                <span>{a.provider || "Yahoo!ニュース"}</span>
-                <time dateTime={a.publishedAt || undefined}>
-                  {a.displayDate || articleDate(a.publishedAt)}
-                </time>
-                {library.read[a.id] && (
-                  <span className="read-label">
-                    <Check size={12} />
-                    既読
+              {a.image && (
+                <img
+                  className="yahoo-list-thumbnail"
+                  src={a.image}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  onError={(event) => {
+                    event.currentTarget.style.visibility = "hidden";
+                  }}
+                />
+              )}
+              <div className="yahoo-list-copy">
+                <h3>{a.title}</h3>
+                <span className="article-meta">
+                  <span>
+                    {yahooCategories.find((c) => c.id === a.category)?.label}
                   </span>
-                )}
-              </span>
+                  <span>{a.provider || "Yahoo!ニュース"}</span>
+                  <time dateTime={a.publishedAt || undefined}>
+                    {a.displayDate || articleDate(a.publishedAt)}
+                  </time>
+                  {library.read[a.id] && (
+                    <span className="read-label">
+                      <Check size={12} />
+                      既読
+                    </span>
+                  )}
+                </span>
+              </div>
             </button>
             <button
               className={`icon-button save-button ${saved.has(a.id) ? "is-saved" : ""}`}
