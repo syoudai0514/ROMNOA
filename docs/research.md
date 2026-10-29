@@ -79,4 +79,11 @@ Apple Search API: `https://itunes.apple.com/search?term=2ch&country=jp&entity=so
 
 [公式RSS一覧](https://news.yahoo.co.jp/rss)でカテゴリ9本のURLを照合。domesticの実RSS200/50件にitem.imageとdescriptionが存在し、summaryは記事冒頭まで。トピックスRSSは8件で画像・descriptionなしのためカテゴリRSSを選定。カテゴリRSSの画像はnewsatcl-pctr.c.yimg.jp/t/amd-img/。
 
-[公式RSSヘルプ](https://support.yahoo-net.jp/PccNews/s/article/H000011243)はRSS利用を案内。[リンク・二次利用・著作権](https://support.yahoo-net.jp/PccNews/s/article/H000006460)は二次利用に情報提供元の了承を要求し、通常テキスト/別ウィンドウのリンクを案内。ニュース全文を取得・再配信する許諾は未確認。画像は公式RSS item.imageとして提供されたものだけ使用し、記事ページのOGP/本文/追加写真を取得しない。Yahoo非公認の独立した個人用RSSリーダーとして出典と元記事URLを表示する。
+[公式RSSヘルプ](https://support.yahoo-net.jp/PccNews/s/article/H000011243)はRSS利用を案内。[リンク・二次利用・著作権](https://support.yahoo-net.jp/PccNews/s/article/H000006460)は二次利用に情報提供元の了承を要求し、通常テキスト/別ウィンドウのリンクを案内。ニュース全文を取得・再配信する許諾は未確認。ADR014時点の画像は公式RSS item.imageのみ。ADR015では検索結果として提供されたサムネイルも区別して使用する。記事ページのOGP/本文/追加写真は取得しない。Yahoo非公認の独立した個人用RSSリーダーとして出典と元記事URLを表示する。
+
+
+## 2026-10-29 Yahoo検索「岡田紗佳」
+
+公開検索ページ/search?p=岡田紗佳の実HTMLでsearch.totalResults243、先頭50ニュース、広告10枠を確認。serialized search.contentsはviewType0の記事とviewType1の広告枠が混在する。タイトルだけで照合25件、短い検索抜粋を含め50件。ランキング欄に別記事があるため全文書内の全リンク抽出は使用しない。
+
+公開URLのb=51/page=2/start=51は実応答でstartIndex1・同一先頭記事のままだったため、次ページ取得として採用しない。内部/apiの呼出しを追加せず、続きは公式検索画面へ。検索サムネイルは192pxとして提供された正確なURLを使用し、未確認の高解像度URLへ置換しない。検索表示日時には年がないため年を推定しない。以上は観測時の数値で常時243件や全文検索成功を保証しない。

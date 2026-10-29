@@ -66,6 +66,9 @@ export const yahooArticleSchema = z
       .refine((s) => s === null || yahooImageUrl(s) === s),
     category: yahooCategorySchema,
     publishedAt: z.iso.datetime().nullable(),
+    origin: z.enum(["rss", "search"]).optional(),
+    displayDate: z.string().max(40).optional(),
+    provider: z.string().max(100).optional(),
   })
   .refine((a) => a.id === a.url && yahooArticleUrl(a.url) === a.url);
 export type YahooArticle = z.infer<typeof yahooArticleSchema>;
@@ -83,11 +86,22 @@ export const yahooResponseSchema = z.object({
   generatedAt: z.iso.datetime(),
 });
 export type YahooResponse = z.infer<typeof yahooResponseSchema>;
+export const yahooSearchResponseSchema = z.object({
+  query: z.string().min(1).max(80),
+  scope: z.enum(["title", "summary"]),
+  articles: z.array(yahooArticleSchema).max(50),
+  candidateCount: z.number().int().min(0).max(50),
+  providerTotal: z.number().int().min(0).max(10000000),
+  status: z.enum(["ok", "cached"]),
+  fetchedAt: z.iso.datetime(),
+});
+export type YahooSearchResponse = z.infer<typeof yahooSearchResponseSchema>;
 export function filterYahoo(
   articles: YahooArticle[],
   query: string,
   scope: "title" | "summary",
   category: string,
+  preserveOrder = false,
 ) {
   return articles
     .filter(
@@ -99,9 +113,10 @@ export function filterYahoo(
             query,
           )),
     )
-    .sort(
-      (a, b) =>
-        (Date.parse(b.publishedAt || "") || 0) -
-          (Date.parse(a.publishedAt || "") || 0) || a.id.localeCompare(b.id),
+    .sort((a, b) =>
+      preserveOrder
+        ? 0
+        : (Date.parse(b.publishedAt || "") || 0) -
+            (Date.parse(a.publishedAt || "") || 0) || a.id.localeCompare(b.id),
     );
 }

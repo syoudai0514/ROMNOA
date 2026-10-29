@@ -19,6 +19,9 @@
     },
     "api/yahoo.ts": {
       "maxDuration": 30
+    },
+    "api/yahoo-search.ts": {
+      "maxDuration": 20
     }
   },
   "headers": [

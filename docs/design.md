@@ -149,6 +149,17 @@ Readerは本文テキストのpへreader-text-blockを付け、フォントサ�
 
 YahooServiceはRuntime Cache romnoa-yahoo-rss-v1、成功10分・失敗1分・最後の成功24時間、9カテゴリ/各50/最大450、1MB/6秒/redirect:error、最大3並列、重複要求共有。全カテゴリ失敗時503、部分失敗は他カテゴリを維持。外部アクセスはRSSと開いたニュースの配信画像だけ。ニュース本文URLや任意URLをサーバー取得するAPIはない。
 
-YahooNewsはホーム/検索/保存で共通インスタンスを使い、まとめ検索と独立した検索語/対象を保持。チャンネル変更でスクロールキーも分離。日付を課さないが検索母集団は配信中の最大450件だけ。タイトル/概要のNFKC・小文字AND一致、NG語を適用。過去全文検索とは明確に区別し公式検索の外部リンクを提供。同カテゴリ12件は配信中記事で、Yahooページの推薦取得ではない。
+YahooNewsはホーム/検索/保存で共通インスタンスを使い、まとめ検索と独立した検索語/対象を保持。チャンネル変更でスクロールキーも分離。ADR015により検索は公開検索候補へ置換し、配信中最大450件のRSSはホーム一覧の母集団として維持。検索見出し/抜粋のNFKC・小文字AND一致、NG語を適用。本文全文検索とは明確に区別し公式検索の外部リンクを提供。同カテゴリ12件は配信中記事で、Yahooページの推薦取得ではない。
 
 端末romnoa:yahoo-library:v1に保存200/既読1000、romnoa:yahoo-feed:v1に検証済み一覧24時間。サーバーやブラウザで画像データを複製保存しない。sessionStorageに閲覧位置。既存の履歴既読リセットをYahooへも通知、保存は残す。通常の本文v3・保存キャッシュを消さない。廃止したシークレット機能のコード/候補/PIN/APIは配布しない。
+
+
+## Yahoo掲載記事の検索（ADR015）
+
+Yahoo検索タブで確定した語は/api/yahoo-search?q=&scope=title|summaryへ送る。RSS内だけでは探索しない。新規検索はカテゴリを解除。useYahooSearchは語/対象/再試行キーとAbortControllerを持ち、遅い応答や失敗を別語の結果へ混ぜない。失敗はalert/再試行を表示し、正常0件と区別。検索語を端末へ自動永続化しない。
+
+サーバーは固定公開URL https://news.yahoo.co.jp/search?p=<正規化語> のHTMLを8秒/2MB/redirect:errorで取得、window.__PRELOADED_STATE__の単一JSONからsearchConditions.queryの一致、search.isError=false/startIndex1を検証する。scriptを実行せず内部/apiへアクセスしない。search.contentsのviewType0/serviceIdnews/40hex IDと一致する正規permalinkだけを候補とし、広告・ランキング・おすすめ・関連検索語のstateは使わない。本文ページは取得しない。先頭50候補を上限に、検索見出し/短い抜粋でNFKC AND照合。Yahoo側totalResultsは検索対象を広げた候補総数で、タイトル一致総数とは表現しない。
+
+YahooArticleへoptional origin=search/displayDate/providerを追加し既存RSS保存との互換を維持。検索用日時は年がないためpublishedAt=null、元の表示文字をdisplayDateへ。検索結果の掲載順を維持し、年月を捏造してソートしない。検索由来はサムネイル最大192px/検索抜粋として表示、RSSの原画像・記事本文とは区別。既存allowlistの画像ホストのみ、記事URLを新たな本文取得権限にはしない。
+
+YahooSearchServiceはqのSHA256をキーに、Runtime Cache romnoa-yahoo-search-v1（10分成功/1分失敗/24時間最終成功）、local128件・同一要求共有。scopeは同じ候補を再利用。Previewのみ、GET/80文字/既知scope/重複・未知パラメータ拒否。失敗を空の正常応答で返さない。本文v3と既存RSScacheは変更しない。

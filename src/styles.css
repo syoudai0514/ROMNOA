@@ -2528,3 +2528,5 @@ button {
 .yahoo-reader .reader-footer { gap: 8px; }
 .yahoo-reader .reader-footer .text-button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; font-size: 11px; }
 .yahoo-reader .reader-footer > span { font-size: 10px; color: var(--muted); }
+
+.yahoo-search-reader .article-gallery { max-width: 192px; margin-left: auto; margin-right: auto; }

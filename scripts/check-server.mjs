@@ -34,6 +34,19 @@ if (
     .status !== 400
 )
   throw new Error("Native Yahoo query rejection failed");
+const { GET: yahooSearch } = await import(
+  new URL("api/yahoo-search.js", output)
+);
+if (
+  (
+    await yahooSearch(
+      new Request(
+        "http://localhost/api/yahoo-search?q=x&url=http://127.0.0.1/",
+      ),
+    )
+  ).status !== 400
+)
+  throw new Error("Native Yahoo search query rejection failed");
 const invalidDiscovery = await discover(
   new Request("http://localhost/api/discovery?mode=date&date=2026-02-30"),
 );

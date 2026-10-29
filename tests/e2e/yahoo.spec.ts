@@ -1,6 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { feed } from "../fixtures";
-import { yahooCategories, type YahooArticle } from "../../src/lib/yahoo-model";
+import {
+  yahooCategories,
+  filterYahoo,
+  type YahooArticle,
+} from "../../src/lib/yahoo-model";
 const image =
   "https://newsatcl-pctr.c.yimg.jp/t/amd-img/test-news-view.jpg?w=450";
 const articles: YahooArticle[] = [
@@ -44,6 +48,22 @@ const response = {
 async function setup(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo", (r) => r.fulfill({ json: response }));
+  await page.route("**/api/yahoo-search?**", (r) => {
+    const params = new URL(r.request().url()).searchParams,
+      q = params.get("q")!,
+      scope = params.get("scope") as "title" | "summary";
+    return r.fulfill({
+      json: {
+        query: q,
+        scope,
+        articles: filterYahoo(articles, q, scope, "all"),
+        candidateCount: articles.length,
+        providerTotal: articles.length,
+        status: "ok",
+        fetchedAt: new Date().toISOString(),
+      },
+    });
+  });
   await page.route("https://newsatcl-pctr.c.yimg.jp/**", async (r) => {
     const res = await page.request.get("/icon-192.png");
     return r.fulfill({ contentType: "image/png", body: await res.body() });
@@ -137,11 +157,11 @@ test("Yahoo search separates titles from feed leads, has no date restriction, an
   await search.getByRole("searchbox").fill("気象庁");
   await search.getByRole("button", { name: "検索", exact: true }).click();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(0);
-  await search.getByRole("radio", { name: "配信された概要を含む" }).check();
+  await search.getByRole("radio", { name: "タイトル・検索の抜粋" }).check();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
-  await expect(search).toContainText("全9カテゴリ");
+  await expect(search).toContainText("期間指定なし");
   await expect(
-    search.getByRole("link", { name: /過去記事をYahoo/ }),
+    search.getByRole("link", { name: /続きもYahoo/ }),
   ).toHaveAttribute(
     "href",
     `https://news.yahoo.co.jp/search?p=${encodeURIComponent("気象庁")}`,
@@ -242,4 +262,117 @@ test("removed secret gesture no longer opens a dialog and removed API is unavail
       await page.request.post("/api/hidden-search", { data: { pin: "000000" } })
     ).status(),
   ).toBe(404);
+});
+
+test("person-name search finds a story outside every RSS category and preserves snippets through save/reload", async ({
+  page,
+}) => {
+  await setup(page);
+  await channel(page);
+  const remote: YahooArticle = {
+    ...articles[0],
+    id: `https://news.yahoo.co.jp/articles/${"d".repeat(40)}`,
+    url: `https://news.yahoo.co.jp/articles/${"d".repeat(40)}`,
+    title: "[テスト] 岡田紗佳さんの新しいニュース",
+    summary: "検索ページに掲載された抜粋です。",
+    origin: "search",
+    publishedAt: null,
+    displayDate: "10/28(水) 11:00",
+    provider: "テスト配信社",
+  };
+  const requests: URLSearchParams[] = [];
+  await page.route("**/api/yahoo-search?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    requests.push(p);
+    return r.fulfill({
+      json: {
+        query: p.get("q"),
+        scope: p.get("scope"),
+        articles: [remote],
+        candidateCount: 50,
+        providerTotal: 243,
+        status: "ok",
+        fetchedAt: new Date().toISOString(),
+      },
+    });
+  });
+  await tab(page, "検索");
+  const form = page.getByRole("search", { name: "Yahooニュースを探す" });
+  await form.getByRole("searchbox").fill("岡田紗佳");
+  await form.getByRole("button", { name: "検索", exact: true }).click();
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
+  await expect(page.getByTestId("yahoo-row")).toContainText("岡田紗佳");
+  expect(requests.length).toBeGreaterThan(0);
+  expect(requests[0].get("q")).toBe("岡田紗佳");
+  expect(requests[0].has("date")).toBe(false);
+  await expect(
+    page.getByRole("status").filter({ hasText: "候補総数は243件" }),
+  ).toBeVisible();
+  await page
+    .getByTestId("yahoo-row")
+    .getByRole("button", { name: /^ニュースを保存:/ })
+    .click();
+  await page
+    .getByTestId("yahoo-row")
+    .getByRole("button", { name: /^ニュースを開く:/ })
+    .click();
+  await expect(page.getByRole("region", { name: "検索結果の抜粋" })).toHaveText(
+    remote.summary,
+  );
+  await expect(page.getByRole("dialog", { name: remote.title })).toContainText(
+    "検索結果に表示されているサムネイルと抜粋",
+  );
+  await page.getByRole("button", { name: "ニュースを閉じる" }).click();
+  await page.reload();
+  await channel(page);
+  await tab(page, "保存");
+  await expect(page.getByTestId("yahoo-row")).toContainText(remote.title);
+  await page
+    .getByTestId("yahoo-row")
+    .getByRole("button", { name: /^ニュースを開く:/ })
+    .click();
+  await expect(page.getByRole("region", { name: "検索結果の抜粋" })).toHaveText(
+    remote.summary,
+  );
+});
+
+test("late Yahoo searches cannot replace a newer name and outages are shown as errors rather than zero hits", async ({
+  page,
+}) => {
+  await setup(page);
+  await channel(page);
+  await tab(page, "検索");
+  await page.route("**/api/yahoo-search?**", async (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    if (p.get("q") === "古い語")
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    if (p.get("q") === "障害")
+      return r.fulfill({ status: 503, json: { error: "down" } });
+    return r.fulfill({
+      json: {
+        query: p.get("q"),
+        scope: p.get("scope"),
+        articles: [{ ...articles[0], title: p.get("q")! }],
+        candidateCount: 1,
+        providerTotal: 1,
+        status: "ok",
+        fetchedAt: new Date().toISOString(),
+      },
+    });
+  });
+  const form = page.getByRole("search", { name: "Yahooニュースを探す" });
+  await form.getByRole("searchbox").fill("古い語");
+  await form.getByRole("button", { name: "検索", exact: true }).click();
+  await form.getByRole("searchbox").fill("新しい語");
+  await form.getByRole("button", { name: "検索", exact: true }).click();
+  await expect(page.getByTestId("yahoo-row")).toContainText("新しい語");
+  await page.waitForTimeout(650);
+  await expect(page.getByTestId("yahoo-row")).not.toContainText("古い語");
+  await form.getByRole("searchbox").fill("障害");
+  await form.getByRole("button", { name: "検索", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("検索できませんでした");
+  await expect(page.locator(".yahoo-empty")).toHaveCount(0);
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(0);
+  await page.getByRole("button", { name: "検索を再試行" }).click();
+  await expect(page.getByRole("alert")).toContainText("検索できませんでした");
 });

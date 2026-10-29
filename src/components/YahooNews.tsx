@@ -20,6 +20,8 @@ import {
   type YahooResponse,
 } from "../lib/yahoo-model";
 import { ArticleImages } from "./ArticleImages";
+import { useYahooSearch } from "../lib/use-yahoo-search";
+import { normalizeSearch, validSearch } from "../lib/search-model";
 
 const STORE = "romnoa:yahoo-library:v1";
 const FEED = "romnoa:yahoo-feed:v1";
@@ -83,6 +85,8 @@ export function YahooNews({
   const [term, setTerm] = useState("");
   const [scope, setScope] = useState<"title" | "summary">("title");
   const [category, setCategory] = useState("all");
+  const searchActive = active && mode === "search" && !!term;
+  const remote = useYahooSearch(searchActive ? term : "", scope);
   const [selection, setSelection] = useState<{
     article: YahooArticle;
     sequence: YahooArticle[];
@@ -193,12 +197,27 @@ export function YahooNews({
   const articles = useMemo(
     () =>
       filterYahoo(
-        mode === "saved" ? library.saved : data?.articles || [],
-        mode === "search" ? term : "",
+        mode === "saved"
+          ? library.saved
+          : searchActive
+            ? remote.data?.articles || []
+            : data?.articles || [],
+        "",
         scope,
         category,
+        searchActive,
       ).filter(allowed),
-    [data, library.saved, mode, term, scope, category, ngWords],
+    [
+      data,
+      library.saved,
+      mode,
+      term,
+      scope,
+      category,
+      ngWords,
+      searchActive,
+      remote.data,
+    ],
   );
   const saved = new Set(library.saved.map((a) => a.id));
   function open(article: YahooArticle, sequence = articles) {
@@ -210,7 +229,13 @@ export function YahooNews({
   return (
     <section className="yahoo-panel" aria-label="Yahooニュース">
       <div className="yahoo-controls">
-        <span>{mode === "saved" ? "保存したニュース" : "新着ニュース"}</span>
+        <span>
+          {mode === "saved"
+            ? "保存したニュース"
+            : mode === "search"
+              ? "Yahooニュースを検索"
+              : "新着ニュース"}
+        </span>
         <div>
           {mode !== "search" && (
             <button className="text-button" onClick={onSearch}>
@@ -219,10 +244,12 @@ export function YahooNews({
             </button>
           )}
           <button
-            className={`icon-button ${loading ? "refreshing" : ""}`}
+            className={`icon-button ${(searchActive ? remote.searching : loading) ? "refreshing" : ""}`}
             aria-label="Yahooニュースを更新"
-            disabled={loading}
-            onClick={() => setRefresh((r) => r + 1)}
+            disabled={searchActive ? remote.searching : loading}
+            onClick={() =>
+              searchActive ? remote.retry() : setRefresh((r) => r + 1)
+            }
           >
             <RefreshCw size={18} />
           </button>
@@ -235,7 +262,11 @@ export function YahooNews({
           aria-label="Yahooニュースを探す"
           onSubmit={(e) => {
             e.preventDefault();
-            setTerm(query.trim());
+            const q = normalizeSearch(query);
+            if (!validSearch(q)) return;
+            setTerm(q);
+            setCategory("all");
+            remote.retry();
           }}
         >
           <div className="search-box">
@@ -273,11 +304,11 @@ export function YahooNews({
                 checked={scope === "summary"}
                 onChange={() => setScope("summary")}
               />
-              配信された概要を含む
+              タイトル・検索の抜粋
             </label>
           </fieldset>
           <p className="yahoo-note">
-            日付で絞らず、取得済みの全9カテゴリ・最大450件を検索します。過去記事・全文は検索対象に含まれません。
+            Yahoo掲載記事を期間指定なしで検索します（先頭50候補）。
           </p>
           {term && (
             <a
@@ -286,7 +317,7 @@ export function YahooNews({
               rel="noopener noreferrer"
               href={`https://news.yahoo.co.jp/search?p=${encodeURIComponent(term)}`}
             >
-              過去記事をYahoo!ニュースで検索
+              続きもYahoo!ニュースで検索
               <ExternalLink size={14} />
             </a>
           )}
@@ -320,7 +351,7 @@ export function YahooNews({
           </button>
         </p>
       )}
-      {error && (
+      {!searchActive && error && (
         <p role="status" className="status-banner warning">
           {error}
           <button
@@ -332,7 +363,34 @@ export function YahooNews({
           </button>
         </p>
       )}
-      {data?.sources.some((s) => s.status !== "ok") && (
+      {searchActive && remote.error && (
+        <p className="status-banner warning" role="alert">
+          {remote.error}
+          <button className="text-button" onClick={remote.retry}>
+            検索を再試行
+          </button>
+        </p>
+      )}
+      {searchActive && remote.data && (
+        <details
+          className="yahoo-note yahoo-search-range"
+          open={remote.data.status === "cached"}
+        >
+          <summary>
+            <span role="status">
+              取得{remote.data.candidateCount}件 ／ Yahoo候補総数は
+              {remote.data.providerTotal}件
+            </span>
+          </summary>
+          <p>
+            取得した先頭候補の見出し・検索抜粋で照合しています。Yahoo候補総数にはタイトル以外の一致も含み、表示中の一致数とは異なります。未取得の続きはYahooの検索画面で確認できます。本文全文の検索ではありません。
+          </p>
+          {remote.data.status === "cached" && (
+            <p>取得に失敗したため前回の検索結果を表示しています。</p>
+          )}
+        </details>
+      )}
+      {!searchActive && data?.sources.some((s) => s.status !== "ok") && (
         <p className="yahoo-note" role="status">
           {data.sources
             .filter((s) => s.status !== "ok")
@@ -343,9 +401,11 @@ export function YahooNews({
             .join(" ／ ")}
         </p>
       )}
-      <p className="yahoo-note">
-        公式RSSの画像・記事冒頭を広告なしで表示します。本文の続きは元記事で読めます（広告が出る場合があります）。
-      </p>
+      {mode !== "search" && (
+        <p className="yahoo-note">
+          RSSの記事冒頭や、検索結果のサムネイル・抜粋を広告なしで表示します。本文の続きは元記事で読めます（広告が出る場合があります）。
+        </p>
+      )}
       <div className="yahoo-result-heading" role="status">
         <strong>
           {term && mode === "search"
@@ -355,7 +415,9 @@ export function YahooNews({
               : "配信中のニュース"}{" "}
           <span className="count-badge">{articles.length}</span>
         </strong>
-        {loading && <span>更新中…</span>}
+        {(searchActive ? remote.searching : loading) && (
+          <span>{searchActive ? "Yahooを検索中…" : "更新中…"}</span>
+        )}
       </div>
       <div className="article-list yahoo-list">
         {articles.map((a) => (
@@ -374,9 +436,9 @@ export function YahooNews({
                 <span>
                   {yahooCategories.find((c) => c.id === a.category)?.label}
                 </span>
-                <span>Yahoo!ニュース</span>
+                <span>{a.provider || "Yahoo!ニュース"}</span>
                 <time dateTime={a.publishedAt || undefined}>
-                  {articleDate(a.publishedAt)}
+                  {a.displayDate || articleDate(a.publishedAt)}
                 </time>
                 {library.read[a.id] && (
                   <span className="read-label">
@@ -400,14 +462,22 @@ export function YahooNews({
           </article>
         ))}
       </div>
-      {!loading && !articles.length && (
-        <p className="yahoo-empty">
-          {mode === "saved"
-            ? "保存したYahooニュースはまだありません。"
-            : "この条件に一致するニュースはありません。カテゴリや検索語を変えてください。"}
+      {!(searchActive ? remote.searching || remote.error : loading) &&
+        !articles.length && (
+          <p className="yahoo-empty">
+            {mode === "saved"
+              ? "保存したYahooニュースはまだありません。"
+              : searchActive
+                ? "取得した検索候補に一致するニュースはありません。検索対象・カテゴリを変えるか、Yahooで続きを確認してください。"
+                : "この条件に一致するニュースはありません。カテゴリや検索語を変えてください。"}
+          </p>
+        )}
+      {searchActive && remote.data && (
+        <p className="yahoo-note">
+          {articleDate(remote.data.fetchedAt)} 更新 · Yahoo!ニュース検索
         </p>
       )}
-      {data && (
+      {!searchActive && data && (
         <p className="yahoo-note">
           {offlineCache ? "端末キャッシュ · " : ""}
           {articleDate(data.generatedAt)} 更新 · 配信元：Yahoo!ニュース公式RSS
@@ -418,7 +488,15 @@ export function YahooNews({
           key={selection.article.id}
           article={selection.article}
           saved={saved.has(selection.article.id)}
-          related={(data?.articles || [])
+          related={[
+            ...new Map(
+              [
+                ...(remote.data?.articles || []),
+                ...(data?.articles || []),
+                ...library.saved,
+              ].map((a) => [a.id, a]),
+            ).values(),
+          ]
             .filter(
               (a) =>
                 a.id !== selection.article.id &&
@@ -535,7 +613,7 @@ function YahooReader({
   return (
     <dialog
       ref={dialog}
-      className="reader yahoo-reader"
+      className={`reader yahoo-reader ${article.origin === "search" ? "yahoo-search-reader" : ""}`}
       aria-labelledby="yahoo-reader-title"
       onCancel={(e) => {
         e.preventDefault();
@@ -575,11 +653,16 @@ function YahooReader({
             </span>
             <h1 id="yahoo-reader-title">{article.title}</h1>
             <p className="reader-byline">
-              Yahoo!ニュース · {articleDate(article.publishedAt)}
+              Yahoo!ニュース {article.provider ? ` / ${article.provider}` : ""}{" "}
+              · {article.displayDate || articleDate(article.publishedAt)}
             </p>
             <section
               className="reading-body yahoo-summary"
-              aria-label="配信された記事冒頭"
+              aria-label={
+                article.origin === "search"
+                  ? "検索結果の抜粋"
+                  : "配信された記事冒頭"
+              }
             >
               <p className="reader-text-block">
                 {article.summary ||
@@ -587,7 +670,9 @@ function YahooReader({
               </p>
             </section>
             <p className="yahoo-note">
-              ここまでが公式RSSで配信された記事冒頭です。全文は元記事でご確認ください。
+              {article.origin === "search"
+                ? "検索結果に表示されているサムネイルと抜粋です。全文・記事内の写真は元記事でご確認ください。"
+                : "ここまでが公式RSSで配信された記事冒頭です。全文は元記事でご確認ください。"}
             </p>
             <div className="reader-actions">
               <a
@@ -617,7 +702,9 @@ function YahooReader({
                 aria-label="同じカテゴリのニュース"
               >
                 <h2>同じカテゴリのニュース</h2>
-                <p className="yahoo-note">公式RSSで配信中のニュースです。</p>
+                <p className="yahoo-note">
+                  検索結果やRSSから開けるニュースです。
+                </p>
                 {related.map((a) => (
                   <button
                     className="yahoo-related"

@@ -7,6 +7,7 @@ import { handleReader } from "./server/reader";
 import { handleDiscovery } from "./server/discovery";
 import { handleSearch } from "./server/search";
 import { handleYahoo } from "./server/yahoo";
+import { handleYahooSearch } from "./server/yahoo-search";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
@@ -17,6 +18,7 @@ const api = (): Plugin => ({
       ["/api/discovery", handleDiscovery],
       ["/api/search", handleSearch],
       ["/api/yahoo", handleYahoo],
+      ["/api/yahoo-search", handleYahooSearch],
     ] as const) {
       server.middlewares.use(path, async (req, res) => {
         try {
