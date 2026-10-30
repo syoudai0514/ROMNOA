@@ -100,7 +100,7 @@ async function tab(page: Page, name: string) {
     .click();
 }
 
-test("Yahoo opens image before the title and RSS lead; same-category links, back and next stay inside app", async ({
+test("Yahoo opens the body before the image; same-category links, back and next stay inside app", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -138,7 +138,7 @@ test("Yahoo opens image before the title and RSS lead; same-category links, back
   await expect
     .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth))
     .toBeGreaterThan(0);
-  expect((await img.boundingBox())!.y).toBeLessThan(
+  expect((await img.boundingBox())!.y).toBeGreaterThan(
     (await reader.getByRole("heading", { level: 1 }).boundingBox())!.y,
   );
   await reader.getByRole("button", { name: /を拡大$/ }).click();
@@ -477,4 +477,24 @@ test("article back button and bottom navigation work inside the reader", async (
         .getByRole("button", { name: "検索", exact: true }),
     ).toHaveAttribute("aria-current", "page");
   }
+});
+
+test("categories switch between roundup and news and filter the news list", async ({ page }) => {
+  await setup(page);
+  await tab(page, "カテゴリ");
+  await page.getByRole("combobox", { name: "配信チャンネル" }).selectOption("yahoo");
+  await page.getByRole("button", { name: /スポーツ.*ニュースを見る/ }).click();
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
+  await expect(page.getByTestId("yahoo-row").first()).toContainText(articles[2].title);
+});
+
+test("article navigation is available without a photo feature", async ({ page }) => {
+  await setup(page);
+  await channel(page);
+  await page.getByRole("button", { name: `ニュースを開く: ${articles[1].title}` }).click();
+  const reader = page.getByRole("dialog", { name: articles[1].title });
+  const nav = reader.getByRole("navigation", { name: "ニュース内の移動" });
+  await expect(nav.getByRole("button")).toHaveText(["ニュース本文", "記事の写真"]);
+  await nav.getByRole("button", { name: "記事の写真" }).click();
+  await expect(reader.getByText("表示できる記事の写真はありません。")).toBeVisible();
 });

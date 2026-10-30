@@ -67,7 +67,7 @@ function gallery(feature = pageUrl(), page = feature) {
     status: "ok",
   };
 }
-async function setup(page: Page, generic = false, failNext?: () => boolean) {
+async function setup(page: Page, generic = false, failNext?: () => boolean, multiple = false) {
   const requests: URLSearchParams[] = [];
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo-body?**", (r) =>
@@ -116,7 +116,7 @@ async function setup(page: Page, generic = false, failNext?: () => boolean) {
     return r.fulfill({
       json: p.has("feature")
         ? gallery(p.get("feature")!, p.get("page") || p.get("feature")!)
-        : meta,
+        : multiple ? { ...meta, pictures: [meta.pictures[0], { ...meta.pictures[0], url: `${cover}&second=1`, alt: "二枚目" }] } : meta,
     });
   });
   const full = await sharp({
@@ -185,7 +185,7 @@ test("full article photo and photo feature appear inline automatically, with fiv
   expect(requests.some((r) => r.get("feature") === pageUrl())).toBe(true);
   await reader
     .getByRole("navigation", { name: "ニュース内の移動" })
-    .getByRole("button", { name: "ニュースへ", exact: true })
+    .getByRole("button", { name: "ニュース本文", exact: true })
     .click();
   await expect(
     reader.getByRole("heading", { name: article.title, exact: true }),
@@ -303,7 +303,7 @@ test("photo failures offer retry while keeping news readable, and a failed next 
   await expect(feature.locator(".photo-feature-stage img")).toHaveCount(0);
   await page
     .getByRole("navigation", { name: "ニュース内の移動" })
-    .getByRole("button", { name: "ニュースへ", exact: true })
+    .getByRole("button", { name: "ニュース本文", exact: true })
     .click();
   await expect(
     page.getByRole("region", { name: "検索結果の抜粋" }),
@@ -442,4 +442,21 @@ test("enlarged gallery supports buttons and swipe, and restores the selected pho
     display(4),
   );
   await expect(feature).toContainText("4 / 5");
+});
+
+
+test("article pictures navigate horizontally and zoom keeps the chosen image", async ({ page }) => {
+  await setup(page, false, undefined, true);
+  const reader = page.getByRole("dialog", { name: article.title });
+  const nav = reader.getByRole("navigation", { name: "ニュース内の移動" });
+  await expect(nav.getByRole("button")).toHaveText(["ニュース本文", "記事の写真", "写真特集"]);
+  await nav.getByRole("button", { name: "記事の写真" }).click();
+  const gallery = reader.getByRole("region", { name: "この記事の画像" });
+  await expect(gallery.getByRole("group", { name: "記事の写真一覧" }).getByRole("button")).toHaveCount(2);
+  await gallery.getByRole("button", { name: "記事の次の写真" }).click();
+  await expect(gallery.locator(".article-gallery-stage img")).toHaveAttribute("alt", "二枚目");
+  await gallery.getByRole("button", { name: "二枚目を拡大" }).click();
+  await page.getByRole("button", { name: "前の画像" }).click();
+  await page.getByRole("button", { name: "拡大画像を閉じる" }).click();
+  await expect(gallery.locator(".article-gallery-stage img")).toHaveAttribute("alt", "記事の大きい写真");
 });

@@ -2561,3 +2561,9 @@ button {
   .reader:has(.reader-bottom-nav) .reader-inner { height: calc(100dvh - 65px - env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 65px - env(safe-area-inset-bottom, 0px)); }
   .reader .reader-footer { padding-bottom: 9px; }
 }
+
+.article-gallery-stage { touch-action: pan-y; min-height: calc(min(62dvh, 550px) + 35px); }
+.article-gallery-stage figure { margin: 0; }
+.article-gallery-stage .article-picture img { height: min(62dvh, 550px); object-fit: contain; }
+.yahoo-photo-section { padding-top: 20px; margin-top: 22px; border-top: 1px solid var(--line); }
+.yahoo-photo-section > h2 { font-size: 16px; margin: 0 0 14px; }

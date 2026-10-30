@@ -24,6 +24,7 @@ import type { LucideIcon } from "lucide-react";
 import { ArticleRow } from "./components/ArticleRow";
 import { Reader } from "./components/Reader";
 import { YahooNews } from "./components/YahooNews";
+import { yahooCategories } from "./lib/yahoo-model";
 import { HomeFilters, CategoryChips } from "./components/HomeFilters";
 import { SortControl } from "./components/SortControl";
 import { ArticleSearch } from "./components/ArticleSearch";
@@ -88,6 +89,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [channel, setChannel] = useState<"roundup" | "yahoo">("roundup");
   const [category, setCategory] = useState<Category>("すべて");
+  const [yahooCategory, setYahooCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [shelfQuery, setShelfQuery] = useState("");
   const query =
@@ -511,7 +513,7 @@ export default function App() {
             </a>
             <span className="topbar-label">あなたの、読む時間。</span>
             <div className="topbar-tools">
-              {showList ? (
+              {showList || tab === "categories" ? (
                 <select
                   className="channel-select"
                   aria-label="配信チャンネル"
@@ -666,6 +668,8 @@ export default function App() {
               onSearch={() => navigate("search")}
               bottomNav={readerBottomNav}
               ngWords={prefs.ngWords}
+              category={yahooCategory}
+              onCategory={setYahooCategory}
             />
             {showList && !yahooActive && (
               <div className="reading-layout">
@@ -1194,28 +1198,54 @@ export default function App() {
             {tab === "categories" && (
               <>
                 <div className="category-grid">
-                  {categories.slice(1).map((c, i) => (
-                    <button
-                      className="category-card"
-                      key={c}
-                      onClick={() => chooseCategory(c)}
-                    >
-                      <span className={`category-number dot-${i + 1}`}>
-                        0{i + 1}
-                      </span>
-                      <h2>{c}</h2>
-                      <p>{categoryDescriptions[c]}</p>
-                      <span className="category-card-footer">
-                        {filteredCount.filter((a) => a.category === c).length}{" "}
-                        件の記事
-                        <ArrowRight size={18} />
-                      </span>
-                    </button>
-                  ))}
+                  {channel === "roundup"
+                    ? categories.slice(1).map((c, i) => (
+                        <button
+                          className="category-card"
+                          key={c}
+                          onClick={() => chooseCategory(c)}
+                        >
+                          <span className={`category-number dot-${i + 1}`}>
+                            0{i + 1}
+                          </span>
+                          <h2>{c}</h2>
+                          <p>{categoryDescriptions[c]}</p>
+                          <span className="category-card-footer">
+                            {
+                              filteredCount.filter((a) => a.category === c)
+                                .length
+                            }{" "}
+                            件の記事
+                            <ArrowRight size={18} />
+                          </span>
+                        </button>
+                      ))
+                    : yahooCategories.map((c, i) => (
+                        <button
+                          className="category-card"
+                          key={c.id}
+                          onClick={() => {
+                            setYahooCategory(c.id);
+                            setTab("home");
+                          }}
+                        >
+                          <span
+                            className={`category-number dot-${(i % 6) + 1}`}
+                          >
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                          <h2>{c.label}</h2>
+                          <span className="category-card-footer">
+                            ニュースを見る <ArrowRight size={18} />
+                          </span>
+                        </button>
+                      ))}
                 </div>
-                <p className="muted-note">
-                  カテゴリは配信元の分類と記事タイトルから推定しています。
-                </p>
+                {channel === "roundup" && (
+                  <p className="muted-note">
+                    カテゴリは配信元の分類と記事タイトルから推定しています。
+                  </p>
+                )}
               </>
             )}
 

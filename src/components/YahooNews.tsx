@@ -71,12 +71,16 @@ export function YahooNews({
   onSearch,
   bottomNav,
   ngWords,
+  category,
+  onCategory,
 }: {
   active: boolean;
   mode: "home" | "search" | "saved";
   onSearch: () => void;
   bottomNav?: React.ReactNode;
   ngWords: string[];
+  category: string;
+  onCategory: (category: string) => void;
 }) {
   const [initial] = useState(readLibrary);
   const [library, setLibrary] = useState(initial.value);
@@ -90,7 +94,6 @@ export function YahooNews({
   const [query, setQuery] = useState("");
   const [term, setTerm] = useState("");
   const [scope, setScope] = useState<"title" | "summary">("title");
-  const [category, setCategory] = useState("all");
   const searchActive = active && mode === "search" && !!term;
   const remote = useYahooSearch(searchActive ? term : "", scope);
   const [selection, setSelection] = useState<{
@@ -279,7 +282,7 @@ export function YahooNews({
             const q = normalizeSearch(query);
             if (!validSearch(q)) return;
             setTerm(q);
-            setCategory("all");
+            onCategory("all");
             remote.retry();
           }}
         >
@@ -347,7 +350,7 @@ export function YahooNews({
             key={c.id}
             className={category === c.id ? "selected" : ""}
             aria-pressed={category === c.id}
-            onClick={() => setCategory(c.id)}
+            onClick={() => onCategory(c.id)}
           >
             {c.label}
           </button>
@@ -762,78 +765,19 @@ function YahooReader({
             戻る
           </button>
         </header>
-        {!!feature && (
-          <nav className="yahoo-detail-sections" aria-label="ニュース内の移動">
-            <button onClick={() => jump(photos.current)}>記事の写真</button>
+        <nav className="yahoo-detail-sections" aria-label="ニュース内の移動">
+          <button onClick={() => jump(newsHeading.current)}>
+            ニュース本文
+          </button>
+          <button onClick={() => jump(photos.current)}>記事の写真</button>
+          {feature && (
             <button onClick={() => jump(featureSection.current)}>
               写真特集
             </button>
-            <button onClick={() => jump(newsHeading.current)}>
-              ニュースへ
-            </button>
-          </nav>
-        )}
+          )}
+        </nav>
         <div className="reader-content" ref={content}>
           <div>
-            <div ref={photos} className="yahoo-photo-section">
-              {fullPictures.length ? (
-                <>
-                  <ArticleImages
-                    key="full-article-photos"
-                    pictures={fullPictures.map((p) => ({
-                      url: p.url,
-                      alt: p.alt || article.title,
-                      role: "cover",
-                    }))}
-                  />
-                  {fullPictures.some((p) => p.caption || p.credit) && (
-                    <p className="yahoo-note photo-credit">
-                      {fullPictures
-                        .map((p) =>
-                          [p.caption, p.credit].filter(Boolean).join(" / "),
-                        )
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  )}
-                </>
-              ) : (
-                article.image && (
-                  <ArticleImages
-                    pictures={[
-                      { url: article.image, alt: article.title, role: "cover" },
-                    ]}
-                  />
-                )
-              )}
-              {mediaRequest.loading && (
-                <p className="yahoo-note" role="status">
-                  記事の大きい写真と写真特集を確認中…
-                </p>
-              )}
-              {mediaRequest.error && (
-                <p className="yahoo-note" role="status">
-                  {mediaRequest.error}
-                  <button className="text-button" onClick={mediaRequest.retry}>
-                    写真情報を再取得
-                  </button>
-                </p>
-              )}
-              {media?.status === "cached" && (
-                <p className="yahoo-note" role="status">
-                  前回確認した写真情報を表示しています。
-                </p>
-              )}
-            </div>
-            {feature && (
-              <div ref={featureSection} className="yahoo-feature-section">
-                <YahooPhotoFeature
-                  key={feature.url}
-                  articleId={article.id}
-                  feature={feature}
-                />
-              </div>
-            )}
             <span className="pill">
               {yahooCategories.find((c) => c.id === article.category)?.label}
             </span>
@@ -930,6 +874,73 @@ function YahooReader({
                 {saved ? "保存済み" : "あとで読む"}
               </button>
             </div>
+            <div ref={photos} className="yahoo-photo-section">
+              <h2>記事の写真</h2>
+              {!mediaRequest.loading &&
+                !fullPictures.length &&
+                !article.image && (
+                  <p className="yahoo-note">
+                    表示できる記事の写真はありません。
+                  </p>
+                )}
+              {fullPictures.length ? (
+                <>
+                  <ArticleImages
+                    key="full-article-photos"
+                    pictures={fullPictures.map((p) => ({
+                      url: p.url,
+                      alt: p.alt || article.title,
+                      role: "cover",
+                    }))}
+                  />
+                  {fullPictures.some((p) => p.caption || p.credit) && (
+                    <p className="yahoo-note photo-credit">
+                      {fullPictures
+                        .map((p) =>
+                          [p.caption, p.credit].filter(Boolean).join(" / "),
+                        )
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
+                </>
+              ) : (
+                article.image && (
+                  <ArticleImages
+                    pictures={[
+                      { url: article.image, alt: article.title, role: "cover" },
+                    ]}
+                  />
+                )
+              )}
+              {mediaRequest.loading && (
+                <p className="yahoo-note" role="status">
+                  記事の大きい写真と写真特集を確認中…
+                </p>
+              )}
+              {mediaRequest.error && (
+                <p className="yahoo-note" role="status">
+                  {mediaRequest.error}
+                  <button className="text-button" onClick={mediaRequest.retry}>
+                    写真情報を再取得
+                  </button>
+                </p>
+              )}
+              {media?.status === "cached" && (
+                <p className="yahoo-note" role="status">
+                  前回確認した写真情報を表示しています。
+                </p>
+              )}
+            </div>
+            {feature && (
+              <div ref={featureSection} className="yahoo-feature-section">
+                <YahooPhotoFeature
+                  key={feature.url}
+                  articleId={article.id}
+                  feature={feature}
+                />
+              </div>
+            )}
             {!!media?.features.length && (
               <section
                 className="yahoo-photo-features"
