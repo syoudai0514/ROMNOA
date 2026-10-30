@@ -167,7 +167,29 @@ export function parseYahooPhotoMetadata(
   }
   for (const raw of array(detail.relatedLink).slice(0, 20)) {
     const l = object(raw);
-    add(l.title, l.uri, false);
+    // Some publishers put the article's own gallery only in relatedLink.
+    // Accept it only with both publisher-host and native article-ID evidence.
+    const target = typeof l.uri === "string" ? linkedPhotoTarget(l.uri) : null;
+    const nativeId = clean(detail.amandaId).match(
+      /^\d{8}-(\d{5,})-[a-z0-9]+$/i,
+    )?.[1];
+    let ownGallery = false;
+    try {
+      const publisher = new URL(String(object(detail.media).mediaUrl));
+      const candidate = target && new URL(target.url);
+      ownGallery =
+        !!candidate &&
+        !!nativeId &&
+        candidate.hostname.replace(/^www\./, "") ===
+          publisher.hostname.replace(/^www\./, "") &&
+        candidate.pathname.split("/").includes(nativeId) &&
+        /\/(?:photo|gallery|img|images)(?:\/|$)/i.test(candidate.pathname) &&
+        rankPhotoLinks([{ url: candidate.href, title: clean(l.title) }])
+          .length === 1;
+    } catch {
+      /* no publisher provenance */
+    }
+    add(l.title, l.uri, ownGallery);
   }
   // Only links with photo evidence become features; social posts, shops and
   // plain related stories are left to the article body.
@@ -398,7 +420,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v15" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v16" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

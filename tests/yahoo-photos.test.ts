@@ -301,3 +301,30 @@ describe("private Yahoo article photos and linked MANTAN features", () => {
     expect((await handleYahooPhotos(req(), failed, true)).status).toBe(503);
   });
 });
+
+it("accepts an article's own related gallery only with publisher and native-ID evidence", () => {
+  const article = `https://news.yahoo.co.jp/articles/${"a".repeat(40)}`;
+  const own = "https://times.abema.tv/articles/photo/10285039?pn=6";
+  const html = `<script>window.__PRELOADED_STATE__=${JSON.stringify({
+    articleDetail: {
+      contentId: "a".repeat(40),
+      newsLink: article,
+      amandaId: "20261030-10285039-abemav",
+      media: { mediaUrl: "https://times.abema.tv/" },
+      relatedLink: [
+        { title: "【画像】投稿の写真", uri: own },
+        {
+          title: "【画像】別記事",
+          uri: "https://times.abema.tv/articles/photo/99999999?pn=1",
+        },
+        {
+          title: "【画像】他サイト",
+          uri: "https://evil.example/articles/photo/10285039",
+        },
+      ],
+    },
+  })}</script>`;
+  expect(
+    parseYahooPhotoMetadata(html, article).features.map((f) => f.url),
+  ).toEqual([own]);
+});
