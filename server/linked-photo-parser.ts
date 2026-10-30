@@ -515,6 +515,13 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
       };
     }
   }
+  const remaining = DomUtils.findOne(
+    (n) => (n.attribs.class || "").split(/\s+/).includes("js-gallery-more"),
+    doc.children,
+  );
+  const declaredTotal = Number(remaining?.attribs["data-max"] || 0);
+  if (Number.isInteger(declaredTotal) && declaredTotal > pictures.length)
+    throw Error("incomplete_gallery");
   const pages = pictures.map((_, i) =>
     i ? `${pageUrl}#romnoa-photo-${i + 1}` : pageUrl,
   );

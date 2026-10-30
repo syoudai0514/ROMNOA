@@ -1,3 +1,5 @@
+import { declaredGallery } from "./declared-gallery.js";
+import { oriconGallery } from "./oricon-gallery.js";
 import { entameGallery, entamePhotoKey } from "./entame-gallery.js";
 import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
@@ -320,7 +322,19 @@ export async function fetchPhotoHtml(
     await reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
-  return Buffer.concat(chunks).toString("utf8");
+  const buffer = Buffer.concat(chunks);
+  const declared =
+    res.headers.get("content-type")?.match(/charset=["']?([\w-]+)/i)?.[1] ||
+    buffer
+      .subarray(0, 4096)
+      .toString("ascii")
+      .match(/charset\s*=\s*["']?([\w-]+)/i)?.[1] ||
+    "utf-8";
+  try {
+    return new TextDecoder(declared).decode(buffer);
+  } catch {
+    return buffer.toString("utf8");
+  }
 }
 const entrySchema = z.object({
   data: dataSchema.nullable(),
@@ -346,7 +360,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v12" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v13" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -437,7 +451,9 @@ export class YahooPhotoService {
           ? parseYahooPhotoMetadata(html, url)
           : photoFeatureTarget(url)
             ? parseMantanPhotoPage(html, url)
-            : entameGallery(html, url) ||
+            : declaredGallery(html, url) ||
+              oriconGallery(html, url) ||
+              entameGallery(html, url) ||
               mdprGallery(html, url) ||
               (await bunshunGallery(html, url)) ||
               (await collectLinkedPhotos(html, url, this.load));
@@ -493,6 +509,17 @@ export class YahooPhotoService {
     const first = await this.entry(feature),
       gallery = first.data!;
     if (gallery.kind !== "gallery") throw Error("wrong_cache_kind");
+    const label =
+      data.features.find((f) => f.url === feature)?.title.normalize("NFKC") ||
+      "";
+    const expected = Number(
+      label
+        .match(/(?:写真|画像|全)\s*(\d+)\s*枚|(?:全)?\s*(\d+)\s*枚/)
+        ?.slice(1)
+        .find(Boolean) || 0,
+    );
+    if (expected > 1 && gallery.pages.length < expected)
+      throw Error("incomplete_gallery");
     const selected = page || feature;
     if (!gallery.pages.includes(selected))
       throw new PhotoAccessError("page_not_linked");
@@ -502,6 +529,13 @@ export class YahooPhotoService {
           : await this.entry(selected),
       photo = current.data!;
     if (photo.kind !== "gallery") throw Error("wrong_cache_kind");
+    if (/(^|\.)oricon\.co\.jp$/.test(new URL(feature).hostname)) {
+      const paths = (g: typeof gallery) =>
+        g.pages.map((p) => new URL(p).pathname).join("\n");
+      if (paths(photo) !== paths(gallery))
+        throw Error("gallery_structure_changed");
+    }
+
     const entameArticle =
       new URL(feature).hostname === "entamenext.com" &&
       new URL(feature).pathname.match(/^\/articles\/gallery\/(\d+)\/\d+$/);
@@ -611,6 +645,10 @@ export async function handleYahooPhotos(
   } catch (e) {
     return Response.json(
       {
+        code:
+          e instanceof Error && e.message === "incomplete_gallery"
+            ? "incomplete_gallery"
+            : undefined,
         error:
           e instanceof PhotoAccessError
             ? "この記事に紐づく写真ではありません。"

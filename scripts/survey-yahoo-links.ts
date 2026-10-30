@@ -105,6 +105,27 @@ console.error(`articles: ${articles.size}`);
 
 const service = new YahooPhotoService(new MemoryPhotoCache());
 const rows: Row[] = [];
+const articleResults: {
+  url: string;
+  category: string;
+  status: string;
+  error?: string;
+}[] = [];
+writeFileSync(
+  join(out, "articles.json"),
+  JSON.stringify(
+    [...articles].map(([url, category]) => ({ url, category })),
+    null,
+    2,
+  ),
+);
+const checkpoint = () => {
+  writeFileSync(join(out, "links.json"), JSON.stringify(rows, null, 2));
+  writeFileSync(
+    join(out, "article-results.json"),
+    JSON.stringify(articleResults, null, 2),
+  );
+};
 const queue = [...articles];
 await Promise.all(
   Array.from({ length: 4 }, async () => {
@@ -114,9 +135,17 @@ await Promise.all(
       try {
         found = links(await fetchPhotoHtml(article));
       } catch (e) {
+        articleResults.push({
+          url: article,
+          category,
+          status: "failed",
+          error: e instanceof Error ? e.message : String(e),
+        });
+        checkpoint();
         console.error("article", article, String(e));
         continue;
       }
+      articleResults.push({ url: article, category, status: "ok" });
       let features: string[] = [];
       try {
         const meta = await service.get(article);
@@ -155,6 +184,7 @@ await Promise.all(
         }
         rows.push(row);
       }
+      checkpoint();
       console.error(`${articles.size - queue.length}/${articles.size}`);
     }
   }),

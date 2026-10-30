@@ -79,7 +79,14 @@ export function useYahooPhotos(
         const res = await fetch(`/api/yahoo-photos?${key}`, {
           signal: controller.signal,
         });
-        if (!res.ok) throw Error("unavailable");
+        if (!res.ok) {
+          const error = await res.json().catch(() => null);
+          throw Error(
+            error?.code === "incomplete_gallery"
+              ? "incomplete_gallery"
+              : "unavailable",
+          );
+        }
         const data = (
           feature ? yahooPhotoGallerySchema : yahooPhotoMetadataSchema
         ).parse(await res.json());
@@ -94,15 +101,18 @@ export function useYahooPhotos(
         memory.set(key, data);
         if (memory.size > 100) memory.delete(memory.keys().next().value!);
         setState({ key, resource: data, loading: false, error: "" });
-      } catch {
+      } catch (error) {
         if (live)
           setState({
             key,
             resource: cached || null,
             loading: false,
-            error: feature
-              ? "写真特集を取得できませんでした。再試行してください。"
-              : "大きい写真と写真特集を取得できませんでした。再試行できます。",
+            error:
+              error instanceof Error && error.message === "incomplete_gallery"
+                ? "写真一覧をすべて取得できませんでした。元の写真ページで確認できます。"
+                : feature
+                  ? "写真特集を取得できませんでした。再試行してください。"
+                  : "大きい写真と写真特集を取得できませんでした。再試行できます。",
           });
       } finally {
         clearTimeout(timeout);

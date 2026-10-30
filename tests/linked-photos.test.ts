@@ -76,6 +76,18 @@ describe("publisher-independent linked photos", () => {
     expect(gallery.pages).toEqual([page]);
     expect(gallery.picture.url).toContain("/actual.jpg");
   });
+  it("does not report a partial gallery as the complete declared photo set", async () => {
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) =>
+        url === article
+          ? metadata().replace("画像を見る", "全10枚の写真")
+          : html,
+    );
+    await expect(service.get(article, feature)).rejects.toThrow(
+      "incomplete_gallery",
+    );
+  });
   it("resolves every photo through article membership without fetching synthetic fragment pages", async () => {
     const loaded: string[] = [];
     const service = new YahooPhotoService(
