@@ -490,3 +490,43 @@ test("article pictures navigate horizontally and zoom keeps the chosen image", a
     "記事の大きい写真",
   );
 });
+
+test("publisher gallery exposes its embedded Instagram post alongside its photographs", async ({
+  page,
+}) => {
+  await setup(page);
+  const post = "https://www.instagram.com/p/De_fIWIE2-9/";
+  await page.route("**/api/social?**", (r) =>
+    r.fulfill({ status: 502, json: { error: "unavailable" } }),
+  );
+  await page.route("**/api/yahoo-photos?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    return r.fulfill({
+      json: p.has("feature")
+        ? {
+            ...gallery(p.get("feature")!, p.get("page") || p.get("feature")!),
+            posts: [{ provider: "Instagram", url: post }],
+          }
+        : meta,
+    });
+  });
+  await page.reload();
+  await page
+    .getByRole("combobox", { name: "配信チャンネル", exact: true })
+    .selectOption("yahoo");
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${article.title}`,
+      exact: true,
+    })
+    .click();
+  const reader = page.getByRole("dialog", { name: article.title, exact: true });
+  await expect(
+    reader.getByRole("link", { name: /Instagramで開く/ }),
+  ).toHaveAttribute("href", post);
+  await expect(
+    reader
+      .getByRole("group", { name: "写真特集の写真一覧" })
+      .getByRole("button"),
+  ).toHaveCount(5);
+});

@@ -6,6 +6,7 @@ import type {
 } from "../lib/yahoo-photos-model";
 import { yahooPhotoImagePath } from "../lib/yahoo-photos-model";
 import { prefetchYahooPhoto, useYahooPhotos } from "../lib/use-yahoo-photos";
+import { SocialPostCard } from "./SocialPost";
 import { ImageViewer } from "./ArticleImages";
 
 export function YahooPhotoFeature({
@@ -215,6 +216,13 @@ export function YahooPhotoFeature({
           取得に失敗したため、前回確認した写真を表示しています。
         </p>
       )}
+      {gallery?.posts?.map((post) => (
+        <SocialPostCard
+          key={post.url}
+          url={post.url}
+          provider={post.provider}
+        />
+      ))}
       {zoom && picture && (
         <ImageViewer
           pictures={pages.map((url, i) => ({

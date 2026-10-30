@@ -88,6 +88,34 @@ describe("publisher-independent linked photos", () => {
       "incomplete_gallery",
     );
   });
+  it("resolves a publisher's actual-post page without collecting other article cards", async () => {
+    const feature = "https://www.chunichi.co.jp/article/1330719";
+    const source = readFileSync(
+      new URL("./fixtures/chunichi-post.html", import.meta.url),
+      "utf8",
+    );
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) =>
+        url === article
+          ? metadata(feature).replace("画像を見る", "実際の投稿")
+          : source,
+    );
+    const gallery = await service.get(article, feature);
+    if (gallery.kind !== "gallery") throw Error("gallery");
+    expect(gallery.pages).toHaveLength(3);
+    expect(gallery.posts).toEqual([
+      {
+        provider: "Instagram",
+        url: "https://www.instagram.com/p/De_fIWIE2-9/",
+      },
+    ]);
+    for (const page of gallery.pages) {
+      const image = await service.imageSource(article, feature, page, false);
+      expect(image.url).not.toContain("unrelated");
+    }
+    expect(JSON.stringify(gallery)).not.toContain("Other12");
+  });
   it("resolves every photo through article membership without fetching synthetic fragment pages", async () => {
     const loaded: string[] = [];
     const service = new YahooPhotoService(

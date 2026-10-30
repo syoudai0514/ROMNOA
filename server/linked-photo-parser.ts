@@ -1,5 +1,6 @@
 import { parseDocument, DomUtils } from "htmlparser2";
 import type { Element, AnyNode } from "domhandler";
+import { socialPostUrl } from "../src/lib/reader-media.js";
 import { publicPhotoUrl } from "../src/lib/public-photo-url.js";
 import type { YahooPicture } from "../src/lib/yahoo-photos-model.js";
 
@@ -49,7 +50,8 @@ function priority(node: Element) {
   if (node.name === "figure") return 4;
   if (
     /(?:entry|article|post)[-_](?:content|body)/i.test(label) ||
-    a.itemprop === "articleBody"
+    a.itemprop === "articleBody" ||
+    a.id === "entry"
   )
     return 3;
   if (node.name === "article") return 2;
@@ -271,11 +273,17 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
           href.split("#")[0] !== pageUrl &&
           !(
             new URL(href).origin === new URL(pageUrl).origin &&
+            new URL(pageUrl).pathname.split("/").filter(Boolean).length >= 3 &&
             new URL(pageUrl).pathname.replace(/\/\d+\/?$/, "/") !==
               new URL(pageUrl).pathname &&
             new URL(href).pathname.startsWith(
               new URL(pageUrl).pathname.replace(/\/\d+\/?$/, "/"),
             )
+          ) &&
+          !(
+            new URL(href).origin === new URL(pageUrl).origin &&
+            new URL(href).searchParams.get("article_id") ===
+              new URL(pageUrl).pathname.match(/\/(\d+)\/?$/)?.[1]
           ) &&
           !/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href)
         )
@@ -522,6 +530,34 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
   const declaredTotal = Number(remaining?.attribs["data-max"] || 0);
   if (Number.isInteger(declaredTotal) && declaredTotal > pictures.length)
     throw Error("incomplete_gallery");
+  const posts = selected
+    ? DomUtils.findAll((n) => n.name === "blockquote", selected.children)
+        .flatMap((node) => {
+          let parent: AnyNode | null = node;
+          while (parent && parent !== selected) {
+            if ("attribs" in parent && blocked(parent)) return [];
+            parent = parent.parent;
+          }
+          const explicit = node.attribs["data-instgrm-permalink"];
+          const candidates = explicit
+            ? [explicit]
+            : (node.attribs.class || "").split(/\s+/).includes("twitter-tweet")
+              ? DomUtils.findAll((n) => n.name === "a", node.children).map(
+                  (a) => a.attribs.href || "",
+                )
+              : [];
+          const urls = candidates
+            .map((raw) => socialPostUrl(raw))
+            .filter(
+              (p): p is NonNullable<ReturnType<typeof socialPostUrl>> => !!p,
+            );
+          return urls.length ? [urls[urls.length - 1]] : [];
+        })
+        .filter(
+          (post, i, all) => all.findIndex((p) => p.url === post.url) === i,
+        )
+        .slice(0, 12)
+    : [];
   const pages = pictures.map((_, i) =>
     i ? `${pageUrl}#romnoa-photo-${i + 1}` : pageUrl,
   );
@@ -534,6 +570,7 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
     title,
     linkedPages: [...linkedPages],
     hasPrimaryPhoto: !!selected,
+    posts,
   };
 }
 

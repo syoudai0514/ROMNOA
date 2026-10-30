@@ -1,3 +1,4 @@
+import { socialPostUrl } from "./reader-media.js";
 import { publicPhotoUrl } from "./public-photo-url.js";
 import { z } from "zod";
 import { yahooArticleUrl, yahooImageUrl } from "./yahoo-model.js";
@@ -117,9 +118,17 @@ export const yahooPhotoMetadataSchema = z.object({
   features: z.array(photoFeatureSchema).max(12),
 });
 export type YahooPhotoMetadata = z.infer<typeof yahooPhotoMetadataSchema>;
+export const embeddedPostSchema = z.object({
+  provider: z.enum(["X", "Instagram"]),
+  url: z
+    .string()
+    .max(2048)
+    .refine((s) => socialPostUrl(s)?.url === s),
+});
 export const yahooPhotoGallerySchema = z.object({
   ...common,
   kind: z.literal("gallery"),
+  posts: z.array(embeddedPostSchema).max(12).optional(),
   featureUrl: photoFeatureSchema.shape.url,
   pageUrl: photoFeatureSchema.shape.url,
   picture: yahooPictureSchema,

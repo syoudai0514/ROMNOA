@@ -650,3 +650,11 @@ articles 450 / links 3595 / features 422
 | unnan.keizai.biz/headline/N/ | 1 | article | 0 | 0/0 | 0 |  | 奥出雲で着物リメークのファッションショー　 すみれ会員ランウェー歩く |
 | imabari.keizai.biz/headline/N/ | 1 | article | 0 | 0/0 | 0 |  | 今治で「きつねの嫁入り行列」一般参加募る　着物文化の発信とにぎわい目指し |
 | news.ntv.co.jp/n/sdt/category/weather/sH/entry | 1 | article | 0 | 0/0 | 0 |  | 【台風30号接近中】静岡県内は非常に激しい雨に　富士山南東に一時警報発表　27日 |
+
+## 追跡調査: 出版社経由の「実際の投稿」
+
+Yahoo記事69736ace837e479ddd2a48567a8daea6f8229365では、リンク先の中日スポーツarticle/1330719に、article_id=1330719の写真リンク3件とInstagramの明示的なblockquoteがある。分類だけの問題ではなく、本文#entryを識別できず、番号付きURLの兄弟判定が/article/以下の別記事まで許していたことが誤画像の原因だった。
+
+本文領域を認識し、写真リンクのarticle_idが現在の記事に一致することを検証。番号付きギャラリーの兄弟判定は、記事ルートより深い階層に限定。投稿は選択された本文内のInstagram permalinkとX埋め込みblockquoteだけから抽出し、広告・関連記事・ヘッダーのSNSを含めない。抽出した投稿は既存の投稿カードへ渡し、取得できない場合も正規の投稿URLを表示する。サイト全体のSNSリンクやスクリプトを実行して探す方式は採らない。
+
+実ページで3枚とInstagram De_fIWIE2-9を確認。別記事・別article_id・aside内の別投稿を含むfixtureと、出版社経由の投稿表示の画面テストを追加。写真キャッシュv14。

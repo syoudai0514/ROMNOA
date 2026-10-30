@@ -20,6 +20,7 @@ import {
   photoThumbnailSchema,
   yahooPhotoMetadataSchema,
   yahooPhotoGallerySchema,
+  embeddedPostSchema,
   type YahooPhotoMetadata,
   type YahooPhotoGallery,
   type YahooPicture,
@@ -50,6 +51,7 @@ const articleDataSchema = z.object({
 });
 const galleryDataSchema = z.object({
   kind: z.literal("gallery"),
+  posts: z.array(embeddedPostSchema).max(12).optional(),
   picture: yahooPictureSchema,
   pictures: z.array(yahooPictureSchema).max(40).optional(),
   pages: z.array(photoFeatureSchema.shape.url).min(1).max(80),
@@ -360,7 +362,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v13" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v14" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -586,6 +588,7 @@ export class YahooPhotoService {
       throw Error("gallery_structure_changed");
     return yahooPhotoGallerySchema.parse({
       kind: "gallery",
+      posts: photo.posts,
       articleId,
       featureUrl: feature,
       pageUrl: selected,

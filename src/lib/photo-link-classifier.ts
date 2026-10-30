@@ -56,6 +56,7 @@ export function classifyPhotoLink(
   if (galleries.some((p) => p.test(u.pathname))) score += 5;
   if (photoPath.test(`${u.pathname}${u.search}`)) score += 2;
   if (photoLabel.test(label)) score += 3;
+  if (/実際の投稿|元の投稿|投稿を見る/.test(label)) score += 3;
   if (nonPhotoLabel.test(label.trim()) && !photoLabel.test(label)) score -= 3;
   if (score >= 5 && galleries.some((p) => p.test(u.pathname)))
     return { kind: "gallery", score };
