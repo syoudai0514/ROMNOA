@@ -126,6 +126,61 @@ describe("publisher-independent linked photos", () => {
   });
 });
 
+describe("numbered HTML photo galleries", () => {
+  const root = "https://www.inside-games.jp/article/img/2026/10/28/189998/";
+  const feature = `${root}1798799.html`;
+  const html = readFileSync(
+    new URL("./fixtures/inside-gallery.html", import.meta.url),
+    "utf8",
+  );
+  it("uses only the article roster, preserves order, and resolves full-size pages", async () => {
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) => {
+        if (url === article) return metadata(feature);
+        const id = url.match(/(\d+)\.html$/)?.[1];
+        if (!id) throw Error("unexpected page");
+        return html.replace("/imgs/zoom/1798799.jpg", `/imgs/zoom/${id}.jpg`);
+      },
+    );
+    const initial = await service.get(article, feature);
+    if (initial.kind !== "gallery") throw Error("gallery");
+    expect(initial.pages).toHaveLength(10);
+    expect(initial.pages[0]).toBe(`${root}1798802.html`);
+    expect(initial.pages[1]).toBe(feature);
+    expect(initial.picture.url).toBe(
+      "https://www.inside-games.jp/imgs/zoom/1798799.jpg",
+    );
+    const first = await service.get(article, feature, initial.pages[0]);
+    if (first.kind !== "gallery") throw Error("gallery");
+    expect(first.picture.url).toBe(
+      "https://www.inside-games.jp/imgs/zoom/1798802.jpg",
+    );
+    expect(
+      await service.imageSource(article, feature, initial.pages[0], true),
+    ).toEqual({
+      url: "https://www.inside-games.jp/imgs/p/gvssBNQPA7w4bt5n10RlmAsJcAd_BQQDAgEA/1798802.jpg",
+      referer: feature,
+    });
+    await expect(
+      service.get(article, feature, `${root}999999.html`),
+    ).rejects.toThrow("page_not_linked");
+  });
+  it("does not substitute another article when a listed photo is missing", async () => {
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) => {
+        if (url === article) return metadata(feature);
+        if (url === feature) return html;
+        return html.replace("/imgs/zoom/1798799.jpg", "/imgs/zoom/other.jpg");
+      },
+    );
+    await expect(
+      service.get(article, feature, `${root}1798802.html`),
+    ).rejects.toThrow("gallery_structure_changed");
+  });
+});
+
 // Reported gallery: the Yahoo link opens photo 2 of 3, followed by dozens of
 // unrelated cards. Each full-sized photograph lives on its own document.
 describe("scoped multi-page galleries", () => {

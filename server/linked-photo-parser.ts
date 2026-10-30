@@ -109,6 +109,134 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
     }
   }
   scan(doc.children);
+  // Some galleries use one .html document per image and a thumbnail roster.
+  // The publisher's image IDs are not necessarily sequential; keep the roster
+  // order and require the current page, full image and thumbnail IDs to agree.
+  const basePage = new URL(pageUrl);
+  const numberedHtml = basePage.pathname.match(/^(.*\/)(\d+)\.html$/);
+  if (numberedHtml && !basePage.search && !basePage.hash) {
+    const mains = DomUtils.findAll(
+      (n) => n.name === "main" && !blocked(n),
+      doc.children,
+    );
+    for (const main of mains) {
+      const lists = DomUtils.findAll(
+        (n) =>
+          n.name === "ul" &&
+          /(?:^|[-_\s])thumb(?:nail)?[-_\s]/i.test(n.attribs.class || "") &&
+          !blocked(n),
+        main.children,
+      );
+      const figures = DomUtils.findAll(
+        (n) => n.name === "figure" && !blocked(n),
+        main.children,
+      );
+      const figure = figures.find((f) =>
+        DomUtils.findOne((n) => {
+          if (n.name !== "img" || blocked(n)) return false;
+          const url = publicPhotoUrl(
+            n.attribs["data-src"] || n.attribs.src || "",
+            pageUrl,
+          );
+          return (
+            !!url &&
+            new URL(url).pathname.match(
+              new RegExp(
+                `/\\b${numberedHtml[2]}\\.(?:jpe?g|png|webp|avif)$`,
+                "i",
+              ),
+            ) !== null
+          );
+        }, f.children),
+      );
+      if (!figure) continue;
+      const full = DomUtils.findOne((n) => {
+        if (n.name !== "img" || blocked(n)) return false;
+        const url = publicPhotoUrl(
+          n.attribs["data-src"] || n.attribs.src || "",
+          pageUrl,
+        );
+        return (
+          !!url &&
+          new URL(url).pathname
+            .split("/")
+            .pop()
+            ?.match(
+              new RegExp(`^${numberedHtml[2]}\\.(?:jpe?g|png|webp|avif)$`, "i"),
+            ) != null
+        );
+      }, figure.children);
+      const fullUrl =
+        full &&
+        publicPhotoUrl(
+          full.attribs["data-src"] || full.attribs.src || "",
+          pageUrl,
+        );
+      if (!full || !fullUrl || imageOverlay(full, fullUrl)) continue;
+      for (const list of lists) {
+        const entries = DomUtils.findAll(
+          (n) => n.name === "a",
+          list.children,
+        ).flatMap((anchor) => {
+          const link = publicPhotoUrl(anchor.attribs.href || "", pageUrl);
+          const image = DomUtils.findOne(
+            (n) => n.name === "img",
+            anchor.children,
+          );
+          const thumb =
+            image &&
+            publicPhotoUrl(
+              image.attribs["data-src"] || image.attribs.src || "",
+              pageUrl,
+            );
+          if (!link || !thumb || !image) return [];
+          const target = new URL(link);
+          const match = target.pathname.match(/^(.*\/)(\d+)\.html$/);
+          if (
+            !match ||
+            target.origin !== basePage.origin ||
+            match[1] !== numberedHtml[1] ||
+            target.search ||
+            target.hash ||
+            !new RegExp(`^${match[2]}\\.(?:jpe?g|png|webp|avif)$`, "i").test(
+              new URL(thumb).pathname.split("/").pop() || "",
+            ) ||
+            imageOverlay(image, thumb)
+          )
+            return [];
+          return [{ pageUrl: target.href, url: thumb }];
+        });
+        if (
+          entries.length < 2 ||
+          entries.length > 40 ||
+          !entries.some((e) => e.pageUrl === pageUrl) ||
+          new Set(entries.map((e) => e.pageUrl)).size !== entries.length
+        )
+          continue;
+        const alt = (full.attribs.alt || "").trim().slice(0, 500);
+        const captionNode = DomUtils.findOne(
+          (n) => n.name === "figcaption",
+          figure.children,
+        );
+        const caption = captionNode
+          ? DomUtils.textContent(captionNode)
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 500)
+          : alt;
+        return {
+          kind: "gallery" as const,
+          picture: { url: fullUrl, alt, caption },
+          pages: entries.map((e) => e.pageUrl),
+          thumbnails: entries,
+          pictures: [] as YahooPicture[],
+          title,
+          linkedPages: [] as string[],
+          hasPrimaryPhoto: true,
+        };
+      }
+    }
+  }
   const primary =
     regions.find((r) => r.node.name === "article" || r.rank === 3) ||
     regions.find((r) => r.node.name === "main");

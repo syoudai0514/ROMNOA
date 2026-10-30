@@ -336,7 +336,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v8" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v9" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -490,6 +490,25 @@ export class YahooPhotoService {
           : await this.entry(selected),
       photo = current.data!;
     if (photo.kind !== "gallery") throw Error("wrong_cache_kind");
+    // For numbered HTML galleries, do not substitute a recommendation if a
+    // listed photo page changes or fails to expose its matching photograph.
+    const id = new URL(selected).pathname.match(/\/(\d+)\.html$/)?.[1];
+    const thumb = gallery.thumbnails.find((t) => t.pageUrl === selected);
+    if (
+      id &&
+      thumb &&
+      !gallery.pictures?.length &&
+      new URL(thumb.url).pathname
+        .split("/")
+        .pop()
+        ?.match(new RegExp(`^${id}\\.(?:jpe?g|png|webp|avif)$`, "i")) &&
+      (!new URL(photo.picture.url).pathname
+        .split("/")
+        .pop()
+        ?.match(new RegExp(`^${id}\\.(?:jpe?g|png|webp|avif)$`, "i")) ||
+        !photo.pages.includes(feature))
+    )
+      throw Error("gallery_structure_changed");
     return yahooPhotoGallerySchema.parse({
       kind: "gallery",
       articleId,
