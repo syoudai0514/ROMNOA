@@ -38,4 +38,18 @@ describe("publisher full-resolution photo data", () => {
       bunshunGallery(html, url.replace("pn=1", "pn=9"), fetcher),
     ).rejects.toThrow();
   });
+  it("recognises other publishers on the same gallery CMS by markup, not hostname", async () => {
+    const other = url.replace("bunshun.jp", "toyokeizai.net");
+    const seen: string[] = [];
+    const g = await bunshunGallery(html, other, async (input) => {
+      seen.push(new URL(String(input)).origin);
+      return fetcher(input);
+    });
+    expect(g?.pictures).toHaveLength(4);
+    expect(new Set(seen)).toEqual(new Set(["https://toyokeizai.net"]));
+    expect(await bunshunGallery("<main></main>", other, fetcher)).toBeNull();
+    await expect(
+      bunshunGallery("<main></main>", url, fetcher),
+    ).rejects.toThrow();
+  });
 });

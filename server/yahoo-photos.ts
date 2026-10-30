@@ -6,6 +6,7 @@ import { getCache } from "@vercel/functions";
 import { Parser } from "htmlparser2";
 import { z } from "zod";
 import { yahooArticleUrl, yahooImageUrl } from "../src/lib/yahoo-model.js";
+import { rankPhotoLinks } from "../src/lib/photo-link-classifier.js";
 import {
   photoFeatureTarget,
   linkedPhotoTarget,
@@ -121,13 +122,15 @@ export function parseYahooPhotoMetadata(
         credit: clean(item.credit, 200),
       });
   }
-  const features: PhotoFeature[] = [];
-  function add(title: unknown, raw: unknown, inline = true) {
+  const inline: PhotoFeature[] = [],
+    related: PhotoFeature[] = [];
+  function add(title: unknown, raw: unknown, isInline = true) {
     if (typeof raw !== "string") return;
-    const target = inline ? linkedPhotoTarget(raw) : photoFeatureTarget(raw),
-      label = clean(title);
-    if (target && label && !features.some((f) => f.url === target.url))
-      features.push({ title: label, url: target.url });
+    const target = isInline ? linkedPhotoTarget(raw) : photoFeatureTarget(raw),
+      label = clean(title),
+      list = isInline ? inline : related;
+    if (target && label && !list.some((f) => f.url === target.url))
+      list.push({ title: label, url: target.url });
   }
   // New Yahoo rich-body trees may omit the legacy paragraph link fields.
   let visited = 0;
@@ -160,6 +163,11 @@ export function parseYahooPhotoMetadata(
     const l = object(raw);
     add(l.title, l.uri, false);
   }
+  // Only links with photo evidence become features; social posts, shops and
+  // plain related stories are left to the article body.
+  const features: PhotoFeature[] = [];
+  for (const f of [...rankPhotoLinks(inline), ...related])
+    if (!features.some((x) => x.url === f.url)) features.push(f);
   return articleDataSchema.parse({
     kind: "article",
     pictures,
@@ -337,7 +345,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v10" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v11" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

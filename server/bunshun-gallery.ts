@@ -4,22 +4,24 @@ import { publicPhotoUrl } from "../src/lib/public-photo-url.js";
 
 // The publisher declares the gallery and supplies the full image for each
 // numbered slide in its own photo endpoint. Check each image against the
-// thumbnail roster before returning it.
+// thumbnail roster before returning it. Other publishers on the same CMS
+// (ARENA: /articles/photo/<id>?pn=<n>) are recognised by the same carousel
+// markup rather than by hostname, and fall through to the generic parser if
+// the markup is absent.
 export async function bunshunGallery(
   html: string,
   pageUrl: string,
   fetcher: typeof fetch = fetchPublicPhoto,
 ) {
   const u = new URL(pageUrl),
-    match =
-      u.hostname === "bunshun.jp" &&
-      u.pathname.match(/^\/articles\/photo\/(\d+)$/);
+    match = u.pathname.match(/^\/articles\/photo\/(\d+)$/);
   if (!match) return null;
   const doc = parseDocument(html),
     carousel = DomUtils.findOne(
       (n) => n.attribs.id === "photo-main-carousel",
       doc.children,
     );
+  if (!carousel && u.hostname !== "bunshun.jp") return null;
   const thumbnail = DomUtils.findOne(
     (n) => n.attribs.id === "photo-thumbnail",
     doc.children,
@@ -46,7 +48,7 @@ export async function bunshunGallery(
     throw Error("gallery_structure_changed");
   const pictures = await Promise.all(
     thumbs.map(async (thumb, i) => {
-      const endpoint = `https://bunshun.jp/articles/api-photo/${match[1]}?pn=${i + 1}`;
+      const endpoint = `${u.origin}/articles/api-photo/${match[1]}?pn=${i + 1}`;
       const response = await fetcher(endpoint, {
         redirect: "error",
         signal: AbortSignal.timeout(8000),

@@ -369,7 +369,10 @@ test("image gallery expands, moves between images, and returns focus to the arti
     .getByRole("button", { name: /^記事を開く/ })
     .click();
   await expect(
-    page.getByRole("region", { name: "この記事の画像" }).locator("img"),
+    page
+      .getByRole("region", { name: "この記事の画像" })
+      .getByRole("group", { name: "記事の写真一覧" })
+      .getByRole("button"),
   ).toHaveCount(2);
   await page.getByText("画像の判定について", { exact: true }).click();
   await expect(page.getByText(/判定保留：1枚非表示/)).toBeVisible();
@@ -387,8 +390,9 @@ test("image gallery expands, moves between images, and returns focus to the arti
   await expect(
     page.getByRole("dialog").getByRole("heading", { level: 1 }),
   ).toBeVisible();
+  // The article gallery keeps the photo chosen in the viewer.
   await expect(
-    page.getByRole("button", { name: "記事写真1を拡大", exact: true }),
+    page.getByRole("button", { name: "記事写真2を拡大", exact: true }),
   ).toBeFocused();
 });
 
@@ -546,7 +550,9 @@ test("Pickup title opens its real story with X photos; original-page and body li
     name: "この記事の画像",
     exact: true,
   });
-  await expect(gallery.locator("img")).toHaveCount(2);
+  await expect(
+    gallery.getByRole("group", { name: "記事の写真一覧" }).getByRole("button"),
+  ).toHaveCount(2);
   await expect(
     gallery.getByRole("img", { name: "本編写真1", exact: true }),
   ).toBeVisible();
@@ -645,7 +651,9 @@ test("Imgur photos load without a body toggle, and inline image/article clicks s
     name: "この記事の画像",
     exact: true,
   });
-  await expect(gallery.locator("img")).toHaveCount(3);
+  await expect(
+    gallery.getByRole("group", { name: "記事の写真一覧" }).getByRole("button"),
+  ).toHaveCount(3);
   await expect(gallery.locator("img").first()).toHaveAttribute(
     "loading",
     "eager",
