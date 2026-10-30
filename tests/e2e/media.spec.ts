@@ -136,6 +136,9 @@ test("Instagram CDN photos render without a widget; post-only URLs get an explic
   const image =
     "https://scontent-nrt1-1.cdninstagram.com/v/t51.2885-15/123456_n.jpg?oh=public_signature&oe=1234";
   const post = "https://www.instagram.com/p/AbCdEfg/";
+  await page.route("**/api/social?**", (route) =>
+    route.fulfill({ status: 502, json: { error: "unavailable" } }),
+  );
   const outside: string[] = [];
   page.on("request", (request) => {
     if (new URL(request.url()).hostname !== "127.0.0.1")

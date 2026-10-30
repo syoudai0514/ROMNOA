@@ -1,3 +1,4 @@
+import { entameGallery, entamePhotoKey } from "./entame-gallery.js";
 import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
@@ -345,7 +346,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v11" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v12" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -436,7 +437,8 @@ export class YahooPhotoService {
           ? parseYahooPhotoMetadata(html, url)
           : photoFeatureTarget(url)
             ? parseMantanPhotoPage(html, url)
-            : mdprGallery(html, url) ||
+            : entameGallery(html, url) ||
+              mdprGallery(html, url) ||
               (await bunshunGallery(html, url)) ||
               (await collectLinkedPhotos(html, url, this.load));
         entry = { data, fetchedAt: now, checkedAt: now, failed: false };
@@ -500,6 +502,22 @@ export class YahooPhotoService {
           : await this.entry(selected),
       photo = current.data!;
     if (photo.kind !== "gallery") throw Error("wrong_cache_kind");
+    const entameArticle =
+      new URL(feature).hostname === "entamenext.com" &&
+      new URL(feature).pathname.match(/^\/articles\/gallery\/(\d+)\/\d+$/);
+    if (entameArticle) {
+      const keys = (g: typeof gallery) =>
+        g.thumbnails.map((t) => entamePhotoKey(t.url, entameArticle[1]));
+      const thumb = gallery.thumbnails.find((t) => t.pageUrl === selected);
+      if (
+        !thumb ||
+        keys(gallery).some((key) => !key) ||
+        keys(gallery).join("\n") !== keys(photo).join("\n") ||
+        entamePhotoKey(thumb.url, entameArticle[1]) !==
+          entamePhotoKey(photo.picture.url, entameArticle[1])
+      )
+        throw Error("gallery_structure_changed");
+    }
     if (
       new URL(feature).hostname === "mdpr.jp" &&
       /^\/photo\/detail\/\d+$/.test(new URL(feature).pathname)

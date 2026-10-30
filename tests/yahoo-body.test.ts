@@ -129,6 +129,7 @@ it("drops shop, PR and related links, and marks SNS posts for in-app display", (
             a("https://twitter.com/user/status/1234567890", "投稿"),
             a("https://www.instagram.com/p/AbCdE12/", "投稿"),
             a("https://pub.example/official", "公式サイト"),
+            a("https://www.youtube.com/watch?v=abc", "動画を見る"),
           ],
         },
       ],
@@ -149,5 +150,10 @@ it("drops shop, PR and related links, and marks SNS posts for in-app display", (
       text: "投稿",
     },
     { kind: "link", url: "https://pub.example/official", text: "公式サイト" },
+    {
+      kind: "link",
+      url: "https://www.youtube.com/watch?v=abc",
+      text: "動画を見る",
+    },
   ]);
 });

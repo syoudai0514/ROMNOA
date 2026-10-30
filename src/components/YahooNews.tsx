@@ -812,7 +812,7 @@ function YahooReader({
                         ? parts.map((part, n) =>
                             part.kind === "social" ? (
                               <SocialPostCard
-                                key={n}
+                                key={`${n}:${part.url}`}
                                 url={part.url!}
                                 provider={socialPostUrl(part.url!)!.provider}
                               />
@@ -838,7 +838,14 @@ function YahooReader({
                                     {part.text}
                                   </button>
                                 ) : (
-                                  <span key={n}>{part.text}</span>
+                                  <a
+                                    key={n}
+                                    href={part.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {part.text}
+                                  </a>
                                 );
                               })()
                             ) : part.kind === "link" ? (

@@ -568,3 +568,28 @@ test("X posts in a Yahoo article show their photos in the app, and shop or relat
   ).toHaveAttribute("src", photo);
   await expect(page.locator("iframe")).toHaveCount(0);
 });
+
+test("an unavailable in-app gallery keeps its article photo link usable", async ({
+  page,
+}) => {
+  await setup(page);
+  const url = "https://publisher.example/gallery/story";
+  await page.route("**/api/yahoo-body?**", (r) =>
+    r.fulfill({
+      json: {
+        article: articles[0].id,
+        pages: ["写真を見る"],
+        complete: true,
+        richPages: [[{ kind: "photo", url, text: "写真を見る" }]],
+      },
+    }),
+  );
+  await channel(page);
+  await page
+    .getByRole("button", { name: `ニュースを開く: ${articles[0].title}` })
+    .click();
+  const reader = page.getByRole("dialog", { name: articles[0].title });
+  await expect(
+    reader.getByRole("link", { name: "写真を見る" }),
+  ).toHaveAttribute("href", url);
+});

@@ -134,7 +134,10 @@ export function parseYahooBody(html: string, article: string, page: number) {
               url: u.href,
               text: label.slice(0, 2000),
             });
-          else if (link.kind === "article" && link.score >= 0)
+          else if (
+            link.kind === "social" ||
+            (link.kind === "article" && link.score >= 0)
+          )
             rich.push({
               kind: "link",
               url: u.href,
