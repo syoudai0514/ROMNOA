@@ -2556,3 +2556,8 @@ button {
 .yahoo-photo-features { margin-top: 22px; }
 
 .yahoo-full-text { white-space: pre-wrap; }
+
+@media (max-width: 767px) {
+  .reader:has(.reader-bottom-nav) .reader-inner { height: calc(100dvh - 65px - env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 65px - env(safe-area-inset-bottom, 0px)); }
+  .reader .reader-footer { padding-bottom: 9px; }
+}

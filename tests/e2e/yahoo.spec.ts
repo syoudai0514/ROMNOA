@@ -413,6 +413,18 @@ test("Yahoo article shows the full body in order and keeps the source link", asy
       json: {
         article: articles[0].id,
         pages: ["本文1ページ目\n\n続きの段落", "本文2ページ目の最後"],
+        richPages: [
+          [
+            { kind: "text", text: "本文1ページ目\n\n続きの段落" },
+            {
+              kind: "link",
+              text: "本文内のリンク",
+              url: "https://example.com/story",
+            },
+            { kind: "image", text: "本文の写真", url: image },
+          ],
+          [],
+        ],
         complete: true,
       },
     }),
@@ -428,6 +440,41 @@ test("Yahoo article shows the full body in order and keeps the source link", asy
   await expect(body).toContainText("本文1ページ目");
   await expect(body).toContainText("本文2ページ目の最後");
   await expect(
+    body.getByRole("link", { name: "本文内のリンク" }),
+  ).toHaveAttribute("href", "https://example.com/story");
+  await expect(body.getByRole("img", { name: "本文の写真" })).toBeVisible();
+  await expect(
     page.getByRole("link", { name: /元記事を開く/ }),
   ).toHaveAttribute("href", articles[0].url);
+});
+
+test("article back button and bottom navigation work inside the reader", async ({
+  page,
+  isMobile,
+}) => {
+  await setup(page);
+  await channel(page);
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${articles[0].title}`,
+      exact: true,
+    })
+    .click();
+  const reader = page.getByRole("dialog", { name: articles[0].title });
+  await expect(
+    reader.getByRole("button", { name: "ニュースを閉じる" }),
+  ).toBeVisible();
+  if (isMobile) {
+    const bar = reader.getByRole("navigation", {
+      name: "記事内のナビゲーション",
+    });
+    await expect(bar).toBeVisible();
+    await bar.getByRole("button", { name: "検索", exact: true }).click();
+    await expect(reader).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("navigation", { name: "下部ナビゲーション" })
+        .getByRole("button", { name: "検索", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+  }
 });

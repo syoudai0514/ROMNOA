@@ -127,7 +127,15 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
         if (
           href &&
           href.split("#")[0] !== pageUrl &&
-          !/\.(?:jpe?g|png|webp)(?:[?#]|$)/i.test(href)
+          !(
+            new URL(href).origin === new URL(pageUrl).origin &&
+            new URL(pageUrl).pathname.replace(/\/\d+\/?$/, "/") !==
+              new URL(pageUrl).pathname &&
+            new URL(href).pathname.startsWith(
+              new URL(pageUrl).pathname.replace(/\/\d+\/?$/, "/"),
+            )
+          ) &&
+          !/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href)
         )
           return;
       }

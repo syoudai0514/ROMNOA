@@ -674,3 +674,32 @@ test("Imgur photos load without a body toggle, and inline image/article clicks s
   expect(popups).toBe(0);
   expect(requests.every((url) => photos.includes(url))).toBe(true);
 });
+
+test("reader keeps bottom navigation available and returns to the selected tab", async ({
+  page,
+  isMobile,
+}) => {
+  await fixture(page);
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  const reader = page.getByRole("dialog");
+  await expect(
+    reader.getByRole("button", { name: "記事を閉じる" }),
+  ).toBeVisible();
+  if (isMobile) {
+    const nav = reader.getByRole("navigation", {
+      name: "記事内のナビゲーション",
+    });
+    await expect(nav).toBeVisible();
+    await nav.getByRole("button", { name: "検索", exact: true }).click();
+    await expect(reader).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("navigation", { name: "下部ナビゲーション" })
+        .getByRole("button", { name: "検索", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+  }
+});

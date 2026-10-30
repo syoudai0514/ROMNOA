@@ -1,5 +1,5 @@
 import { Parser } from "htmlparser2";
-import { yahooArticleUrl } from "../src/lib/yahoo-model.js";
+import { yahooArticleUrl, yahooImageUrl } from "../src/lib/yahoo-model.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
 
 export function parseYahooBody(html: string, article: string, page: number) {
@@ -62,7 +62,71 @@ export function parseYahooBody(html: string, article: string, page: number) {
     total > 100
   )
     throw Error("body_unavailable");
-  return { text, total };
+  type Part = { kind: "text" | "link" | "image"; text: string; url?: string };
+  const rich: Part[] = [];
+  let nodes = 0;
+  const items = Array.isArray(detail.richObjectItems)
+    ? detail.richObjectItems
+    : [];
+  function visit(node: any, depth = 0) {
+    if (!node || ++nodes > 20000 || depth > 80 || rich.length >= 4000) return;
+    if (node.type === "text" && typeof node.value === "string") {
+      rich.push({ kind: "text", text: node.value.slice(0, 10000) });
+      return;
+    }
+    const tag = node.tagName,
+      children = Array.isArray(node.children) ? node.children : [];
+    if (tag === "yjrf-img") {
+      const image = items.find(
+        (item: any) =>
+          String(item.objectId) === String(node.attributes?.["data-obj-id"]),
+      );
+      const url = yahooImageUrl(
+        image?.view?.uri ||
+          image?.resizedViewUrl?.jpeg ||
+          image?.thumb?.uri ||
+          "",
+      );
+      if (url)
+        rich.push({
+          kind: "image",
+          url,
+          text: String(image?.caption || image?.alt || "").slice(0, 500),
+        });
+      return;
+    }
+    if (tag === "a") {
+      const href = node.attributes?.href;
+      const label = children
+        .map((c: any) => (c?.type === "text" ? c.value || "" : ""))
+        .join("");
+      try {
+        const u = new URL(href);
+        if (
+          label &&
+          ["http:", "https:"].includes(u.protocol) &&
+          !u.username &&
+          !u.password &&
+          href.length <= 2048
+        ) {
+          rich.push({ kind: "link", url: u.href, text: label.slice(0, 2000) });
+          return;
+        }
+      } catch {
+        /* traverse children */
+      }
+    }
+    if (tag === "br") {
+      rich.push({ kind: "text", text: "\n" });
+      return;
+    }
+    for (const child of children) visit(child, depth + 1);
+    if (["p", "h2", "h3", "figcaption"].includes(tag))
+      rich.push({ kind: "text", text: "\n\n" });
+  }
+  if (Array.isArray(detail.richBody))
+    for (const node of detail.richBody) visit(node);
+  return { text, total, rich };
 }
 export async function fetchYahooBodyPage(article: string, page: number) {
   if (
@@ -115,12 +179,14 @@ export async function getYahooBody(article: string, load = fetchYahooBodyPage) {
     Array.from({ length: count - 1 }, (_, i) => load(article, i + 2)),
   );
   const pages = [first.text];
+  const richPages = [first.rich || []];
   for (const result of rest) {
     if (result.status !== "fulfilled" || result.value.total !== first.total)
       break;
     pages.push(result.value.text);
+    richPages.push(result.value.rich || []);
   }
-  return { article, pages, complete: pages.length === first.total };
+  return { article, pages, richPages, complete: pages.length === first.total };
 }
 export async function handleYahooBody(
   request: Request,

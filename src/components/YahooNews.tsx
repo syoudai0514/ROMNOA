@@ -15,6 +15,7 @@ import {
   filterYahoo,
   yahooCategories,
   yahooArticleSchema,
+  yahooImageUrl,
   yahooResponseSchema,
   type YahooArticle,
   type YahooResponse,
@@ -68,11 +69,13 @@ export function YahooNews({
   active,
   mode,
   onSearch,
+  bottomNav,
   ngWords,
 }: {
   active: boolean;
   mode: "home" | "search" | "saved";
   onSearch: () => void;
+  bottomNav?: React.ReactNode;
   ngWords: string[];
 }) {
   const [initial] = useState(readLibrary);
@@ -95,6 +98,14 @@ export function YahooNews({
     sequence: YahooArticle[];
   } | null>(null);
   const [trail, setTrail] = useState<YahooArticle[]>([]);
+  useEffect(() => {
+    const close = () => {
+      setSelection(null);
+      setTrail([]);
+    };
+    window.addEventListener("romnoa:close-yahoo-reader", close);
+    return () => window.removeEventListener("romnoa:close-yahoo-reader", close);
+  }, []);
   useEffect(() => {
     // History deletion in Settings also applies to this separate RSS library.
     const clear = () => {
@@ -505,6 +516,7 @@ export function YahooNews({
         <YahooReader
           key={selection.article.id}
           article={selection.article}
+          bottomNav={bottomNav}
           saved={saved.has(selection.article.id)}
           related={[
             ...new Map(
@@ -566,6 +578,7 @@ export function YahooNews({
 
 function YahooReader({
   article,
+  bottomNav,
   saved,
   related,
   index,
@@ -577,6 +590,7 @@ function YahooReader({
   onBack,
 }: {
   article: YahooArticle;
+  bottomNav?: React.ReactNode;
   saved: boolean;
   related: YahooArticle[];
   index: number;
@@ -597,6 +611,11 @@ function YahooReader({
     article: string;
     pages: string[];
     complete: boolean;
+    richPages?: {
+      kind: "text" | "link" | "image";
+      text: string;
+      url?: string;
+    }[][];
   } | null>(null);
   const currentBody = body?.article === article.id ? body : null;
   const [bodyLoading, setBodyLoading] = useState(true);
@@ -624,6 +643,40 @@ function YahooReader({
           typeof value.complete !== "boolean"
         )
           throw Error("body_invalid");
+        const richSchema = z
+          .array(
+            z
+              .array(
+                z
+                  .object({
+                    kind: z.enum(["text", "link", "image"]),
+                    text: z.string().max(10000),
+                    url: z.string().max(2048).optional(),
+                  })
+                  .refine((p) => {
+                    if (p.kind === "text") return true;
+                    if (!p.url) return false;
+                    if (p.kind === "image")
+                      return yahooImageUrl(p.url) === p.url;
+                    try {
+                      const u = new URL(p.url);
+                      return (
+                        ["https:", "http:"].includes(u.protocol) &&
+                        !u.username &&
+                        !u.password
+                      );
+                    } catch {
+                      return false;
+                    }
+                  }),
+              )
+              .max(4000),
+          )
+          .max(10);
+        if (value.richPages !== undefined) {
+          const parsed = richSchema.safeParse(value.richPages);
+          value.richPages = parsed.success ? parsed.data : [];
+        }
         if (!controller.signal.aborted) setBody(value);
       } catch {
         /* Retain the supplied excerpt on failure. */
@@ -648,6 +701,7 @@ function YahooReader({
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     element.showModal();
+    element.querySelector<HTMLButtonElement>(".reader-back")?.focus();
     let y = 0;
     const key = `romnoa:yahoo-position:${article.id}`;
     try {
@@ -692,23 +746,20 @@ function YahooReader({
         onClose();
       }}
     >
+      {bottomNav}
       <div className="reader-inner">
         <header className="reader-toolbar">
-          {onBack ? (
-            <button className="button quiet reader-back" onClick={onBack}>
-              <ArrowLeft size={17} />
-              元のニュースへ戻る
-            </button>
-          ) : (
-            <span className="eyebrow">ROMNOA / NEWS</span>
-          )}
           <button
-            className="icon-button"
-            aria-label="ニュースを閉じる"
-            onClick={onClose}
+            className="button quiet reader-back"
+            aria-label={onBack ? "元のニュースへ戻る" : "ニュースを閉じる"}
+            onClick={() => {
+              if (onBack) onBack();
+              else onClose();
+            }}
             autoFocus
           >
-            <X size={21} />
+            <ArrowLeft size={17} />
+            戻る
           </button>
         </header>
         {!!feature && (
@@ -804,11 +855,37 @@ function YahooReader({
               }
             >
               {currentBody ? (
-                currentBody.pages.map((text, i) => (
-                  <p className="reader-text-block yahoo-full-text" key={i}>
-                    {text}
-                  </p>
-                ))
+                currentBody.pages.map((text, i) => {
+                  const parts = currentBody.richPages?.[i];
+                  return (
+                    <div className="reader-text-block yahoo-full-text" key={i}>
+                      {parts?.length
+                        ? parts.map((part, n) =>
+                            part.kind === "link" ? (
+                              <a
+                                href={part.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                key={n}
+                              >
+                                {part.text}
+                              </a>
+                            ) : part.kind === "image" ? (
+                              <img
+                                src={part.url}
+                                alt={part.text}
+                                loading="lazy"
+                                referrerPolicy="no-referrer"
+                                key={n}
+                              />
+                            ) : (
+                              <span key={n}>{part.text}</span>
+                            ),
+                          )
+                        : text}
+                    </div>
+                  );
+                })
               ) : (
                 <p className="reader-text-block">
                   {article.summary ||

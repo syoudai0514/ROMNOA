@@ -572,13 +572,14 @@ export class ReaderService {
     id: string,
     from?: string,
     collection?: string,
+    saved = false,
   ): Promise<ReaderDocument> {
     if (!articleTarget(id))
       throw new ReaderError("not_found", "対応していない記事です。");
-    const key = `${id}\n${from || ""}\n${collection || ""}`;
+    const key = `${id}\n${from || ""}\n${collection || ""}\n${saved}`;
     const pending = this.pending.get(key);
     if (pending) return pending;
-    const work = this.read(id, from, collection);
+    const work = this.read(id, from, collection, saved);
     this.pending.set(key, work);
     try {
       return await work;
@@ -590,6 +591,7 @@ export class ReaderService {
     id: string,
     from?: string,
     collection?: string,
+    saved = false,
   ): Promise<ReaderDocument> {
     let old: ReaderEntry | undefined;
     try {
@@ -633,11 +635,24 @@ export class ReaderService {
         console.error("ROMNOA reader_parent_cache_failed");
       }
     }
-    if (!article)
+    if (!article && !saved)
       throw new ReaderError(
         "not_found",
         "確認済みの一覧にない記事です。元の記事・人気順・日付一覧を開き直してからお試しください。",
       );
+    if (!article) {
+      // Saved items can outlive the feeds. The target validator restricts this
+      // fallback to canonical article paths on the two configured publishers.
+      const target = articleTarget(id)!;
+      article = {
+        id,
+        url: id,
+        sourceId: target.sourceId,
+        title: "保存した記事",
+        publishedAt: null,
+        category: "話題",
+      };
+    }
     try {
       const document = await this.load(article);
       try {
@@ -693,13 +708,21 @@ export async function handleReader(
   const id = params.get("article") || "";
   const from = params.get("from") || undefined;
   const collection = params.get("collection") ?? undefined;
+  const saved = params.get("saved") === "1";
   if (
     params.getAll("article").length !== 1 ||
     params.getAll("from").length > 1 ||
     params.getAll("collection").length > 1 ||
-    (collection !== undefined && !validCollection(collection)) ||
+    params.getAll("saved").length > 1 ||
+    (params.has("saved") && !saved) ||
+    (collection !== undefined &&
+      ((!saved && !validCollection(collection)) || collection.length > 256)) ||
     [...params.keys()].some(
-      (key) => key !== "article" && key !== "from" && key !== "collection",
+      (key) =>
+        key !== "article" &&
+        key !== "from" &&
+        key !== "collection" &&
+        key !== "saved",
     ) ||
     (params.has("from") &&
       (!from || from.length > 2048 || !articleTarget(from) || from === id)) ||
@@ -711,7 +734,17 @@ export async function handleReader(
       { status: 400, headers },
     );
   try {
-    return Response.json(await service.get(id, from, collection), { headers });
+    return Response.json(
+      saved
+        ? await service.get(
+            id,
+            from,
+            collection && validCollection(collection) ? collection : undefined,
+            true,
+          )
+        : await service.get(id, from, collection),
+      { headers },
+    );
   } catch (error) {
     const problem =
       error instanceof ReaderError

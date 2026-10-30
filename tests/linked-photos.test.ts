@@ -244,3 +244,17 @@ describe("photo-page thumbnail rosters", () => {
     ).rejects.toThrow();
   });
 });
+
+it("removes Yahoo tracking fragments and extracts the linked article photo instead of related cards", () => {
+  const feature = "https://nlab.itmedia.co.jp/research/articles/4075832/2/";
+  expect(
+    linkedPhotoTarget(feature + "#utm_source=yahoo_v3&utm_medium=feed")?.url,
+  ).toBe(feature);
+  const html = readFileSync(
+    new URL("./fixtures/nlab-photo.html", import.meta.url),
+    "utf8",
+  );
+  const parsed = parseLinkedPhotos(html, feature);
+  expect(parsed.pictures).toHaveLength(1);
+  expect(parsed.picture.url).toContain("4550723182102_org.avif");
+});

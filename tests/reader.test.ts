@@ -402,6 +402,32 @@ describe("Personal article reader", () => {
     ).rejects.toThrow("確認済みの一覧にない");
     expect(load).toHaveBeenCalledTimes(1);
   });
+  it("reloads a saved article outside the current feed using only a canonical publisher URL", async () => {
+    const savedId = "https://alfalfalfa.com/articles/10976806.html";
+    const loader = vi.fn(async (article) =>
+      extractArticle(
+        '<div class="article_body"><p>保存した記事の本文です。</p></div>',
+        article,
+      ),
+    );
+    const service = new ReaderService(
+      new MemoryReaderCache(),
+      { get: async () => feed },
+      loader,
+    );
+    await expect(service.get(savedId)).rejects.toThrow("確認済みの一覧にない");
+    const result = await service.get(savedId, undefined, undefined, true);
+    expect(result.articleId).toBe(savedId);
+    expect(loader.mock.calls[0][0].sourceId).toBe("alfalfa");
+    await expect(
+      service.get(
+        "https://example.com/articles/10976806.html",
+        undefined,
+        undefined,
+        true,
+      ),
+    ).rejects.toThrow();
+  });
   it("cools down upstream failures and does not repeatedly hit a broken source", async () => {
     const load = vi.fn(async () => {
       throw new Error("offline");

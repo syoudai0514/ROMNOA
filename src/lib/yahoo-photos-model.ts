@@ -32,6 +32,8 @@ export function linkedPhotoTarget(raw: string, base?: string) {
   const url = publicPhotoUrl(raw, base);
   if (!url) return null;
   const u = new URL(url);
+  // Yahoo embeds tracking in fragments on some publisher links.
+  if (u.hash && /^#utm_[a-z_]+=[^#]*$/i.test(u.hash)) u.hash = "";
   // Keep the strict adapter's validation for its own hosts.
   if (
     /(^|\.)mantan-web\.jp$/.test(u.hostname) ||

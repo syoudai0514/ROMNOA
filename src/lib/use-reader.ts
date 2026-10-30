@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { cacheReader, cachedReader } from "./reader-cache";
 import { readerDocumentSchema, type ReaderDocument } from "./reader-model";
 
-export function useReader(id: string, from?: string, collection?: string) {
+export function useReader(
+  id: string,
+  from?: string,
+  collection?: string,
+  saved = false,
+) {
   const [state, setState] = useState<{
     id: string;
     document: ReaderDocument | null;
@@ -38,7 +43,7 @@ export function useReader(id: string, from?: string, collection?: string) {
       }
       try {
         const response = await fetch(
-          `/api/reader?article=${encodeURIComponent(id)}${from ? `&from=${encodeURIComponent(from)}` : ""}${collection ? `&collection=${encodeURIComponent(collection)}` : ""}`,
+          `/api/reader?article=${encodeURIComponent(id)}${from ? `&from=${encodeURIComponent(from)}` : ""}${collection ? `&collection=${encodeURIComponent(collection)}` : ""}${saved ? "&saved=1" : ""}`,
           { signal: abort.signal },
         );
         const value = await response.json();
@@ -52,14 +57,14 @@ export function useReader(id: string, from?: string, collection?: string) {
         if (document.articleId !== id)
           throw new Error("記事が一致しませんでした。");
         if (cancelled) return;
-        const saved = await cacheReader(document);
+        const stored = await cacheReader(document);
         if (!cancelled)
           setState({
             id,
             document,
             loading: false,
             error: "",
-            storageError: !saved,
+            storageError: !stored,
           });
       } catch (e) {
         if (!cancelled)
@@ -85,7 +90,7 @@ export function useReader(id: string, from?: string, collection?: string) {
       clearTimeout(timeout);
       abort.abort();
     };
-  }, [id, from, collection, attempt]);
+  }, [id, from, collection, saved, attempt]);
   return {
     ...(state.id === id
       ? state

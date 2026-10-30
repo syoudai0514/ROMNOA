@@ -70,6 +70,9 @@ function gallery(feature = pageUrl(), page = feature) {
 async function setup(page: Page, generic = false, failNext?: () => boolean) {
   const requests: URLSearchParams[] = [];
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
+  await page.route("**/api/yahoo-body?**", (r) =>
+    r.fulfill({ status: 502, json: { error: "unavailable" } }),
+  );
   await page.route("**/api/yahoo", (r) =>
     r.fulfill({
       json: {

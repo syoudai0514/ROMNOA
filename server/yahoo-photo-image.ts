@@ -43,7 +43,13 @@ export async function fetchPhotoImage(
   if (
     !response.ok ||
     !response.body ||
-    !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(type)
+    ![
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/avif",
+    ].includes(type)
   ) {
     await response.body?.cancel();
     throw Error("image_unavailable");

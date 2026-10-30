@@ -9,7 +9,7 @@ const html = (page: number, total = 2) =>
   `<script>window.__PRELOADED_STATE__=${JSON.stringify({ articleDetail: { contentId: "a".repeat(40), newsLink: article, currentPage: page, maxPage: total, paragraphs: [{ textDetails: [{ text: `ページ${page}\n\n本文` }, { text: "duplicate" }] }] } })}</script>`;
 describe("Yahoo article body", () => {
   it("extracts each article page without duplicating textDetails and checks identity", () => {
-    expect(parseYahooBody(html(1), article, 1)).toEqual({
+    expect(parseYahooBody(html(1), article, 1)).toMatchObject({
       text: "ページ1\n\n本文",
       total: 2,
     });
@@ -35,7 +35,12 @@ describe("Yahoo article body", () => {
     expect(partial.complete).toBe(false);
   });
   it("only accepts a single canonical Yahoo article and limits the API to preview", async () => {
-    const load = async () => ({ article, pages: ["本文"], complete: true });
+    const load = async () => ({
+      article,
+      pages: ["本文"],
+      richPages: [],
+      complete: true,
+    });
     expect(
       (
         await handleYahooBody(
@@ -70,4 +75,28 @@ describe("Yahoo article body", () => {
       ).status,
     ).toBe(200);
   });
+});
+
+it("keeps inline links, text, article images and headings in their original order", async () => {
+  const { readFileSync } = await import("node:fs");
+  const fixture = readFileSync(
+    new URL("./fixtures/yahoo-rich-body.html", import.meta.url),
+    "utf8",
+  );
+  const url =
+    "https://news.yahoo.co.jp/articles/d265f6978ffdeab58457f69f06aaa5813e2b3578";
+  const result = parseYahooBody(fixture, url, 1);
+  expect(
+    result.rich.some((p) => p.kind === "link" && p.text.includes("ショート丈")),
+  ).toBe(true);
+  expect(
+    result.rich.some(
+      (p) =>
+        p.kind === "image" &&
+        p.url?.startsWith("https://newsatcl-pctr.c.yimg.jp/"),
+    ),
+  ).toBe(true);
+  expect(
+    result.rich.some((p) => p.kind === "text" && p.text.includes("購入者の声")),
+  ).toBe(true);
 });

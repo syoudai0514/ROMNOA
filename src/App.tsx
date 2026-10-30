@@ -350,6 +350,8 @@ export default function App() {
   });
 
   function navigate(next: Tab) {
+    setSelection(null);
+    window.dispatchEvent(new Event("romnoa:close-yahoo-reader"));
     scrollPositions.current[viewKey] = window.scrollY;
     setTab(next);
     setShelfQuery("");
@@ -422,6 +424,25 @@ export default function App() {
     setNgInput("");
   }
   const showList = tab === "home" || tab === "search" || tab === "saved";
+  const readerBottomNav = (
+    <nav
+      className="bottom-nav reader-bottom-nav"
+      aria-label="記事内のナビゲーション"
+    >
+      {tabs.map(({ id, label, icon: Icon }) => (
+        <button
+          key={id}
+          className={tab === id ? "active" : ""}
+          aria-current={tab === id ? "page" : undefined}
+          onClick={() => navigate(id)}
+        >
+          <Icon size={21} strokeWidth={tab === id ? 2 : 1.6} />
+          <span>{label}</span>
+          {id === "saved" && prefs.saved.length > 0 && <i />}
+        </button>
+      ))}
+    </nav>
+  );
   function startSearch(value: string) {
     const term = normalizeSearch(value);
     if (!validSearch(term)) return;
@@ -643,6 +664,7 @@ export default function App() {
                 tab === "search" ? "search" : tab === "saved" ? "saved" : "home"
               }
               onSearch={() => navigate("search")}
+              bottomNav={readerBottomNav}
               ngWords={prefs.ngWords}
             />
             {showList && !yahooActive && (
@@ -1436,6 +1458,7 @@ export default function App() {
       {selected && selection && (
         <Reader
           article={selected}
+          bottomNav={readerBottomNav}
           from={selection.from}
           collection={
             selection.collections

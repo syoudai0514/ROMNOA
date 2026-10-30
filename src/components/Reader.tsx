@@ -7,7 +7,6 @@ import {
   Check,
   ExternalLink,
   BookOpen,
-  X,
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
 import { readerPictures } from "../lib/reader-model";
@@ -19,6 +18,7 @@ import { ArticleImages, ImageViewer } from "./ArticleImages";
 
 export function Reader({
   article,
+  bottomNav,
   saved,
   read,
   index,
@@ -35,6 +35,7 @@ export function Reader({
   ngWords,
 }: {
   article: Article;
+  bottomNav?: React.ReactNode;
   saved: boolean;
   read: boolean;
   index: number;
@@ -53,7 +54,7 @@ export function Reader({
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
-  const reading = useReader(article.id, from, collection);
+  const reading = useReader(article.id, from, collection, saved);
   const [textFor, setTextFor] = useState<Set<string>>(() => new Set());
   const allPictures = reading.document ? readerPictures(reading.document) : [];
   const bodyPictures = allPictures.filter((b) => b.role !== "cover");
@@ -103,6 +104,7 @@ export function Reader({
   useLayoutEffect(() => {
     const d = dialog.current!;
     d.showModal();
+    d.querySelector<HTMLButtonElement>(".reader-back")?.focus();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -192,32 +194,21 @@ export function Reader({
           onClose={() => setExpandedImage(null)}
         />
       )}
+      {bottomNav}
       <div className="reader-inner">
         <header className="reader-toolbar">
-          {onBack ? (
-            <button
-              className="button quiet reader-back"
-              onClick={() => {
-                rememberPosition();
-                onBack();
-              }}
-            >
-              <ArrowLeft size={17} />
-              元の記事へ戻る
-            </button>
-          ) : (
-            <span className="eyebrow">ROMNOA / ARTICLE</span>
-          )}
           <button
-            className="icon-button"
-            aria-label="記事を閉じる"
+            className="button quiet reader-back"
+            aria-label={onBack ? "元の記事へ戻る" : "記事を閉じる"}
             onClick={() => {
               rememberPosition();
-              onClose();
+              if (onBack) onBack();
+              else onClose();
             }}
             autoFocus
           >
-            <X size={21} />
+            <ArrowLeft size={17} />
+            戻る
           </button>
         </header>
         <div
