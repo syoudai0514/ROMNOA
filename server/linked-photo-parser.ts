@@ -23,6 +23,20 @@ function blocked(node: Element) {
     )
   );
 }
+// Publishers often place a transparent protection or loading layer over the
+// actual photograph. These are UI assets, not gallery pictures.
+function imageOverlay(node: Element, url: string) {
+  const label = `${node.attribs.class || ""} ${node.attribs.id || ""}`;
+  const filename = new URL(url).pathname.split("/").pop() || "";
+  return (
+    /(?:image[-_]?protect|photo[-_]?protect|placeholder|spacer|loading[-_]?image)/i.test(
+      label,
+    ) ||
+    /^(?:img|image|photo)[-_]protect\.|^(?:placeholder|spacer|transparent|loading)\.(?:png|gif|webp|avif)$/i.test(
+      filename,
+    )
+  );
+}
 function priority(node: Element) {
   const a = node.attribs,
     label = `${a.id || ""} ${a.class || ""}`;
@@ -158,6 +172,7 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
         const url = raw && publicPhotoUrl(raw, pageUrl);
         if (
           url &&
+          !imageOverlay(node, url) &&
           !/\.(?:svg|ico)(?:[?#]|$)/i.test(url) &&
           result.length < 40 &&
           !result.some((p) => p.url === url)

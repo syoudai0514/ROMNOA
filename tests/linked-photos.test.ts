@@ -60,6 +60,22 @@ describe("publisher-independent linked photos", () => {
       ).picture.url,
     ).toBe("https://publisher.example/cover.jpg");
   });
+  it("ignores transparent protection overlays while keeping the photograph below", async () => {
+    const page = "https://mdpr.jp/photo/detail/20639572";
+    const source = `<title>写真</title><article><div class="content-image-main">
+      <img class="c-imageProtect" src="https://img-mdpr.freetls.fastly.net/common/web/common/img_protect.png?quality=40" width="487" height="723">
+      <img class="c-image__image" src="https://img-mdpr.freetls.fastly.net/article/C8aA/nm/actual.jpg?width=1520" width="487" height="723">
+    </div></article>`;
+    const parsed = parseLinkedPhotos(source, page);
+    expect(parsed.pictures.map((picture) => picture.url)).toEqual([
+      "https://img-mdpr.freetls.fastly.net/article/C8aA/nm/actual.jpg?width=1520",
+    ]);
+    const gallery = await collectLinkedPhotos(source, page, async () => {
+      throw Error("unexpected fetch");
+    });
+    expect(gallery.pages).toEqual([page]);
+    expect(gallery.picture.url).toContain("/actual.jpg");
+  });
   it("resolves every photo through article membership without fetching synthetic fragment pages", async () => {
     const loaded: string[] = [];
     const service = new YahooPhotoService(
