@@ -15,10 +15,24 @@ const candidates = new Map<
   string,
   { url: string; labels: string[]; articles: string[] }
 >();
+const rejected: {
+  url: string;
+  article: string;
+  label: string;
+  reason: string;
+}[] = [];
 for (const row of JSON.parse(readFileSync(input, "utf8"))) {
   if (!["photo", "gallery"].includes(row.kind)) continue;
   const url = linkedPhotoTarget(row.url)?.url;
-  if (!url) continue;
+  if (!url) {
+    rejected.push({
+      url: row.url,
+      article: row.article,
+      label: row.label,
+      reason: "unsupported_target",
+    });
+    continue;
+  }
   const item = candidates.get(url) || { url, labels: [], articles: [] };
   if (!item.labels.includes(row.label)) item.labels.push(row.label);
   if (!item.articles.includes(row.article)) item.articles.push(row.article);
@@ -38,6 +52,14 @@ writeFileSync(
   join(out, "targets.json"),
   JSON.stringify([...candidates.values()], null, 2),
 );
+writeFileSync(
+  join(out, "unsupported-targets.json"),
+  JSON.stringify(rejected, null, 2),
+);
+console.error(
+  `planned ${candidates.size} accepted targets; ${rejected.length} unsupported link occurrences recorded`,
+);
+if (process.argv.includes("--plan")) process.exit(0);
 async function load(url: string) {
   const path = join(
     out,

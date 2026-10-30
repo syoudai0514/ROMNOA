@@ -123,6 +123,40 @@ describe("publisher-independent linked photos", () => {
       ["https://publisher.example/1.jpg", "https://publisher.example/2.jpg"],
     );
   });
+  it("canonicalizes numbered source anchors and extracts the publisher body photos and post", async () => {
+    const feature = "https://nishispo.nishinippon.co.jp/article/1052908";
+    const html = readFileSync(
+      new URL("./fixtures/nishispo-post.html", import.meta.url),
+      "utf8",
+    );
+    const service = new YahooPhotoService(
+      new MemoryPhotoCache(),
+      async (url) => (url === article ? metadata(feature + "#1") : html),
+    );
+    const meta = await service.get(article);
+    if (meta.kind !== "article") throw Error("article");
+    expect(meta.features[0].url).toBe(feature);
+    const gallery = await service.get(article, feature);
+    if (gallery.kind !== "gallery") throw Error("gallery");
+    expect(gallery.pages).toHaveLength(2);
+    expect(gallery.posts).toEqual([
+      {
+        provider: "Instagram",
+        url: "https://www.instagram.com/p/De6Vdw0ElRo/",
+      },
+    ]);
+    expect(gallery.picture.url).not.toContain("cover");
+    expect(JSON.stringify(gallery)).not.toContain("unrelated");
+  });
+  it("distinguishes publisher section anchors from synthetic photo identifiers", () => {
+    const base = "https://publisher.example/article/12345";
+    for (const fragment of ["#1", "#2", "#photo-3", "#image4"])
+      expect(linkedPhotoTarget(base + fragment)?.url).toBe(base);
+    expect(linkedPhotoTarget(base + "#romnoa-photo-2")?.url).toBe(
+      base + "#romnoa-photo-2",
+    );
+    expect(linkedPhotoTarget(base + "#unrecognized")?.url).toBeUndefined();
+  });
   it("resolves every photo through article membership without fetching synthetic fragment pages", async () => {
     const loaded: string[] = [];
     const service = new YahooPhotoService(

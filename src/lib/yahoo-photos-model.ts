@@ -35,6 +35,10 @@ export function linkedPhotoTarget(raw: string, base?: string) {
   const u = new URL(url);
   // Yahoo embeds tracking in fragments on some publisher links.
   if (u.hash && /^#utm_[a-z_]+=[^#]*$/i.test(u.hash)) u.hash = "";
+  // Publisher links often point to numbered sections within the same document.
+  // They are source anchors, distinct from our synthetic gallery page IDs.
+  if (/^#(?:\d{1,4}|(?:photo|image|img|gallery)[-_]?\d{1,4})$/i.test(u.hash))
+    u.hash = "";
   // Keep the strict adapter's validation for its own hosts.
   if (
     /(^|\.)mantan-web\.jp$/.test(u.hostname) ||

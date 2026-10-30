@@ -357,3 +357,10 @@ ABEMA TIMESの実ページで1→8、1→13等、スポーツ報知で1→2、1�
 | https://www.walkerplus.com/article/1452258/image18961269.html | 1 | 1 | 1枚のみ・全件未確認 | 1/1 |
 | https://www.watch.impress.co.jp/img/ipw/docs/2152/497/html/g02_o.jpg.html | 1 | 1 | 1枚のみ・全件未確認 | 1/1 |
 | https://www.watch.impress.co.jp/img/ipw/docs/2152/548/html/02_o.jpg.html | 1 | 1 | 1枚のみ・全件未確認 | 1/1 |
+
+
+## 追跡: 数値のページ内アンカー
+
+Yahoo記事7c4ab367b379caeb1fe7d2376dd5fb13a65eebd0の写真リンクは西スポ記事1052908#1。既存のURL検証が#1を拒否し、写真候補から外れていた。数値やphoto/image番号のソースアンカーは同一文書の位置指定として正規化し、#romnoa-photo-Nという内部写真IDは保持する。リンク先のdetails-cntarea本文に掲載された2枚とInstagram De6Vdw0ElRoを実HTMLで確認。未知のフラグメントは引き続き拒否する。
+
+調査ツールも、URL検証で弾いた候補を無言でスキップせず、unsupported-targets.jsonに理由とURLを残すよう変更。過去の325ページという件数は受理された対象数であり、除外された全リンクの成功を意味しない。写真キャッシュv17。

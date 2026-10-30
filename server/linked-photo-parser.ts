@@ -51,7 +51,8 @@ function priority(node: Element) {
   if (
     /(?:entry|article|post)[-_]?(?:content|body)(?:$|[-_\s])/i.test(label) ||
     a.itemprop === "articleBody" ||
-    a.id === "entry"
+    a.id === "entry" ||
+    (a.class || "").split(/\s+/).includes("details-cntarea")
   )
     return 3;
   if (node.name === "article") return 2;
