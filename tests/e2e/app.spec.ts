@@ -711,3 +711,62 @@ test("reader keeps bottom navigation available and returns to the selected tab",
     ).toHaveAttribute("aria-current", "page");
   }
 });
+
+test("roundup article shows embedded post videos alongside body images", async ({
+  page,
+}) => {
+  await fixture(page);
+  const first = feed.articles[0];
+  const postUrl = "https://x.com/mico_bodymake/status/2068315106715558288";
+  const videoUrl =
+    "https://video.twimg.com/amplify_video/2068315032430292992/vid/avc1/720x1280/47w7K5GDfrEreJDG.mp4";
+  await page.route("**/api/reader**", (route) =>
+    route.fulfill({
+      json: {
+        ...readerFixture(first),
+        links: [{ url: postUrl, title: "Xの投稿" }],
+        blocks: [
+          {
+            type: "image",
+            url: "https://livedoor.blogimg.jp/hamusoku/imgs/1/2/photo.jpg",
+            alt: "本文の画像",
+          },
+          { type: "text", text: "記事本文" },
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/social**", (route) =>
+    route.fulfill({
+      json: {
+        provider: "X",
+        url: postUrl,
+        author: "mico",
+        handle: "mico_bodymake",
+        text: "投稿本文",
+        createdAt: "2026-06-20T12:48:43.000Z",
+        media: [
+          {
+            type: "video",
+            url: videoUrl,
+            poster:
+              "https://pbs.twimg.com/amplify_video_thumb/2068315032430292992/img/MsoGhDal4DL8y-9J.jpg",
+          },
+        ],
+      },
+    }),
+  );
+  await page
+    .getByTestId("article-row")
+    .first()
+    .getByRole("button", { name: /^記事を開く/ })
+    .click();
+  const reader = page.getByRole("dialog");
+  await expect(
+    reader.getByRole("region", { name: "この記事の画像", exact: true }),
+  ).toBeVisible();
+  const post = reader.getByRole("region", { name: "Xの投稿 @mico_bodymake" });
+  await expect(post).toBeVisible();
+  await expect(post.locator("video")).toHaveAttribute("src", videoUrl);
+  await expect(post.locator("video")).toHaveAttribute("controls", "");
+});

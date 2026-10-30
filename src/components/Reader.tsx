@@ -335,19 +335,17 @@ export function Reader({
                       この記事で表示できる画像は見つかりませんでした。判定保留の画像は読み込んでいません。
                     </p>
                   ) : null}
-                  {!bodyPictures.length &&
-                    !videos.length &&
-                    socialPosts.length > 0 && (
-                      <section className="social-posts" aria-label="SNSの投稿">
-                        {socialPosts.map((post) => (
-                          <SocialPostCard
-                            key={post.url}
-                            url={post.url}
-                            provider={post.provider}
-                          />
-                        ))}
-                      </section>
-                    )}
+                  {socialPosts.length > 0 && (
+                    <section className="social-posts" aria-label="SNSの投稿">
+                      {socialPosts.map((post) => (
+                        <SocialPostCard
+                          key={post.url}
+                          url={post.url}
+                          provider={post.provider}
+                        />
+                      ))}
+                    </section>
+                  )}
                   {(pictures.length > 0 || videos.length > 0) && (
                     <button
                       className="button secondary body-toggle"
