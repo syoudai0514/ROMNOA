@@ -1,3 +1,4 @@
+import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
@@ -336,7 +337,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v9" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v10" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -427,7 +428,8 @@ export class YahooPhotoService {
           ? parseYahooPhotoMetadata(html, url)
           : photoFeatureTarget(url)
             ? parseMantanPhotoPage(html, url)
-            : (await bunshunGallery(html, url)) ||
+            : mdprGallery(html, url) ||
+              (await bunshunGallery(html, url)) ||
               (await collectLinkedPhotos(html, url, this.load));
         entry = { data, fetchedAt: now, checkedAt: now, failed: false };
       } catch {
@@ -490,6 +492,19 @@ export class YahooPhotoService {
           : await this.entry(selected),
       photo = current.data!;
     if (photo.kind !== "gallery") throw Error("wrong_cache_kind");
+    if (
+      new URL(feature).hostname === "mdpr.jp" &&
+      /^\/photo\/detail\/\d+$/.test(new URL(feature).pathname)
+    ) {
+      const thumb = gallery.thumbnails.find((t) => t.pageUrl === selected);
+      if (
+        !thumb ||
+        photo.pages.join("\n") !== gallery.pages.join("\n") ||
+        new URL(thumb.url).origin !== new URL(photo.picture.url).origin ||
+        new URL(thumb.url).pathname !== new URL(photo.picture.url).pathname
+      )
+        throw Error("gallery_structure_changed");
+    }
     // For numbered HTML galleries, do not substitute a recommendation if a
     // listed photo page changes or fails to expose its matching photograph.
     const id = new URL(selected).pathname.match(/\/(\d+)\.html$/)?.[1];
