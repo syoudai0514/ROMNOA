@@ -49,7 +49,7 @@ function priority(node: Element) {
     return 5;
   if (node.name === "figure") return 4;
   if (
-    /(?:entry|article|post)[-_](?:content|body)/i.test(label) ||
+    /(?:entry|article|post)[-_]?(?:content|body)(?:$|[-_\s])/i.test(label) ||
     a.itemprop === "articleBody" ||
     a.id === "entry"
   )
@@ -256,7 +256,11 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
         return true;
       })
     : regions;
-  scoped.sort((a, b) => b.rank - a.rank);
+  // An explicit article body may contain several sibling figures. A figure
+  // is a fallback region, not evidence that later body figures are unrelated.
+  scoped.sort(
+    (a, b) => (b.rank === 3 ? 4.5 : b.rank) - (a.rank === 3 ? 4.5 : a.rank),
+  );
   let pictures: YahooPicture[] = [],
     selected: Element | undefined;
   function extract(root: Element) {

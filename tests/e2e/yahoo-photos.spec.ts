@@ -530,3 +530,46 @@ test("publisher gallery exposes its embedded Instagram post alongside its photog
       .getByRole("button"),
   ).toHaveCount(5);
 });
+
+test("a one-image fallback does not claim that the complete gallery has one photo", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("**/api/yahoo-photos?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    const g = gallery();
+    return r.fulfill({
+      json: p.has("feature")
+        ? {
+            ...g,
+            complete: false,
+            pages: [g.featureUrl],
+            thumbnails: g.thumbnails.slice(0, 1),
+          }
+        : meta,
+    });
+  });
+  await page.reload();
+  await page
+    .getByRole("combobox", { name: "配信チャンネル", exact: true })
+    .selectOption("yahoo");
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${article.title}`,
+      exact: true,
+    })
+    .click();
+  const feature = page.getByRole("region", {
+    name: "写真特集の写真",
+    exact: true,
+  });
+  await expect(
+    feature.getByText("写真一覧をすべて取得できたか確認できていません。", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    feature.getByRole("link", { name: "元の写真ページで確認" }),
+  ).toHaveAttribute("href", pageUrl());
+  await expect(feature.getByText("1 / 1", { exact: true })).toHaveCount(0);
+});

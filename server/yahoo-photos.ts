@@ -51,6 +51,7 @@ const articleDataSchema = z.object({
 });
 const galleryDataSchema = z.object({
   kind: z.literal("gallery"),
+  complete: z.boolean().optional(),
   posts: z.array(embeddedPostSchema).max(12).optional(),
   picture: yahooPictureSchema,
   pictures: z.array(yahooPictureSchema).max(40).optional(),
@@ -338,6 +339,41 @@ export async function fetchPhotoHtml(
     return buffer.toString("utf8");
   }
 }
+// The production service and bulk audit use exactly the same resolver.
+export async function resolvePhotoPage(
+  html: string,
+  url: string,
+  load = fetchPhotoHtml,
+) {
+  const adapters = [
+    [
+      "mantan",
+      () => (photoFeatureTarget(url) ? parseMantanPhotoPage(html, url) : null),
+    ],
+    ["declared", () => declaredGallery(html, url)],
+    ["oricon", () => oriconGallery(html, url)],
+    ["entame", () => entameGallery(html, url)],
+    ["mdpr", () => mdprGallery(html, url)],
+    ["arena", () => bunshunGallery(html, url)],
+    ["generic", () => collectLinkedPhotos(html, url, load)],
+  ] as const;
+  for (const [strategy, parse] of adapters) {
+    const data = await parse();
+    if (data)
+      return {
+        strategy,
+        data: galleryDataSchema.parse({
+          ...data,
+          complete:
+            strategy !== "generic" ||
+            (data.pages.length > 1 &&
+              (("linkedPages" in data && data.linkedPages.length > 0) ||
+                ("pictures" in data && data.pictures?.length === 0))),
+        }),
+      };
+  }
+  throw Error("gallery_structure_changed");
+}
 const entrySchema = z.object({
   data: dataSchema.nullable(),
   fetchedAt: z.number(),
@@ -362,7 +398,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v14" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v15" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -451,14 +487,7 @@ export class YahooPhotoService {
         const html = await this.load(url);
         const data = yahooArticleUrl(url)
           ? parseYahooPhotoMetadata(html, url)
-          : photoFeatureTarget(url)
-            ? parseMantanPhotoPage(html, url)
-            : declaredGallery(html, url) ||
-              oriconGallery(html, url) ||
-              entameGallery(html, url) ||
-              mdprGallery(html, url) ||
-              (await bunshunGallery(html, url)) ||
-              (await collectLinkedPhotos(html, url, this.load));
+          : (await resolvePhotoPage(html, url, this.load)).data;
         entry = { data, fetchedAt: now, checkedAt: now, failed: false };
       } catch {
         entry = {
@@ -589,6 +618,7 @@ export class YahooPhotoService {
     return yahooPhotoGallerySchema.parse({
       kind: "gallery",
       posts: photo.posts,
+      complete: gallery.complete,
       articleId,
       featureUrl: feature,
       pageUrl: selected,

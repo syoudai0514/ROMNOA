@@ -128,6 +128,7 @@ export const embeddedPostSchema = z.object({
 export const yahooPhotoGallerySchema = z.object({
   ...common,
   kind: z.literal("gallery"),
+  complete: z.boolean().optional(),
   posts: z.array(embeddedPostSchema).max(12).optional(),
   featureUrl: photoFeatureSchema.shape.url,
   pageUrl: photoFeatureSchema.shape.url,

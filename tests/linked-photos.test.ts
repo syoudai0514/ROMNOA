@@ -116,6 +116,13 @@ describe("publisher-independent linked photos", () => {
     }
     expect(JSON.stringify(gallery)).not.toContain("Other12");
   });
+  it("keeps sibling figures together inside the explicit article body", () => {
+    const html =
+      '<main><div class="articleBody"><figure><img src="/1.jpg"></figure><figure><img src="/2.jpg"></figure><aside><figure><img src="/ad.jpg"></figure></aside></div></main>';
+    expect(parseLinkedPhotos(html, feature).pictures.map((p) => p.url)).toEqual(
+      ["https://publisher.example/1.jpg", "https://publisher.example/2.jpg"],
+    );
+  });
   it("resolves every photo through article membership without fetching synthetic fragment pages", async () => {
     const loaded: string[] = [];
     const service = new YahooPhotoService(

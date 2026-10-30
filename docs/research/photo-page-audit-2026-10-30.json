@@ -1,0 +1,5252 @@
+[
+  {
+    "url": "https://0115765.com/archives/212048",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 3,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://0115765.com/wp-content/uploads/2026/10/20261030-qqnkk9kt-1024x767.jpg",
+        "width": 1024,
+        "height": 767,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://36kr.jp/503880/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://36kr.jp/uploads/2026/10/20261029014332v2_79c90b1805624c6699f07ff343f4a9a3@5687509_oswg115498oswg430oswg430_img_000305.jpeg",
+        "width": 1620,
+        "height": 1020,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://abema.go.link/video/episode/89-116_s25_p16955?adj_adgroup=30&adj_campaign=202610&adj_creative=times_yahoo_20261030_free_10285122_centertx&adj_redirect=https%3A%2F%2Fabema.tv%2Fvideo%2Fepisode%2F89-116_s25_p16955%3Fpl%3D1%26utm_campaign%3Dtimes_yahoo_20261030_free_10285122_centertx%26utm_medium%3Dweb%26utm_source%3Dabematimes&adj_t=1o8o1k5q&adj_tracker_limit=25000&pl=1",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://akiba-pc.watch.impress.co.jp/img/ah/docs/2152/403/html/a2.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://akiba-pc.watch.impress.co.jp/img/ah/list/2152/403/a1.jpg",
+        "width": 1920,
+        "height": 1280,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://ascii.jp/elem/000/000/688/688094/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://ascii.jp/img/2007/05/08/1503310/l/d2abd4d638cabff8.jpg?20200122",
+        "width": 280,
+        "height": 210,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://ascii.jp/elem/000/004/431/4431837/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://ascii.jp/img/2026/09/04/4521794/xl/facd470a3b20fe0a.jpg?20200122",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://battle-news.com/?p=150357",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://battle-news.com/article/wp-content/uploads/2026/10/20261023seadlinnng_1.jpg",
+        "width": 1280,
+        "height": 852,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://battle-news.com/article/wp-content/uploads/2026/10/20261023seadlinnng_2.jpg",
+        "width": 1280,
+        "height": 852,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://battle-news.com/?p=150403",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://battle-news.com/article/wp-content/uploads/2026/10/20261025noah_taniguti.jpg",
+        "width": 1280,
+        "height": 853,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://battle-news.com/article/wp-content/uploads/2026/10/20261025noah_taniguti2.jpg",
+        "width": 853,
+        "height": 1280,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://bestcarweb.jp/feature/column/1649931",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 7,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img.bestcarweb.jp/wp-content/uploads/2026/10/06165213/00_261010_71-77_P3_IMG_6793.jpg?v=1791273134",
+        "width": 960,
+        "height": 640,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://bestcarweb.jp/images/1649931",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://cancam.jp/archives/1765243/636114_0?postparent_id=1765243%3Futm_source%3Dnews.yahoo.co.jp",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 7,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://cancam.jp/wp-content/uploads/2026/09/26/636114_0.jpg",
+        "width": 1477,
+        "height": 1108,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://car.watch.impress.co.jp/docs/news/photo/2151299.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://car.watch.impress.co.jp/img/car/list/2151/299/001.jpg",
+        "width": 1920,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://car.watch.impress.co.jp/img/car/docs/2152/500/html/002_o.jpg.html",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_too_large"
+      }
+    ]
+  },
+  {
+    "url": "https://cat.benesse.ne.jp/withcat/content/gallery/?id=220930&img_id=6ae8f5c5-437b-4701-9755-9394566b95c3%283%29.jpg",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 4,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img.benesse-cms.jp/pet-cat/item/image/normal/00e2f6f0-0a6b-4139-b448-73f902186d2d(3).jpg?w=576&h=576&resize_type=cover&resize_mode=force",
+        "width": 576,
+        "height": 576,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 3,
+        "url": "https://img.benesse-cms.jp/pet-cat/item/image/normal/3145d4fb-a35d-4eeb-bfb1-a3d1b0f08539(3).jpg?w=576&h=576&resize_type=cover&resize_mode=force",
+        "width": 576,
+        "height": 576,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://courrier.jp/cj/464052/?gallery=",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://edu.watch.impress.co.jp/img/kit/docs/2152/461/html/sub1_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://edu.watch.impress.co.jp/img/kit/list/2152/461/sub1.png",
+        "width": 1497,
+        "height": 1051,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://eetimes.itmedia.co.jp/ee/articles/2606/19/news065.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://image.itmedia.co.jp/ee/articles/2606/19/cover_news065.jpg",
+        "width": 1632,
+        "height": 854,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://efight.jp/news-20261030_1752465/2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://efight.jp/wp-content/uploads/2026/10/RTTTT.png",
+        "width": 692,
+        "height": 370,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://egolf.jp/photo/260236/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://egolf.jp/wp-content/uploads/2027/10/pt-27-s2s-trtl-max-grn-zt-jv____1.jpg",
+        "width": 2048,
+        "height": 1365,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://eigachannel.jp/photo/247198/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://eigachannel.jp/wp-content/uploads/2026/10/dokokimi.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://eigachannel.jp/photo/252691/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://eigachannel.jp/wp-content/uploads/2026/10/R6C_0013s.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/detail/102251",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.forbesjapan.com/media/article/102251/images/main_image_49de3f8749e466bf82f9525428f2fa540928c830.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/detail/103866",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.forbesjapan.com/media/article/103866/images/main_image_5cd89b5ff5b2668902b87d154388162d2fa07809.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/detail/104499",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.forbesjapan.com/media/article/104499/images/main_image_84488318785d0409d7d72a6d79280491d0923944.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/detail/106568",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.forbesjapan.com/media/article/106568/images/main_image_5ebb5d131cc13e0af47a0c8227b09fa9dcee3d89.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/gallery/106927/1",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://forbesjapan.com/articles/gallery/106981/1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://static.forbesjapan.com/asset/frontend/img/og.png",
+        "width": 1200,
+        "height": 630,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/gallery/107272/1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://static.forbesjapan.com/asset/frontend/img/og.png",
+        "width": 1200,
+        "height": 630,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://forbesjapan.com/articles/gallery/107422/1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://static.forbesjapan.com/asset/frontend/img/og.png",
+        "width": 1200,
+        "height": 630,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://forzastyle.com/articles/photo/80037",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 12,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://forza.ismcdn.jp/mwimgs/6/7/1200wm/img_675c6c153b18c1b6dd9e59ea8a590d9f1759697.jpg",
+        "width": 1200,
+        "height": 932,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 11,
+        "url": "https://forza.ismcdn.jp/mwimgs/f/b/160h/img_fb2d06cf93e8e339c1bce329ce4fb710808282.jpg",
+        "width": 240,
+        "height": 160,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://fujinkoron.jp/articles/photo/23455",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 4,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/9/e/-/img_9e3acf0bfd5ceee757adae9055d65bcd172543.jpg",
+        "width": 1200,
+        "height": 814,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 3,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/c/6/-/img_c60ed6878052cae2aab16c1568496f91223638.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://fujinkoron.jp/articles/photo/24367",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/2/3/-/img_23e1e6c6c0a7932c98cefbfb4f097bbf249215.jpg",
+        "width": 1200,
+        "height": 863,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/2/f/-/img_2fb0b55f075edbd7fb32fce9a2b7665b770611.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://fujinkoron.jp/articles/photo/24425",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/c/a/-/img_ca48d9d6722a072f9855d14723915f9293801.jpg",
+        "width": 350,
+        "height": 500,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/2/c/-/img_2c9d7a97bf02b88c96bb14d8726fb88e15558.jpg",
+        "width": 640,
+        "height": 427,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://fujinkoron.jp/articles/photo/24540",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/7/e/-/img_7e73e38a62b92228eb66c37a41afb21d71052.jpg",
+        "width": 347,
+        "height": 500,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/b/7/-/img_b7e1da26437cded3fcb27d1a71e3eeb669346.jpg",
+        "width": 640,
+        "height": 427,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://fujinkoron.jp/articles/photo/24549",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/e/c/-/img_ecda1b67ca9b8c38569454a4ff2764f5211875.jpg",
+        "width": 684,
+        "height": 1000,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://fujinkoronmw.ismcdn.jp/mwimgs/4/8/-/img_48c455af4eb652dcdb7159dbbe3368e675970.jpg",
+        "width": 315,
+        "height": 500,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://game.watch.impress.co.jp/docs/news/2144357.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://game.watch.impress.co.jp/img/gmw/list/2144/357/1.jpg",
+        "width": 1920,
+        "height": 1080,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://game.watch.impress.co.jp/img/gmw/docs/2152/515/html/02.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://game.watch.impress.co.jp/img/gmw/list/2152/515/01.jpg",
+        "width": 1583,
+        "height": 932,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://game.watch.impress.co.jp/img/gmw/docs/2152/558/html/08.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://game.watch.impress.co.jp/img/gmw/list/2152/558/01.jpg",
+        "width": 960,
+        "height": 540,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://game.watch.impress.co.jp/img/gmw/docs/2152/568/html/2.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://game.watch.impress.co.jp/img/gmw/list/2152/568/1.jpg",
+        "width": 1920,
+        "height": 1080,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://game.watch.impress.co.jp/img/gmw/docs/2152/569/html/1_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://game.watch.impress.co.jp/img/gmw/list/2152/569/0.jpg",
+        "width": 1920,
+        "height": 1440,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://game.watch.impress.co.jp/img/gmw/docs/2152/574/html/5.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://game.watch.impress.co.jp/img/gmw/list/2152/574/1.jpg",
+        "width": 1200,
+        "height": 630,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://gonkaku.jp/images/252534?prev_url=https%3A%2F%2Fgonkaku.jp%2Farticles%2F25265",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://gonkaku.jp/packs/static/images/og_image-15894cead874a0e992cf.jpg",
+        "width": 1000,
+        "height": 1000,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://gonkaku.jp/images/252536?prev_url=https%3A%2F%2Fgonkaku.jp%2Farticles%2F25266",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://gonkaku.jp/packs/static/images/og_image-15894cead874a0e992cf.jpg",
+        "width": 1000,
+        "height": 1000,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://halmek.co.jp/favorite/c/snazzy/17442",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://halmek.co.jp/media/article/image/93c9036c688405ef911f22c4c5e9185b.jpg",
+        "width": 960,
+        "height": 960,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://hobby.watch.impress.co.jp/img/hbw/docs/2152/494/html/at_01.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hobby.watch.impress.co.jp/img/hbw/list/2152/494/at_01.jpg",
+        "width": 3151,
+        "height": 1433,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hobby.watch.impress.co.jp/img/hbw/docs/2152/563/html/012.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hobby.watch.impress.co.jp/img/hbw/list/2152/563/011.jpg",
+        "width": 1200,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hobby.watch.impress.co.jp/img/hbw/docs/2152/579/html/011.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hobby.watch.impress.co.jp/img/hbw/list/2152/579/001.jpg",
+        "width": 2000,
+        "height": 2000,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20231115-OHT1T51015.html?revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2023/11/15/20231115-OHT1I51024-L.jpg",
+        "width": 863,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20250121-OHT1T51040.html?revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2025/01/21/20250121-OHT1I51064-L.jpg",
+        "width": 1068,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20250622-OHT1T51157.html?revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2025/06/22/20250622-OHT1I51193-L.jpg",
+        "width": 831,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20250922-OHT1T51047.html?revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2025/09/22/20250922-OHT1I51056-L.jpg",
+        "width": 808,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20251004-OHT1T51195.html?mode=photo&photoid=1&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 4,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2025/10/04/20251004-OHT1I51285-L.jpg",
+        "width": 597,
+        "height": 879,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 3,
+        "url": "https://hochi.news/images/2025/10/04/20251004-OHT1I51288-L.jpg",
+        "width": 600,
+        "height": 879,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20251022-OHT1T51130.html?revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2025/10/22/20251022-OHT1I51224-L.jpg",
+        "width": 874,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20251126-OHT1T51144.html?mode=photo&photoid=1&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2025/11/26/20251126-OHT1I51206-L.jpg",
+        "width": 608,
+        "height": 868,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://hochi.news/images/2025/11/26/20251126-OHT1I51208-L.jpg",
+        "width": 608,
+        "height": 868,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20260201-OHT1T51327.html?mode=photo&photoid=1&revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/02/01/20260201-OHT1I51468-L.jpg",
+        "width": 750,
+        "height": 909,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20260419-OHT1T51010.html?mode=photo&photoid=1&revision_id=1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/04/19/20260419-OHT1I51017-L.jpg",
+        "width": 675,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20260419-OHT1T51010.html?mode=photo&photoid=1&revision_id=3",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/04/19/20260419-OHT1I51017-L.jpg",
+        "width": 675,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20260624-OHT1T51441.html?mode=photo&photoid=1&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/06/24/20260624-OHT1I51646-L.jpg",
+        "width": 591,
+        "height": 868,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://hochi.news/images/2026/06/24/20260624-OHT1I51648-L.jpg",
+        "width": 586,
+        "height": 868,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20260920-OHT1T51147.html?mode=photo&photoid=1&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/09/20/20260920-OHT1I51217-L.jpg",
+        "width": 1170,
+        "height": 972,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://hochi.news/images/2026/09/20/20260920-OHT1I51562-L.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20261015-OHT1T51355.html?mode=photo&photoid=1&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/10/15/20261015-OHT1I51657-L.jpg",
+        "width": 750,
+        "height": 1078,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://hochi.news/images/2026/10/15/20261015-OHT1I51658-L.jpg",
+        "width": 750,
+        "height": 1042,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20261027-OHT1T51401.html?mode=photo&photoid=1&revision_id=2",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/10/27/20261027-OHT1I51611-L.jpg",
+        "width": 1200,
+        "height": 828,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20261030-OHT1T51016.html?mode=photo&photoid=1&revision_id=1",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/10/30/20261030-OHT1I51055-L.jpg",
+        "width": 1200,
+        "height": 892,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 4,
+        "url": "https://hochi.news/images/2026/10/30/20261030-OHT1I51032-L.jpg",
+        "width": 1080,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20261030-OHT1T51019.html?mode=photo&photoid=1&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/10/30/20261030-OHT1I51187-L.jpg",
+        "width": 1200,
+        "height": 875,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://hochi.news/images/2026/10/30/20261030-OHT1I51154-L.jpg",
+        "width": 1200,
+        "height": 1200,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://hochi.news/articles/20261030-OHT1T51098.html?mode=photo&photoid=2&revision_id=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://hochi.news/images/2026/10/30/20261030-OHT1I51172-L.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://hochi.news/images/2026/10/30/20261030-OHT1I51173-L.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://image.itmedia.co.jp/l/im/business/articles/2610/21/l_ea1635237_2610intelhitachi_004.png",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://image.itmedia.co.jp/business/articles/2610/21/l_ea1635237_2610intelhitachi_004.png",
+        "width": 939,
+        "height": 538,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://image.itmedia.co.jp/l/im/mobile/articles/2610/30/l_rk1640414_neobankcash-02.jpg",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://image.itmedia.co.jp/mobile/articles/2610/30/l_rk1640414_neobankcash-02.jpg",
+        "width": 1085,
+        "height": 2036,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://image.itmedia.co.jp/l/im/pcuser/articles/2610/30/l_si7101-Apple-05.jpg",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://image.itmedia.co.jp/pcuser/articles/2610/30/l_si7101-Apple-05.jpg",
+        "width": 1920,
+        "height": 1080,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://japan.zdnet.com/article/35253562/",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://k-tai.watch.impress.co.jp/img/ktw/docs/2152/534/html/02_o.png.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://asset.watch.impress.co.jp/img/ktw/docs/2152/534/02_o.png",
+        "width": 1920,
+        "height": 1440,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://kaden.watch.impress.co.jp/img/kdw/docs/2152/496/html/002_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://kaden.watch.impress.co.jp/img/kdw/list/2152/496/001.jpg",
+        "width": 1200,
+        "height": 900,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://kanazawa.keizai.biz/headline/4112/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.keizai.biz/kanazawa_keizai/headline/1792535297_photo.jpg",
+        "width": 1200,
+        "height": 901,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://kanazawa.keizai.biz/photoflash/4772/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.keizai.biz/kanazawa_keizai/photonews/1793330037.jpg",
+        "width": 330,
+        "height": 248,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://koko-soccer.com/news/gallery/5-koukousoccer/56652-2026cssaitama102411/photo/1",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 40,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://koko-soccer.com/assets/img/base/title_news.jpg",
+        "width": 670,
+        "height": 32,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 39,
+        "url": "https://cdn.koko-soccer.com/images/news/2026cssaitama102411/thum039.JPG",
+        "width": 88,
+        "height": 66,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://kosodate.mynavi.jp/articles/46503/sns/1109759",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://kosodate.mynavi.jp/uploads/article/image/46503/thumb1030itanomikity.jpg",
+        "width": 622,
+        "height": 451,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://kurukura.jp/gallery/119303-20261030-126/",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 24,
+    "expected": 24,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://kurukura.jp/assets/uploads/2026/09/260911-belovedcar-suzuki-Jimny-00.jpg",
+        "width": 1452,
+        "height": 968,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 23,
+        "url": "https://kurukura.jp/assets/uploads/2026/09/260911-belovedcar-suzuki-Jimny-22.jpg",
+        "width": 1452,
+        "height": 968,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://kuruma-news.jp/photo/1130539",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://kuruma-news.jp/wp-content/uploads/2027/10/20261028_rte127_fukkyu_05.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 4,
+        "url": "https://kuruma-news.jp/wp-content/uploads/2027/10/20261028_rte127_fukkyu_03.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://kuruma-news.jp/photo/1130995",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 19,
+    "expected": 19,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://kuruma-news.jp/wp-content/uploads/2027/09/260903_toyota_crownsport_004.jpg?v=1788418691",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 18,
+        "url": "https://kuruma-news.jp/wp-content/uploads/2027/10/20261026_crownsport_007.jpg?v=1792999512",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://kuruma-news.jp/post/1130539/2",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 5,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://kuruma-news.jp/wp-content/uploads/2027/10/2610-kaitai00.jpg?v=1792876043",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://lasisa.net/photo/166900",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 11,
+    "expected": 11,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://lasisa.net/wp-content/uploads/2027/10/261030-mh-02.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 10,
+        "url": "https://lasisa.net/wp-content/uploads/2027/10/261030-mh-01.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://limo.media/articles/-/143424",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://limo.ismcdn.jp/mwimgs/b/2/1200w/img_b2afdf8e3038a7ab87f024c12726a7b9647595.jpg",
+        "width": 1200,
+        "height": 1795,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://limo.media/articles/-/144288",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://limo.ismcdn.jp/mwimgs/8/3/1200w/img_83843693bab23d2320f7251a2d4e61f4101337.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://limo.media/articles/photo/143424",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://limo.ismcdn.jp/mwimgs/e/5/1740m/img_e542f1b8a72e60b5126ac1cf2a422e7a243456.jpg",
+        "width": 900,
+        "height": 445,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://limo.media/articles/photo/144288",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://limo.ismcdn.jp/mwimgs/8/a/1740m/img_8abde4e3eef3ff915822edd95dcf5c5188020.jpg",
+        "width": 1200,
+        "height": 520,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://madamefigaro.jp/culture/210420-philip-02/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 22,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://madamefigaro.jp/wp-content/uploads/images/210420prince-philip-01.jpg",
+        "width": 400,
+        "height": 662,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 21,
+        "url": "https://madamefigaro.jp/wp-content/uploads/images/210420prince-philip-22jpg.jpg",
+        "width": 400,
+        "height": 826,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://madamefigaro.jp/culture/260416-peter-phillips-wedding-photo-controversy/",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_too_large"
+      }
+    ]
+  },
+  {
+    "url": "https://madamefigaro.jp/culture/261008-princess-diana-father-queen-elizabeth/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://madamefigaro.jp/wp-content/uploads/2026/10/261007-charles-spencer-01.jpg",
+        "width": 1200,
+        "height": 674,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://madamefigaro.jp/lifestyle/261029-literary-hotels/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://madamefigaro.jp/wp-content/uploads/2026/10/261021-hotel-01.jpg",
+        "width": 1100,
+        "height": 1466,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://magmix.jp/photo/383461",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://magmix.jp/wp-content/uploads/2027/10/20261030-vivant-02-1200x800.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 1,
+        "url": "https://magmix.jp/wp-content/uploads/2027/10/20261030-vivant-01.jpg",
+        "width": 720,
+        "height": 900,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://magmix.jp/photo/383476",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 6,
+    "expected": 6,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://magmix.jp/wp-content/uploads/2027/10/261030-az-01.jpg",
+        "width": 660,
+        "height": 900,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://magmix.jp/wp-content/uploads/2027/07/260724-rgteki-01.jpg",
+        "width": 900,
+        "height": 506,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mdpr.jp/cinema/detail/4241555",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img-mdpr.freetls.fastly.net/article/ct8E/wm/ct8E1R-8GIv40o5nIGxtQ_kn3DW12avoDszv_O3EDKo.jpg?width=700&disable=upscale&auto=webp&quality=80",
+        "width": 700,
+        "height": 466,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mdpr.jp/k-enta/detail/3125344",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img-mdpr.freetls.fastly.net/article/1Jvl/nm/1Jvll9ZdJnlQ3D0jE4ut-FhI9osy1lk58Ad4VWNhqHI.jpg?width=700&disable=upscale&auto=webp&quality=80",
+        "width": 700,
+        "height": 466,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mdpr.jp/music/detail/4083120",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img-mdpr.freetls.fastly.net/article/fIRL/nm/fIRL65XadgOVsHbMWIsX1V7NGmGMKYMtqmIyy3zdn3o.jpg?width=700&disable=upscale&auto=webp&quality=80",
+        "width": 600,
+        "height": 300,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mdpr.jp/music/detail/4554951",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img-mdpr.freetls.fastly.net/article/bvb5/nm/bvb5B5j6HsQ4_I5WQvI3DRMuvba0fAh2vNhiuvmtZ38.jpg?width=700&disable=upscale&auto=webp&quality=80",
+        "width": 700,
+        "height": 467,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mdpr.jp/news/detail/2058356",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img-mdpr.freetls.fastly.net/article/kHG_/nm/kHG_YyoEcwrSrIBnArWK69jA5JLrDb9SBuiFfjR8euY.jpg?width=700&disable=upscale&auto=webp&quality=80",
+        "width": 700,
+        "height": 350,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mdpr.jp/photo/detail/19919980",
+    "status": "roster_verified",
+    "strategy": "mdpr",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img-mdpr.freetls.fastly.net/article/d6zl/nm/d6zlo2Vsy4Fs0KZ4xhJJJH1Io1O6IBEMJfdSVj-wPGo.jpg?width=1520&auto=webp&quality=80",
+        "width": 1520,
+        "height": 1013,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://img-mdpr.freetls.fastly.net/article/VaPG/nm/VaPGWgV4IzYzywx9H7bJUfDIIdVNJ19OiGDs0yO5MKs.jpg?width=1520&auto=webp&quality=80",
+        "width": 1520,
+        "height": 1014,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://medicaldoc.jp/m/column-m/sf-202610t0504/gallery/",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://medicaldoc.jp/m/my-experience/ta-202610e0049/gallery/",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://mezamashi.media/articles/gallery/366978?image=2",
+    "status": "incomplete",
+    "strategy": "declared",
+    "count": 10,
+    "expected": 12,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://mezamashi.ismcdn.jp/mwimgs/9/c/708/img_9ca18c0326b3f5938153628d096dbc8c250230.jpg",
+        "width": 708,
+        "height": 398,
+        "type": "image/webp"
+      },
+      {
+        "index": 9,
+        "url": "https://mezamashi.ismcdn.jp/mwimgs/2/a/708/img_2a8d9e1093a472b41406481e70e6e8d962127.jpg",
+        "width": 708,
+        "height": 708,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mezamashi.media/articles/gallery/367023?image=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 6,
+    "expected": 6,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://mezamashi.ismcdn.jp/mwimgs/e/0/708/img_e0c8982b4fc3f6c2dbfa15b232c77b789874369.jpg",
+        "width": 708,
+        "height": 531,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://mezamashi.ismcdn.jp/mwimgs/5/4/708/img_5488e4f5edd3d8075a9fc1e230336ddf161917.jpg",
+        "width": 708,
+        "height": 708,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://mi-mollet.com/articles/image/61821",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://mi-mollet.ismcdn.jp/mwimgs/0/a/124h/img_0a40aa4fca4a6eb24f38e0e6603db15f227677.jpg",
+        "width": 186,
+        "height": 124,
+        "type": "image/webp"
+      },
+      {
+        "index": 4,
+        "url": "https://mi-mollet.ismcdn.jp/mwimgs/9/b/124w/img_9b2e4c3efaa9a888c1820b7182942c76570368.jpg",
+        "width": 124,
+        "height": 186,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://motor-fan.jp/?attachment_id=1651769",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://motor-fan.jp/?attachment_id=1663336",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://motor-fan.jp/?attachment_id=1663400",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://motor-fan.jp/?attachment_id=1666397",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://motor-fan.jp/?attachment_id=1666420",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://natalie.mu/eiga/gallery/news/695924/3004620?ref=ynews&place=inline",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://natgeo.nikkeibp.co.jp/atcl/gallery/101502605/?P=2",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://natgeo.nikkeibp.co.jp/atcl/gallery/101502605/02g.jpg",
+        "width": 1000,
+        "height": 667,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 5,
+        "url": "https://cdn-natgeo.nikkeibp.co.jp/atcl/gallery/101502605/05g.jpg?__scale=w:120,h:90,t:1&_sh=07f0440500",
+        "width": 120,
+        "height": 90,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://natgeo.nikkeibp.co.jp/atcl/gallery/112200047/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 11,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://cdn-natgeo.nikkeibp.co.jp/atcl/gallery/112200047/ph_thumb.jpg?__scale=w:1190,h:793&_sh=0b00e201f0",
+        "width": 1190,
+        "height": 793,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 10,
+        "url": "https://cdn-natgeo.nikkeibp.co.jp/atcl/gallery/112200047/ph10.jpg?__scale=w:120,h:90,t:1&_sh=08a0760f30",
+        "width": 120,
+        "height": 90,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://natgeo.nikkeibp.co.jp/atcl/photo/17/080800185/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://cdn-natgeo.nikkeibp.co.jp/atcl/photo/17/080800185/ph_thumb.jpg?__scale=w:800,h:533&_sh=0f30540a40",
+        "width": 800,
+        "height": 533,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.jp/i/1312978160389554512",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "fetch failed"
+      }
+    ]
+  },
+  {
+    "url": "https://news.jp/i/1313748261500371339",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "fetch failed"
+      }
+    ]
+  },
+  {
+    "url": "https://news.jp/i/1348780079317681063",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "fetch failed"
+      }
+    ]
+  },
+  {
+    "url": "https://news.jp/i/1364428672245383804",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "fetch failed"
+      }
+    ]
+  },
+  {
+    "url": "https://news.jp/i/1481122191083783064",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "fetch failed"
+      }
+    ]
+  },
+  {
+    "url": "https://news.mynavi.jp/gallery/pajero_5th/images/001l.jpg",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 40,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.mynavi.jp/article/20261030-pajero2/images/001l.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 39,
+        "url": "https://news.mynavi.jp/article/20261030-pajero2/images/040l.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.mynavi.jp/photo/article/20261029-pajero1/images/019l.jpg",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.mynavi.jp/article/20261029-pajero1/images/019l.jpg",
+        "width": 1200,
+        "height": 801,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.mynavi.jp/photo/article/kuruma-quiz-64/images/002l.jpg",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.mynavi.jp/article/kuruma-quiz-64/images/002l.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.mynavi.jp/premium/article/20241119-landcruiser/",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 40,
+    "expected": 115,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.mynavi.jp/premium/article/20241119-landcruiser/images/001.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 39,
+        "url": "https://news.mynavi.jp/premium/article/20241119-landcruiser/images/040.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.ntv.co.jp/n/fct/category/society/fc8bbe1158af324381aec16474094cdaac/image?p=1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.ntv.co.jp/images/og_images/og_images_fct.png",
+        "width": 1024,
+        "height": 576,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://news.tv-asahi.co.jp/news_international/articles/photos/900203082.html?y_link_position=0&y_article_id=900203082",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203082_img_3cf3d4e90ead3cf3560ad62935190682202063.jpg",
+        "width": 705,
+        "height": 397,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 5,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203082_img_b2907bc77d5ab34613310af981648067140608.jpg",
+        "width": 705,
+        "height": 397,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.tv-asahi.co.jp/news_society/articles/900203020.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203020_1200.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.tv-asahi.co.jp/news_society/articles/photos/900203081.html?y_link_position=0&y_article_id=900203081",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203081_img_fb9336dead75641cb6813af3c1928f2478723.jpg",
+        "width": 705,
+        "height": 397,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203081_img_c99a76422ee59987eb1fbc06227aadb0107978.jpg",
+        "width": 705,
+        "height": 397,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://news.tv-asahi.co.jp/news_society/articles/photos/900203086.html?y_link_position=0&y_article_id=900203086",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203086_img_bf217442cc4e524876f51e6f1bead7a1162213.jpg",
+        "width": 705,
+        "height": 397,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 5,
+        "url": "https://news.tv-asahi.co.jp/articles_img/900203086_img_f574de8ecb08be31cf463c5bb4fb5117117132.jpg",
+        "width": 705,
+        "height": 397,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/-/2222957?ex_position=r2&ex_id=3050154",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 1,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://newsdig.ismcdn.jp/mwimgs/2/e/1360mw/img_2e8f06a2e21ae486e7a25ca97bb4d501359833.jpg",
+        "width": 1360,
+        "height": 765,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/-/2871082?ex_position=r3&ex_id=3050139",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://newsdig.ismcdn.jp/mwimgs/4/1/1360mw/img_4149847d629c1db33d33cbc5a5f8e3e533154.jpg",
+        "width": 853,
+        "height": 480,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/-/2871082?ex_position=r3&ex_id=3050150",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://newsdig.ismcdn.jp/mwimgs/4/1/1360mw/img_4149847d629c1db33d33cbc5a5f8e3e533154.jpg",
+        "width": 853,
+        "height": 480,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/2984425?ex_position=photo&ex_id=2984425&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049477?ex_position=photo&ex_id=3049477&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049477?ex_position=r1&ex_id=3049477&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049683?ex_position=photo&ex_id=3049683&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049729?ex_position=photo&ex_id=3049729&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049735?ex_position=photo&ex_id=3049735&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049750?ex_position=photo&ex_id=3049750&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049753?ex_position=photo&ex_id=3049753&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049753?ex_position=r1&ex_id=3049753",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049786?ex_position=photo&ex_id=3049786&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049943?ex_position=photo&ex_id=3049943&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3049943?ex_position=r1&ex_id=3049943",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050057?ex_position=photo&ex_id=3050057&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050057?ex_position=r1&ex_id=3050057&image=5",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050112?ex_position=photo&ex_id=3050112&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050112?ex_position=r1&ex_id=3050112&image=47",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050112?ex_position=r2&ex_id=3050112&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050112?ex_position=r3&ex_id=3050112&image=27",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050112?ex_position=r4&ex_id=3050112&image=3",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050139?ex_position=photo&ex_id=3050139&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050144?ex_position=photo&ex_id=3050144&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050150?ex_position=photo&ex_id=3050150&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050152?ex_position=photo&ex_id=3050152&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050154?ex_position=photo&ex_id=3050154&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newsdig.tbs.co.jp/articles/gallery/3050176?ex_position=photo&ex_id=3050176&image=2",
+    "status": "failed",
+    "error": "incomplete_gallery"
+  },
+  {
+    "url": "https://newswitch.jp/p/49062",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.newswitch.jp/images/fd930f7d-8cb5-495a-b082-c1e8b7d5a680.jpg",
+        "width": 800,
+        "height": 658,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/cont/articles/4049683/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1791612756_825270220_18102481430172797_3877966761680741082_n-1024x768.jpg",
+        "width": 1024,
+        "height": 768,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/cont/articles/4049683/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1791612756_825270220_18102481430172797_3877966761680741082_n-1024x768.jpg",
+        "width": 1024,
+        "height": 768,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/fav/articles/4077653/2/",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "getaddrinfo ENOTFOUND research.image.itmedia.co.jp"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/fav/articles/4077782/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1793324103_image-1024x768.jpeg",
+        "width": 1024,
+        "height": 768,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/research/articles/4072561/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1793080798_20261027_t_40.jpg",
+        "width": 612,
+        "height": 720,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/research/articles/4073844/2/",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "getaddrinfo ENOTFOUND research.image.itmedia.co.jp"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/research/articles/4074733/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1792137244_IMG_8249.jpeg",
+        "width": 2048,
+        "height": 1536,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/research/articles/4075216/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1792137244_IMG_8249.jpeg",
+        "width": 2048,
+        "height": 1536,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/research/articles/4076366/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/06/1780291900_33543021_1280-1024x682.jpg",
+        "width": 1024,
+        "height": 682,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nlab.itmedia.co.jp/research/articles/4076509/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://research.image.itmedia.co.jp/wp-content/uploads/2026/10/1793078123_23644039_m-1024x681.jpg",
+        "width": 1024,
+        "height": 681,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://nosweb.jp/asovehicle/articles/gallery/11504/1",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://number.bunshun.jp/articles/photo/872493?pn=5",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 21,
+    "expected": 20,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://number.ismcdn.jp/mwimgs/9/a/765/img_9ae23728d668386894c87b25d5286185524348.jpg",
+        "width": 765,
+        "height": 507,
+        "type": "image/webp"
+      },
+      {
+        "index": 20,
+        "url": "https://number.ismcdn.jp/mwimgs/a/d/765/img_ad8385906654cfec116be698883e90d63090364.jpg",
+        "width": 765,
+        "height": 509,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://octane.jp/articles/gallery/11788/1",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://otonanswer.jp/photo/405100/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://otonanswer.jp/wp-content/uploads/2027/10/20261030goncha02.jpg",
+        "width": 1200,
+        "height": 1200,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://otonanswer.jp/wp-content/uploads/2027/10/20261030goncha07.jpg",
+        "width": 1200,
+        "height": 1200,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://pc.watch.impress.co.jp/img/pcw/docs/2152/468/html/3_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://pc.watch.impress.co.jp/img/pcw/list/2152/468/23.jpg",
+        "width": 1200,
+        "height": 900,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://pc.watch.impress.co.jp/img/pcw/docs/2152/516/html/02_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://pc.watch.impress.co.jp/img/pcw/list/2152/516/01.jpg",
+        "width": 1920,
+        "height": 1080,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://pc.watch.impress.co.jp/img/pcw/docs/2152/546/html/2_o.png.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://asset.watch.impress.co.jp/img/pcw/docs/2152/546/2_o.png",
+        "width": 800,
+        "height": 343,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://plus.luremaga.jp/2026/10/29/499603/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://plus.luremaga.jp/main/wp-content/uploads/2026/10/chining_tray_1280x720-1024x576.jpg",
+        "width": 1024,
+        "height": 576,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://plus.luremaga.jp/2026/10/29/499603/photo/499617/?type=front",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 11,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://plus.luremaga.jp/main/wp-content/uploads/2026/10/chining_tray_1280x720.jpg",
+        "width": 1280,
+        "height": 720,
+        "type": "image/webp"
+      },
+      {
+        "index": 10,
+        "url": "https://plus.luremaga.jp/main/wp-content/uploads/2026/10/20-1-150x150.jpg",
+        "width": 150,
+        "height": 150,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://president.jp/articles/photo/120749?pn=2&cx_referrertype=yahoo&yhref=20261030-00120749-president-soci",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://president.ismcdn.jp/mwimgs/7/5/1200wm/img_75044b6890c41c01b41b046623bbcbf4951546.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://press.moviewalker.jp/news/article/1453076/image19002646/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://press.moviewalker.jp/api/resizeimage/news/article/1453076/19002646?w=200",
+        "width": 200,
+        "height": 133,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://realsound.jp/movie/2026/10/post-2568174.html/photo/20261030-godzilla-01",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://realsound.jp/wp-content/uploads/2026/10/20261030-godzilla-01.jpg",
+        "width": 640,
+        "height": 360,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://realsound.jp/tech/2026/10/post-2568702.html/photo",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://resemom.jp/article/img/2026/10/30/88112/403610.html",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 4,
+    "expected": 4,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://resemom.jp/imgs/p/U46fu-y9ADT5uXawUkLGjo1CRklIS0pNTE9O/403611.jpg",
+        "width": 1280,
+        "height": 720,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 3,
+        "url": "https://resemom.jp/imgs/p/U46fu-y9ADT5uXawUkLGjo1CRklIS0pNTE9O/403608.jpg",
+        "width": 1280,
+        "height": 720,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://shueisha.online/articles/-/259078?referral=yn&page=3",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 9,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://shuon.ismcdn.jp/mwimgs/2/8/1488mw/img_28a3a1d81047ee2a59abeae999ead20219986.jpg",
+        "width": 800,
+        "height": 300,
+        "type": "image/webp"
+      },
+      {
+        "index": 8,
+        "url": "https://shuon.ismcdn.jp/mwimgs/a/9/1488mw/img_a9bae39e8a0b0d42079bf432b1659b911288368.jpg",
+        "width": 1488,
+        "height": 1116,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1450164/landing/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1450164/18860791.jpg?w=1284",
+        "width": 615,
+        "height": 272,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453073/19006615/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 10,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453073/19006668.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 9,
+        "url": "https://thetv.jp/i/nw/1453073/19006657.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453073/19006651/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 10,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453073/19006668.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 9,
+        "url": "https://thetv.jp/i/nw/1453073/19006657.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453157/19006040/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 32,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453157/19005742.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 31,
+        "url": "https://thetv.jp/i/nw/1453157/19006101.jpg?w=1284",
+        "width": 1179,
+        "height": 1624,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453157/19006042/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 32,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453157/19005742.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 31,
+        "url": "https://thetv.jp/i/nw/1453157/19006101.jpg?w=1284",
+        "width": 1179,
+        "height": 1624,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453157/19006054/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 32,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453157/19005742.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 31,
+        "url": "https://thetv.jp/i/nw/1453157/19006101.jpg?w=1284",
+        "width": 1179,
+        "height": 1624,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453157/19006084/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 32,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453157/19005742.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 31,
+        "url": "https://thetv.jp/i/nw/1453157/19006101.jpg?w=1284",
+        "width": 1179,
+        "height": 1624,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453157/19006086/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 32,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453157/19005742.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 31,
+        "url": "https://thetv.jp/i/nw/1453157/19006101.jpg?w=1284",
+        "width": 1179,
+        "height": 1624,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453157/19006094/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 32,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453157/19005742.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 31,
+        "url": "https://thetv.jp/i/nw/1453157/19006101.jpg?w=1284",
+        "width": 1179,
+        "height": 1624,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453169/19005665/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453169/19005665.jpg?w=1284",
+        "width": 750,
+        "height": 1114,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453169/19005667/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453169/19005667.jpg?w=1284",
+        "width": 750,
+        "height": 990,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453169/19005668/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453169/19005668.jpg?w=1284",
+        "width": 643,
+        "height": 904,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453169/19005679/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453169/19005679.jpg?w=1284",
+        "width": 750,
+        "height": 1048,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453169/19005868/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453169/19005868.jpg?w=1284",
+        "width": 880,
+        "height": 591,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453187/19005985/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453187/19005985.jpg?w=1284",
+        "width": 960,
+        "height": 540,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453190/19005925/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 15,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453190/19005918.jpg?w=1284",
+        "width": 1280,
+        "height": 853,
+        "type": "image/webp"
+      },
+      {
+        "index": 14,
+        "url": "https://thetv.jp/i/nw/1453190/19005929.jpg?w=1284",
+        "width": 1280,
+        "height": 853,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453190/19005926/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 15,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453190/19005918.jpg?w=1284",
+        "width": 1280,
+        "height": 853,
+        "type": "image/webp"
+      },
+      {
+        "index": 14,
+        "url": "https://thetv.jp/i/nw/1453190/19005929.jpg?w=1284",
+        "width": 1280,
+        "height": 853,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453190/19005927/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 15,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453190/19005918.jpg?w=1284",
+        "width": 1280,
+        "height": 853,
+        "type": "image/webp"
+      },
+      {
+        "index": 14,
+        "url": "https://thetv.jp/i/nw/1453190/19005929.jpg?w=1284",
+        "width": 1280,
+        "height": 853,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453195/19006016/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 7,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453195/19006014.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 6,
+        "url": "https://thetv.jp/i/nw/1453195/19005961.jpg?w=1284",
+        "width": 1284,
+        "height": 1284,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453195/19006017/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 7,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453195/19006014.jpg?w=1284",
+        "width": 1284,
+        "height": 856,
+        "type": "image/webp"
+      },
+      {
+        "index": 6,
+        "url": "https://thetv.jp/i/nw/1453195/19005961.jpg?w=1284",
+        "width": 1284,
+        "height": 1284,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://thetv.jp/news/detail/1453198/19006693/",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://thetv.jp/i/nw/1453198/19006687.jpg?w=1284",
+        "width": 1284,
+        "height": 722,
+        "type": "image/webp"
+      },
+      {
+        "index": 4,
+        "url": "https://thetv.jp/i/nw/1453198/19006695.jpg?w=1284",
+        "width": 1284,
+        "height": 722,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10272748?pn=6",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/a/a/1352w/img_aab2a2eb9b32db4306ab1253b0fda8af195755.jpg",
+        "width": 1352,
+        "height": 755,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/b/1/1352w/img_b1dac145ae43da8310552cb64a82d1a3175043.jpg",
+        "width": 1352,
+        "height": 755,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10284329?pn=6",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 13,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/9/2/1352w/img_92997cb23dbab45f11d0421bdcc3e9b6133755.jpg",
+        "width": 1352,
+        "height": 755,
+        "type": "image/webp"
+      },
+      {
+        "index": 12,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/8/0/1352w/img_80197347158c5c1fc32a42b0ef2c7302116021.jpg",
+        "width": 1352,
+        "height": 755,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285024?pn=4",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 8,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/0/1/1352w/img_01dc9de63af13fbfa82650e15107eab8125270.jpg",
+        "width": 1352,
+        "height": 756,
+        "type": "image/webp"
+      },
+      {
+        "index": 7,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/f/8/1352w/img_f8fc64390d0615d6e9f3ae27f7f496cb113664.jpg",
+        "width": 1352,
+        "height": 756,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285039?pn=6",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 7,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/a/a/1352w/img_aa08620d94f3bb9279447af3b1d9c8461047629.png",
+        "width": 1352,
+        "height": 802,
+        "type": "image/webp"
+      },
+      {
+        "index": 6,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/9/e/1352w/img_9e99a051ea918c5f93eaccdef7a2dd36730803.png",
+        "width": 1352,
+        "height": 811,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285116?pn=3",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/9/6/1352w/img_96624477acf5bba91be3648729851771233581.jpg",
+        "width": 1352,
+        "height": 755,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 4,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/e/c/1352w/img_ec04134da0d1783068c8c1d66d6dc88288431.jpg",
+        "width": 1352,
+        "height": 1630,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285122?pn=3",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/2/a/1352w/img_2a82bc2266f4f916c73ed5db3ee3ef40613014.jpg",
+        "width": 1352,
+        "height": 760,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/5/c/1352w/img_5cc9073355cfb24737039b5fbed3f7e361155.jpg",
+        "width": 1352,
+        "height": 755,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285180?pn=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 4,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/b/2/1352w/img_b29f814abe29c83c4ad27726b9d86852249433.jpg",
+        "width": 1352,
+        "height": 764,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 3,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/8/8/1352w/img_88218f924d26fcf496d7422d2282b4fe252109.jpg",
+        "width": 1352,
+        "height": 738,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285274?pn=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/3/1/1352w/img_319fbc3a69fea38b2e7cd5438d9107a3301828.jpg",
+        "width": 1352,
+        "height": 760,
+        "type": "image/webp"
+      },
+      {
+        "index": 1,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/6/7/1352w/img_67b429e1d8774b4aeb0d88d06497e2c0476430.jpg",
+        "width": 1352,
+        "height": 760,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://times.abema.tv/articles/photo/10285296?pn=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 4,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/e/3/1352w/img_e30224e7f6ecddbf1e9c2282650e0e1488951.jpg",
+        "width": 1352,
+        "height": 754,
+        "type": "image/webp"
+      },
+      {
+        "index": 3,
+        "url": "https://times-abema.ismcdn.jp/mwimgs/3/8/1352w/img_38d251cc1443fb677482e51be4af1f9996373.jpg",
+        "width": 1352,
+        "height": 754,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://trafficnews.jp/photo/722950",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://trafficnews.jp/wp-content/uploads/2027/10/20250805_as_800_new_interior0449.jpg",
+        "width": 600,
+        "height": 400,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://trafficnews.jp/photo/723289",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://trafficnews.jp/wp-content/uploads/2027/10/261029_chichi6003f_01-600x450.jpg",
+        "width": 600,
+        "height": 450,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://travel.watch.impress.co.jp/img/trw/docs/2152/551/html/002_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://travel.watch.impress.co.jp/img/trw/list/2152/551/001.jpg",
+        "width": 1920,
+        "height": 1280,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://travel.watch.impress.co.jp/img/trw/docs/2152/572/html/02_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://travel.watch.impress.co.jp/img/trw/list/2152/572/02.jpg",
+        "width": 638,
+        "height": 351,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://vague.style/photo/470141",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 22,
+    "expected": 22,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://vague.style/wp-content/uploads/2027/10/1968-Maserati-Ghibli-4-7-Coupe-by-Ghia_1525002-1.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 21,
+        "url": "https://vague.style/wp-content/uploads/2027/10/1968-Maserati-Ghibli-4-7-Coupe-by-Ghia_1525003.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://web.motormagazine.co.jp/_ct/17866268",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d1uzk9o9cg136f.cloudfront.net/f/16783018/rc/2026/09/24/c37f64c5c50dbffdf8e359099f98eab085fb9b1a.jpg",
+        "width": 1280,
+        "height": 854,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://web.motormagazine.co.jp/_ct/17866268/album/16838268/image/17253180",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 12,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d1uzk9o9cg136f.cloudfront.net/f/16783018/rc/2026/09/24/6a557d6a5c20cd8d261ec0b65fccc84ab33f75d6.jpg",
+        "width": 1280,
+        "height": 854,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://d1uzk9o9cg136f.cloudfront.net/f/16783018/rc/2026/09/24/6a557d6a5c20cd8d261ec0b65fccc84ab33f75d6.jpg",
+        "width": 1280,
+        "height": 854,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.alba.co.jp/articles/category/golf-life/post/68d9man-cc/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d2bo6f45ymcdv9.cloudfront.net/images/ogp/M5kvv5p9dU9UO7rTMch8.jpg?ver=9HZ8",
+        "width": 945,
+        "height": 630,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.alba.co.jp/articles/category/golf-sns/post/hd3r5cw14/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d2bo6f45ymcdv9.cloudfront.net/images/ogp/I758mj2hKfyP7OUxq0au.jpg?ver=ZzSk",
+        "width": 945,
+        "height": 630,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.alba.co.jp/articles/category/golf-sns/post/uvolbpik-42/photo/?id=Us26BQCVBCLBK4Iq37tL",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 12,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d2bo6f45ymcdv9.cloudfront.net/images/ogp/VoLP0uGL9iroSthB2ck0.jpg?ver=7Dnu",
+        "width": 945,
+        "height": 630,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.alba.co.jp/tour/category/jlpga/tournament/98562/live-photo/?id=asYtEcMAZp&round=0",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d2bo6f45ymcdv9.cloudfront.net/images/large/NH5EUWiRzG.webp?ver=v3hm",
+        "width": 700,
+        "height": 467,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.alba.co.jp/tour/category/jlpga/tournament/98562/live-photo/?id=yt5jjAXhGn&round=1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://d2bo6f45ymcdv9.cloudfront.net/images/large/NH5EUWiRzG.webp?ver=v3hm",
+        "width": 700,
+        "height": 467,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.as-web.jp/f1/1366984/attachment/26rd01aus-sun-ant-xpb6_3",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.asahi.com/and/w/article/17004676/31502458?ro=17004676&ri=0",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://next-image.potaufeu.asahi.com/and/_next/image?url=https%3A%2F%2Fp.potaufeu.asahi.com%2F934f-p%2Fpicture%2F31502458%2F388f4b918d5b6dabcf7401673b23faa5.jpg&w=3840&q=75",
+        "width": 770,
+        "height": 513,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.autocar.jp/photo/1290573",
+    "status": "incomplete",
+    "strategy": "generic",
+    "count": 40,
+    "expected": 172,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.autocar.jp/wp-content/uploads/2026/10/maserati_quattroporte_20261030_shimizusoichi_04.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 39,
+        "url": "https://www.autocar.jp/wp-content/uploads/2025/07/maserati_quattroporte_20250704_hiraidaisuke_54.jpg",
+        "width": 1000,
+        "height": 667,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.aviationwire.jp/archives/267939/230101_0608_jal-640",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.baseballchannel.jp/npb/292194/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.baseballchannel.jp/wp-content/uploads/2026/09/451a25b81936b4a4cccd0db262515bf3.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.baseballchannel.jp/npb/299390/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.baseballchannel.jp/wp-content/uploads/2026/10/0ab2dff379b87ec983d4bf73fe899732.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.bcnretail.com/ranking/research/gallery/detail/20261030_671460.html",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.bcnretail.com/ranking/research/gallery/detail/20261030_672927.html",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.billboard-japan.com/d_news/detail/166124",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.billboard-japan.com/d_news/image/166976/2",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.billboard-japan.com/d_news/image/166977/2",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.billboard-japan.com/d_news/image/166978/2",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "image_unavailable"
+      }
+    ]
+  },
+  {
+    "url": "https://www.businessinsider.jp/article_images/2610-sundar-pichai-explains-how-ai-agents-help-him-run-google/?p=1",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://media.loom-app.com/loom/2026/10/22/761f976f-0d58-42b5-ac9d-6f3cb715d568/original.jpg?w=640",
+        "width": 640,
+        "height": 426,
+        "type": "image/webp"
+      },
+      {
+        "index": 1,
+        "url": "https://media.loom-app.com/loom/2026/10/22/761f976f-0d58-42b5-ac9d-6f3cb715d568/original.jpg?w=120&h=80",
+        "width": 120,
+        "height": 80,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.buzzfeed.com/jp/buzzfeedjapanlife/seven-countrymaam-icecream-photo",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 9,
+    "expected": 9,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img.buzzfeed.com/buzzfeed-static/static/2026-10/27/03/subbuzz/gM1pZL6V3.png?downsize=700%3A%2A&output-quality=auto&output-format=auto",
+        "width": 700,
+        "height": 700,
+        "type": "image/webp"
+      },
+      {
+        "index": 8,
+        "url": "https://img.buzzfeed.com/buzzfeed-static/static/2026-10/27/04/subbuzz/DY3DQ_v2N.jpg",
+        "width": 1605,
+        "height": 1605,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.chosunonline.com/site/data/html_dir/2026/10/19/2026101980070.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.chosunonline.com/site/data/img_dir/2026/10/19/2026101980070_0.jpg",
+        "width": 640,
+        "height": 403,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.chosunonline.com/site/data/html_dir/2026/10/26/2026102680176.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.chosunonline.com/site/data/img_dir/2026/10/26/2026102680174_0.jpg",
+        "width": 720,
+        "height": 480,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.chosunonline.com/site/data/html_dir/2026/10/27/2026102780139.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.chosunonline.com/site/data/img_dir/2026/10/27/2026102780136_0.jpg",
+        "width": 720,
+        "height": 394,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.chosunonline.com/site/data/html_dir/2026/10/29/2026102980104.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.chosunonline.com/site/data/img_dir/2026/10/29/2026102980104_0.jpg",
+        "width": 720,
+        "height": 480,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.chosunonline.com/svc/view.html?contid=2025102780009&no=1",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.chosunonline.com/svc/view.html?contid=2026031480029&no=1",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.chosunonline.com/svc/view.html?contid=2026061380001&no=1",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.chosunonline.com/svc/view.html?contid=2026070180079&no=1",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.chosunonline.com/svc/view.html?contid=2026102780074&no=1",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.chosunonline.com/svc/view.html?contid=2026102880190&no=1",
+    "status": "failed",
+    "error": "gallery_structure_changed"
+  },
+  {
+    "url": "https://www.cinemacafe.net/article/img/2026/10/30/113720/843089.html",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://www.cnn.co.jp/fringe/35049367.html",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "getaddrinfo ENOTFOUND www.cnn.co.jp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.cnn.co.jp/photo/l/1357218.html",
+    "status": "image_failed",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "error": "getaddrinfo ENOTFOUND www.cnn.co.jp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.crank-in.net/gallery/news/193110/6",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.crank-in.net/img/db/265101236138505_1200.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 5,
+        "url": "https://www.crank-in.net/img/db/261104238133500_1200.jpg",
+        "width": 1200,
+        "height": 900,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.crank-in.net/gallery/news/193507/2",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.crank-in.net/img/db/265102302127252_1200.jpg",
+        "width": 1200,
+        "height": 900,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 2,
+        "url": "https://www.crank-in.net/img/db/266107304127259_1200.jpg",
+        "width": 1200,
+        "height": 1703,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.crank-in.net/trend/gallery/item/193395",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.crank-in.net/img/db/262105289193466_1200.jpg",
+        "width": 1200,
+        "height": 1327,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.crank-in.net/trend/gallery/item/193458",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.crank-in.net/img/db/268102296178598_1200.jpg",
+        "width": 1200,
+        "height": 1500,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.crank-in.net/trend/gallery/item/193506/2",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 9,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.crank-in.net/img/db/269101305123186_1200.jpg",
+        "width": 1200,
+        "height": 1326,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 8,
+        "url": "https://www.crank-in.net/img/db/267103309126180_1200.jpg",
+        "width": 1200,
+        "height": 1661,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.dailyshincho.jp/article/2020/09080559/?ui_medium=http&ui_source=yahoo&ui_campaign=link_back",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.dailyshincho.com/wp-content/uploads/2020/09/2009071752_1-714x476.jpg",
+        "width": 714,
+        "height": 476,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.dailyshincho.jp/article/2026/10301100/?photo=2",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 10,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.dailyshincho.jp/common/img/icon_arrow_white.png",
+        "width": 40,
+        "height": 54,
+        "type": "image/png"
+      },
+      {
+        "index": 9,
+        "url": "https://www.dailyshincho.com/wp-content/uploads/2025/12/1393632_6-345x518.jpg",
+        "width": 345,
+        "height": 518,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.factcheckcenter.jp/fact-check/politics/saitama-governor-ono-fake-poster-foreigners/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://storage.ghost.io/c/93/3f/933fd1fd-ac61-4d64-bfe3-29efbe11e914/content/images/2026/09/data-src-image-6fc9d111-a488-45b1-a90a-4d7010bf07a1.png",
+        "width": 592,
+        "height": 560,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://www.fnn.jp/articles/-/1142066",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fnn.ismcdn.jp/mwimgs/2/e/600/img_2ee99147da1d0edb8ec7eebc0432b33c1297821.jpg",
+        "width": 600,
+        "height": 337,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.fnn.jp/articles/gallery/1142850?image=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 9,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fnn.ismcdn.jp/mwimgs/9/2/780wm/img_92cd68ce2828afc05279d86e549d218939320.jpg",
+        "width": 650,
+        "height": 371,
+        "type": "image/webp"
+      },
+      {
+        "index": 8,
+        "url": "https://fnn.ismcdn.jp/mwimgs/9/8/780wm/img_98643d0a37f5636862ce4504b3c62db543751.jpg",
+        "width": 650,
+        "height": 369,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.fnn.jp/articles/gallery/1142853?image=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 10,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fnn.ismcdn.jp/mwimgs/3/b/780wm/img_3bff7f82ade4339adca989bbaf8b7692245017.jpg",
+        "width": 780,
+        "height": 438,
+        "type": "image/webp"
+      },
+      {
+        "index": 9,
+        "url": "https://fnn.ismcdn.jp/mwimgs/6/7/780wm/img_67344f9827b48740bdfbe6519d6b370a474338.jpg",
+        "width": 780,
+        "height": 438,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.fnn.jp/articles/gallery/1142935?image=2",
+    "status": "roster_verified",
+    "strategy": "declared",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://fnn.ismcdn.jp/mwimgs/b/0/780wm/img_b049bddb8f9306c02e1f3b51c0c69af0203861.jpg",
+        "width": 780,
+        "height": 438,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://fnn.ismcdn.jp/mwimgs/0/d/780wm/img_0ddbcf269384e2bd3ef9743b5e8a52a1378344.jpg",
+        "width": 780,
+        "height": 438,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.gizmodo.jp/article_images/2610-active-cyber-defense/?p=1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://media.loom-app.com/loom/2026/10/29/73688dd2-8024-4d24-8aac-e295d0258d19/original.jpg?w=640",
+        "width": 640,
+        "height": 427,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.gizmodo.jp/article_images/km5-sp1-mp1-wireless-speaker-mixer/?p=1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://media.loom-app.com/loom/2026/10/29/f0c77c0a-0c9a-4cab-a4d7-839db31c79f4/original.png?w=640",
+        "width": 640,
+        "height": 335,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.goal.com/jp/%E3%83%AA%E3%82%B9%E3%83%88/footballer-wife-girl-friend-wags-202051128/bltb29d90a7721307d9",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://assets.goal.com/images/v3/bltef2e289b6062c403/DAZN%20standard%20world%20cup%20campaign.jpg?quality=60&auto=webp&format=pjpg",
+        "width": 1920,
+        "height": 1080,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.huffingtonpost.jp/entry/story_jp_6ae3dfcfe4b03a6ff48ff5ae",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img.huffingtonpost.com/asset/68edf970160000c0d2483b2b.jpeg?ops=1200_630",
+        "width": 1200,
+        "height": 630,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.huffingtonpost.jp/entry/story_jp_6ae3ea1ce4b03a6ff48ff7ab",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img.huffingtonpost.com/asset/6ae3eac514000048e1e01acd.jpeg?cache=f9z4R6xIW1&ops=1200_630",
+        "width": 1200,
+        "height": 629,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.huffingtonpost.jp/entry/story_jp_6ae3f421e4b038f4fbde9241",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://img.huffingtonpost.com/asset/6ae3f51d14000057e3e01ace.jpg?cache=BviGB9AjIr&ops=1200_630",
+        "width": 1200,
+        "height": 630,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.inside-games.jp/article/img/2026/10/30/190083/1789099.html",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 19,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.inside-games.jp/imgs/zoom/1789098.webp",
+        "width": 640,
+        "height": 360,
+        "type": "image/webp"
+      },
+      {
+        "index": 18,
+        "url": "https://www.inside-games.jp/imgs/zoom/1789116.webp",
+        "width": 640,
+        "height": 640,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.inside-games.jp/article/img/2026/10/30/190084/1801381.html",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 7,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.inside-games.jp/imgs/zoom/1801383.jpg",
+        "width": 560,
+        "height": 560,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 6,
+        "url": "https://www.inside-games.jp/imgs/zoom/1801385.jpg",
+        "width": 640,
+        "height": 640,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.itmedia.co.jp/aiplus/article/2608/17/2000000564/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.itmedia.co.jp/aiplus/article/ogp/2608/17/2000000564/10002789/2048",
+        "width": 1199,
+        "height": 628,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.iza.ne.jp/article/20261009-TWUAS7AM7NMPNEJAH5XUGPTYDY/photo/63XQS77HDFJA5N6HJYMVJBUVVY/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.iza.ne.jp/resizer/v2/63XQS77HDFJA5N6HJYMVJBUVVY.jpg?auth=dffb8f4751f55e998517fa4d5242b494c5b5de03cacfd58a9682eea7fe494f70&quality=40&focal=924%2C149&height=1200",
+        "width": 915,
+        "height": 1200,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.lifehacker.jp/article_images/2610-i-switched-back-to-a-phone-with-a-headphone-jack-vxo/?p=1",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://media.loom-app.com/loom/2026/01/21/d2f44aee-5418-493d-8cac-6782a8cd6adc/original.jpg?w=640",
+        "width": 640,
+        "height": 427,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.news-postseven.com/archives/20261030_2137619.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://media.news-postseven.com/uploads/2026/10/20/goliath_eyecatch_final_1200x800-214x142.jpg",
+        "width": 214,
+        "height": 142,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.news-postseven.com/archives/20261030_2137619.html?IMG_ENT=",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://media.news-postseven.com/uploads/2026/10/20/goliath-officialsns-3.png",
+        "width": 1200,
+        "height": 1800,
+        "type": "image/webp"
+      },
+      {
+        "index": 1,
+        "url": "https://media.news-postseven.com/uploads/2026/10/20/goliath-officialsns-5.png",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nikkansports.com/baseball/mlb/photonews/photonews_nsInc_202610300000420-1.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nikkansports.com/baseball/mlb/news/img/202610300000420-w1300_1.jpg",
+        "width": 1018,
+        "height": 1608,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nikkansports.com/baseball/photonews/photonews_nsInc_202404160000207-4.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nikkansports.com/baseball/news/img/202404160000207-w1300_4.jpg",
+        "width": 1300,
+        "height": 1962,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nikkansports.com/baseball/photonews/photonews_nsInc_202610300000418-1.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nikkansports.com/baseball/news/img/202610300000418-w1300_1.jpg",
+        "width": 1300,
+        "height": 1732,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nikkansports.com/sports/news/202407280000068.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nikkansports.com/sports/news/img/202407280000068-w500_0.jpg",
+        "width": 500,
+        "height": 438,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nikkansports.com/sports/news/202511210000124.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nikkansports.com/sports/news/img/202511210000124-w500_0.jpg",
+        "width": 500,
+        "height": 502,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nikkansports.com/sports/photonews/photonews_nsInc_202610300000401-1.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nikkansports.com/sports/news/img/202610300000401-w1300_1.jpg",
+        "width": 402,
+        "height": 599,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1063135/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1920830/middle_PN2026072201000551.-.-.CI0003.jpg",
+        "width": 320,
+        "height": 288,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1096106/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1952847/middle_IP261025JAA000057000.jpg",
+        "width": 320,
+        "height": 241,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1097666/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1954522/middle_IP261029JAA000630000.jpg",
+        "width": 320,
+        "height": 244,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1097677/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1954531/middle_IP261029JAA000248000.jpg",
+        "width": 320,
+        "height": 214,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1097695/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1954545/middle_IP261027JAA000001000.jpg",
+        "width": 320,
+        "height": 469,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1097698/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1954545/middle_IP261027JAA000001000.jpg",
+        "width": 320,
+        "height": 469,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1097730/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1954531/middle_IP261029JAA000248000.jpg",
+        "width": 320,
+        "height": 214,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/1097731/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1954531/middle_IP261029JAA000248000.jpg",
+        "width": 320,
+        "height": 214,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/image/631913/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 1,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.nishinippon.co.jp/uploads/image/1512541/middle_IP230216JAA000807000.jpg",
+        "width": 320,
+        "height": 213,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.nishinippon.co.jp/item/1554843/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://pass.nishinippon.co.jp/common/img/common/shimbun-image.png",
+        "width": 338,
+        "height": 420,
+        "type": "image/png"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oab.co.jp/news/?id=2026-10-30&amp;news_id=202610305001",
+    "status": "failed",
+    "error": "fetch failed"
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2460543/photo/2/?anc=205",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 9,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2461000/2460543/20260609_234404_p_o_28427976.jpg",
+        "width": 1031,
+        "height": 583,
+        "type": "image/webp"
+      },
+      {
+        "index": 8,
+        "url": "https://contents.oricon.co.jp/upimg/news/2461000/2460543/20260610_004637_p_o_35848218.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2470476/photo/2/?anc=205",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 28,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2471000/2470476/20260728_112408_p_o_78947546.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      },
+      {
+        "index": 27,
+        "url": "https://contents.oricon.co.jp/upimg/news/2471000/2470476/20260610_004637_p_o_35848218.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2474312/photo/2/?anc=320",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 3,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2475000/2474312/20260817_122013_p_o_20570061.jpg",
+        "width": 1200,
+        "height": 1202,
+        "type": "image/webp"
+      },
+      {
+        "index": 2,
+        "url": "https://contents.oricon.co.jp/upimg/news/2475000/2474312/20260817_122013_p_o_54497936.jpg",
+        "width": 1200,
+        "height": 420,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2477263/photo/2/?anc=324",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2478000/2477263/20260831_122724_p_o_20779557.jpg",
+        "width": 1200,
+        "height": 848,
+        "type": "image/webp"
+      },
+      {
+        "index": 4,
+        "url": "https://contents.oricon.co.jp/upimg/news/2478000/2477263/20260831_122622_p_o_87033815.jpg",
+        "width": 1200,
+        "height": 848,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2481827/photo/2/?anc=205",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 29,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2482000/2481827/20260610_004637_p_o_35848218.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      },
+      {
+        "index": 28,
+        "url": "https://contents.oricon.co.jp/upimg/news/2482000/2481827/20260728_112419_p_o_93963125.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2483264/photo/4/?anc=324",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 8,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2484000/2483264/20260929_150438_p_o_99913337.jpg",
+        "width": 1200,
+        "height": 905,
+        "type": "image/webp"
+      },
+      {
+        "index": 7,
+        "url": "https://contents.oricon.co.jp/upimg/news/2484000/2483264/20260909_125553_p_o_94406687.jpg",
+        "width": 1200,
+        "height": 848,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2486433/photo/2/?anc=324",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 14,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2487000/2486433/20261014_161619_p_o_94510526.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 13,
+        "url": "https://contents.oricon.co.jp/upimg/news/2487000/2486433/20261014_135256_p_o_82679864.jpg",
+        "width": 1200,
+        "height": 848,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2487287/photo/2/?anc=324",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 12,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2488000/2487287/20261019_123351_p_o_83881773.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 11,
+        "url": "https://contents.oricon.co.jp/upimg/news/2488000/2487287/20261019_123401_p_o_56584603.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2487287/photo/5/?anc=324",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 12,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2488000/2487287/20261019_123351_p_o_83881773.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 11,
+        "url": "https://contents.oricon.co.jp/upimg/news/2488000/2487287/20261019_123401_p_o_56584603.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2488077/photo/2/?anc=320",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 5,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2489000/2488077/20261022_133216_p_o_38263654.jpg",
+        "width": 1200,
+        "height": 851,
+        "type": "image/webp"
+      },
+      {
+        "index": 4,
+        "url": "https://contents.oricon.co.jp/upimg/news/2489000/2488077/20261022_133217_p_o_10700881.jpg",
+        "width": 1200,
+        "height": 851,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2489551/photo/2/?anc=205",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 37,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489551/20260610_004637_p_o_35848218.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      },
+      {
+        "index": 36,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489551/20260728_112419_p_o_93963125.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2489555/photo/2/?anc=324",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 6,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489555/20261029_122612_p_o_91295315.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      },
+      {
+        "index": 5,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489555/20261029_122615_p_o_39081552.jpg",
+        "width": 1200,
+        "height": 800,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2489826/photo/2/?anc=205",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 38,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489826/20260610_004637_p_o_35848218.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      },
+      {
+        "index": 37,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489826/20260728_112419_p_o_93963125.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.oricon.co.jp/news/2489861/photo/2/?anc=320",
+    "status": "roster_verified",
+    "strategy": "oricon",
+    "count": 7,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489861/20261030_120922_p_o_22226058.jpg",
+        "width": 1200,
+        "height": 1290,
+        "type": "image/webp"
+      },
+      {
+        "index": 6,
+        "url": "https://contents.oricon.co.jp/upimg/news/2490000/2489861/20261030_120935_p_o_57552394.jpg",
+        "width": 1200,
+        "height": 937,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.phileweb.com/news/d-av/202610/23/66232.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.phileweb.com/news/photo/d-av/662/66232/01.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.phileweb.com/news/d-av/202610/30/66271.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.phileweb.com/news/photo/d-av/662/66271/AMP19_00.jpg",
+        "width": 1000,
+        "height": 667,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.phileweb.com/news/d-av/202610/30/66273.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.phileweb.com/news/photo/d-av/662/66273/20261018001.jpg",
+        "width": 874,
+        "height": 583,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.phileweb.com/news/hobby/202610/26/8649.html",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 2,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.phileweb.com/news/photo/hobby/86/8649/godzila-00003.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      },
+      {
+        "index": 1,
+        "url": "https://www.phileweb.com/news/photo/hobby/86/8649/godzila-00002.jpg",
+        "width": 1200,
+        "height": 675,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.soccerdigestweb.com/news/detail/id=197960",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.soccerdigestweb.com/files/topics/197960_ext_04_0_L.jpg",
+        "width": 800,
+        "height": 636,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.soccerdigestweb.com/news/detail2/id=197958",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.soccerdigestweb.com/files/topics/197958_ext_04_0_L.jpg",
+        "width": 800,
+        "height": 533,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.sponichi.co.jp/entertainment/news/2024/05/22/articles/20240522s00041000179000c.html?nid=20261030s00041000134000c&screen=2&ref=yahoo",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.sponichi.co.jp/entertainment/news/2026/10/29/jpeg/20261029s10041000092000p_view.webp",
+        "width": 581,
+        "height": 924,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.sponichi.co.jp/entertainment/news/2025/07/03/articles/20250703s00041000300000c.html?nid=20261030s00041000141000c&screen=2&ref=yahoo",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.sponichi.co.jp/entertainment/news/2025/07/03/jpeg/20250703s10041000276000p_thum.webp",
+        "width": 269,
+        "height": 350,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.sponichi.co.jp/entertainment/news/2026/09/11/kiji/20260911s00041000194000c.html?nid=20261030s00041000142000c&ref=yahoo",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.sponichi.co.jp/battle/news/2026/09/11/jpeg/20260911s10041000203000p_thum.webp",
+        "width": 234,
+        "height": 350,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.sponichi.co.jp/entertainment/news/2026/09/24/kiji/20260924s00041000103000c.html?nid=20261030s00041000142000c&ref=yahoo",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.sponichi.co.jp/entertainment/news/2026/09/22/jpeg/20260922s10041000246000p_view.webp",
+        "width": 1200,
+        "height": 939,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.sponichi.co.jp/entertainment/news/2026/10/06/articles/20261006s00041000062000c.html?nid=20261030s00041000135000c&screen=2&ref=yahoo",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.sponichi.co.jp/sports/news/2026/08/23/jpeg/20260823s10079000057000p_view.webp",
+        "width": 1200,
+        "height": 930,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.ssnp.co.jp/distribution/709512/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.ssnp.co.jp/uploads/2026/10/261030familymart-2.jpg",
+        "width": 600,
+        "height": 600,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.ssnp.co.jp/distribution/709512/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.ssnp.co.jp/uploads/2026/10/261030familymart-2.jpg",
+        "width": 600,
+        "height": 600,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.ssnp.co.jp/foodservice/709519/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.ssnp.co.jp/uploads/2026/10/261030sukiyaki-2.jpg",
+        "width": 1300,
+        "height": 975,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.ssnp.co.jp/snack/709532/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.ssnp.co.jp/uploads/2026/10/261030tirol-2.jpg",
+        "width": 1093,
+        "height": 629,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.ssnp.co.jp/snack/709532/2/",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.ssnp.co.jp/uploads/2026/10/261030tirol-2.jpg",
+        "width": 1093,
+        "height": 629,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.tetsudo.com/report/556/figure/image/ssc_000.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://images.tetsudo.com/report/556/ssc_000.jpg",
+        "width": 1280,
+        "height": 853,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.theworldmagazine.jp/20261027/01world/spain/511418",
+    "status": "failed",
+    "error": "photo_source_unavailable"
+  },
+  {
+    "url": "https://www.tokyo-sports.co.jp/articles/-/408237",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://tokyo-sports.ismcdn.jp/mwimgs/6/8/320w/img_68932eca96c73ba44655af7c9cf0775268440.jpg",
+        "width": 320,
+        "height": 320,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.vivi.tv/post495999/media",
+    "status": "multiple_review",
+    "strategy": "generic",
+    "count": 13,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://res.cloudinary.com/vivimedia/image/fetch/f_auto,q_auto:eco,dpr_2,w_646/https://www.vivi.tv/wp-content/uploads/2026/10/29134405/1028_naniwa_live_report_1.jpg",
+        "width": 1292,
+        "height": 861,
+        "type": "image/webp"
+      },
+      {
+        "index": 12,
+        "url": "https://res.cloudinary.com/vivimedia/image/fetch/f_auto,q_auto:eco,dpr_2,w_646/https://www.vivi.tv/wp-content/uploads/2026/10/29134424/1028_naniwa_live_report_13.jpg",
+        "width": 1292,
+        "height": 861,
+        "type": "image/webp"
+      }
+    ]
+  },
+  {
+    "url": "https://www.walkerplus.com/article/1452258/image18961269.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://news.walkerplus.com/article/1452258/18961269_615.jpg",
+        "width": 615,
+        "height": 410,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.watch.impress.co.jp/img/ipw/docs/2152/497/html/g02_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://www.watch.impress.co.jp/img/ipw/list/2152/497/g06.jpg",
+        "width": 1997,
+        "height": 1123,
+        "type": "image/jpeg"
+      }
+    ]
+  },
+  {
+    "url": "https://www.watch.impress.co.jp/img/ipw/docs/2152/548/html/02_o.jpg.html",
+    "status": "single_review",
+    "strategy": "generic",
+    "count": 1,
+    "expected": 0,
+    "images": [
+      {
+        "index": 0,
+        "url": "https://asset.watch.impress.co.jp/img/ipw/docs/2152/548/02_o.jpg",
+        "width": 792,
+        "height": 452,
+        "type": "image/jpeg"
+      }
+    ]
+  }
+]

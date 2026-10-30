@@ -80,10 +80,22 @@ export function YahooPhotoFeature({
       <header>
         <h2>リンク先の写真</h2>
         <span aria-live="polite">
-          {index >= 0 ? `${index + 1} / ${pages.length}` : "読み込み中…"}
+          {gallery?.complete === false
+            ? `取得済み ${pages.length}枚`
+            : index >= 0
+              ? `${index + 1} / ${pages.length}`
+              : "読み込み中…"}
         </span>
       </header>
       <p className="photo-feature-title">{feature.title}</p>
+      {gallery?.complete === false && (
+        <p className="yahoo-note" role="status">
+          写真一覧をすべて取得できたか確認できていません。
+          <a href={feature.url} target="_blank" rel="noopener noreferrer">
+            元の写真ページで確認
+          </a>
+        </p>
+      )}
       {request.loading && !pages.length && (
         <p role="status" className="yahoo-note">
           写真を読み込み中…
@@ -171,7 +183,11 @@ export function YahooPhotoFeature({
           前の写真
         </button>
         <span>
-          {pages.length ? `${Math.max(0, index) + 1} / ${pages.length}` : "—"}
+          {gallery?.complete === false
+            ? `取得済み ${pages.length}枚`
+            : pages.length
+              ? `${Math.max(0, index) + 1} / ${pages.length}`
+              : "—"}
         </span>
         <button
           className="button quiet"
