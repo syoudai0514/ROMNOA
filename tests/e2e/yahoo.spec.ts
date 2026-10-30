@@ -479,22 +479,92 @@ test("article back button and bottom navigation work inside the reader", async (
   }
 });
 
-test("categories switch between roundup and news and filter the news list", async ({ page }) => {
+test("categories switch between roundup and news and filter the news list", async ({
+  page,
+}) => {
   await setup(page);
   await tab(page, "カテゴリ");
-  await page.getByRole("combobox", { name: "配信チャンネル" }).selectOption("yahoo");
+  await page
+    .getByRole("combobox", { name: "配信チャンネル" })
+    .selectOption("yahoo");
   await page.getByRole("button", { name: /スポーツ.*ニュースを見る/ }).click();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
-  await expect(page.getByTestId("yahoo-row").first()).toContainText(articles[2].title);
+  await expect(page.getByTestId("yahoo-row").first()).toContainText(
+    articles[2].title,
+  );
 });
 
-test("article navigation is available without a photo feature", async ({ page }) => {
+test("article navigation is available without a photo feature", async ({
+  page,
+}) => {
   await setup(page);
   await channel(page);
-  await page.getByRole("button", { name: `ニュースを開く: ${articles[1].title}` }).click();
+  await page
+    .getByRole("button", { name: `ニュースを開く: ${articles[1].title}` })
+    .click();
   const reader = page.getByRole("dialog", { name: articles[1].title });
   const nav = reader.getByRole("navigation", { name: "ニュース内の移動" });
-  await expect(nav.getByRole("button")).toHaveText(["ニュース本文", "記事の写真"]);
+  await expect(nav.getByRole("button")).toHaveText([
+    "ニュース本文",
+    "記事の写真",
+  ]);
   await nav.getByRole("button", { name: "記事の写真" }).click();
-  await expect(reader.getByText("表示できる記事の写真はありません。")).toBeVisible();
+  await expect(
+    reader.getByText("表示できる記事の写真はありません。"),
+  ).toBeVisible();
+});
+
+test("X posts in a Yahoo article show their photos in the app, and shop or related links are not shown", async ({
+  page,
+}) => {
+  await setup(page);
+  const post = "https://x.com/official/status/1234567890123";
+  const photo = "https://pbs.twimg.com/media/AAA.jpg";
+  await page.route(photo, (r) =>
+    r.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"/>',
+    }),
+  );
+  await page.route("**/api/social?**", (r) =>
+    r.fulfill({
+      json: {
+        provider: "X",
+        url: post,
+        author: "公式",
+        handle: "official",
+        text: "撮影オフショット",
+        media: [{ type: "photo", url: photo }],
+      },
+    }),
+  );
+  await page.route("**/api/yahoo-body?**", (r) =>
+    r.fulfill({
+      json: {
+        article: articles[0].id,
+        pages: ["本文"],
+        richPages: [
+          [
+            { kind: "text", text: "本文" },
+            { kind: "social", text: "投稿", url: post },
+          ],
+        ],
+        complete: true,
+      },
+    }),
+  );
+  await channel(page);
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${articles[0].title}`,
+      exact: true,
+    })
+    .click();
+  const card = page.getByRole("region", { name: "Xの投稿 @official" });
+  await expect(card).toContainText("撮影オフショット");
+  await card.getByRole("button", { name: "投稿の写真1を拡大" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "記事画像の拡大表示" }).locator("img"),
+  ).toHaveAttribute("src", photo);
+  await expect(page.locator("iframe")).toHaveCount(0);
 });

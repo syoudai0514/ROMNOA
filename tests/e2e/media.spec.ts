@@ -180,9 +180,10 @@ test("Instagram CDN photos render without a widget; post-only URLs get an explic
     name: "SNSの投稿",
     exact: true,
   });
-  await expect(fallback).toContainText("ここではメディアを表示できません");
+  // The post itself could not be read here, so the card offers the app.
+  await expect(fallback).toContainText("投稿を表示できませんでした");
   await expect(
-    fallback.getByRole("link", { name: /Instagramの投稿を開く/ }),
+    fallback.getByRole("link", { name: /Instagramで開く/ }),
   ).toHaveAttribute("href", post);
   await expect(reader.locator("iframe,script")).toHaveCount(0);
   expect(outside).toEqual([image]);

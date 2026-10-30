@@ -26,6 +26,9 @@ import { normalizeSearch, validSearch } from "../lib/search-model";
 import { useYahooPhotos } from "../lib/use-yahoo-photos";
 import type { PhotoFeature } from "../lib/yahoo-photos-model";
 import { YahooPhotoFeature } from "./YahooPhotoFeature";
+import { SocialPostCard } from "./SocialPost";
+import { socialPostUrl } from "../lib/social-model";
+import { linkedPhotoTarget } from "../lib/yahoo-photos-model";
 
 const STORE = "romnoa:yahoo-library:v1";
 const FEED = "romnoa:yahoo-feed:v1";
@@ -615,7 +618,7 @@ function YahooReader({
     pages: string[];
     complete: boolean;
     richPages?: {
-      kind: "text" | "link" | "image";
+      kind: "text" | "link" | "image" | "photo" | "social";
       text: string;
       url?: string;
     }[][];
@@ -652,7 +655,7 @@ function YahooReader({
               .array(
                 z
                   .object({
-                    kind: z.enum(["text", "link", "image"]),
+                    kind: z.enum(["text", "link", "image", "photo", "social"]),
                     text: z.string().max(10000),
                     url: z.string().max(2048).optional(),
                   })
@@ -661,6 +664,8 @@ function YahooReader({
                     if (!p.url) return false;
                     if (p.kind === "image")
                       return yahooImageUrl(p.url) === p.url;
+                    if (p.kind === "social")
+                      return socialPostUrl(p.url)?.url === p.url;
                     try {
                       const u = new URL(p.url);
                       return (
@@ -805,7 +810,38 @@ function YahooReader({
                     <div className="reader-text-block yahoo-full-text" key={i}>
                       {parts?.length
                         ? parts.map((part, n) =>
-                            part.kind === "link" ? (
+                            part.kind === "social" ? (
+                              <SocialPostCard
+                                key={n}
+                                url={part.url!}
+                                provider={socialPostUrl(part.url!)!.provider}
+                              />
+                            ) : part.kind === "photo" ? (
+                              (() => {
+                                // Photo links open the in-app gallery; when it
+                                // is not available they stay plain text.
+                                const target = linkedPhotoTarget(
+                                  part.url!,
+                                )?.url;
+                                const linked = media?.features.find(
+                                  (f) => f.url === target,
+                                );
+                                return linked ? (
+                                  <button
+                                    className="text-button inline-photo-link"
+                                    key={n}
+                                    onClick={() => {
+                                      setChosenFeature(linked);
+                                      jump(featureSection.current);
+                                    }}
+                                  >
+                                    {part.text}
+                                  </button>
+                                ) : (
+                                  <span key={n}>{part.text}</span>
+                                );
+                              })()
+                            ) : part.kind === "link" ? (
                               <a
                                 href={part.url}
                                 target="_blank"

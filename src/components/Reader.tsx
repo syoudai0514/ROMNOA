@@ -1,4 +1,5 @@
 import { compactReaderText } from "../lib/reader-layout";
+import { SocialPostCard } from "./SocialPost";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -338,20 +339,12 @@ export function Reader({
                     !videos.length &&
                     socialPosts.length > 0 && (
                       <section className="social-posts" aria-label="SNSの投稿">
-                        <p>
-                          投稿のリンクはありますが、記事に画像・動画の配信URLがないため、ここではメディアを表示できません。
-                        </p>
                         {socialPosts.map((post) => (
-                          <a
+                          <SocialPostCard
                             key={post.url}
-                            className="button secondary"
-                            href={post.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {post.provider}の投稿を開く（外部）
-                            <ExternalLink size={15} />
-                          </a>
+                            url={post.url}
+                            provider={post.provider}
+                          />
                         ))}
                       </section>
                     )}

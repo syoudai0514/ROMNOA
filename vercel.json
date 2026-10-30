@@ -29,6 +29,9 @@
     },
     "api/yahoo-photo-image.ts": {
       "maxDuration": 30
+    },
+    "api/social.ts": {
+      "maxDuration": 15
     }
   },
   "headers": [

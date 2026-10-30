@@ -73,6 +73,15 @@ if (
   ).status !== 400
 )
   throw new Error("Native photo image rejection failed");
+const { GET: social } = await import(new URL("api/social.js", output));
+if (
+  (
+    await social(
+      new Request("http://localhost/api/social?url=http://127.0.0.1/"),
+    )
+  ).status !== 400
+)
+  throw new Error("Native social post rejection failed");
 const invalidDiscovery = await discover(
   new Request("http://localhost/api/discovery?mode=date&date=2026-02-30"),
 );

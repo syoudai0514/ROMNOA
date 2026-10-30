@@ -11,6 +11,7 @@ import { handleYahoo } from "./server/yahoo";
 import { handleYahooSearch } from "./server/yahoo-search";
 import { handleYahooPhotos } from "./server/yahoo-photos";
 import { handleYahooPhotoImage } from "./server/yahoo-photo-image";
+import { handleSocial } from "./server/social";
 
 const api = (): Plugin => ({
   name: "romnoa-api",
@@ -25,6 +26,7 @@ const api = (): Plugin => ({
       ["/api/yahoo-search", handleYahooSearch],
       ["/api/yahoo-photos", handleYahooPhotos],
       ["/api/yahoo-photo-image", handleYahooPhotoImage],
+      ["/api/social", handleSocial],
     ] as const) {
       server.middlewares.use(path, async (req, res) => {
         try {

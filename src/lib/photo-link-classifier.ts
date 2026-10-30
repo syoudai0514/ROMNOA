@@ -26,7 +26,11 @@ const photoPath =
   /\/(?:photos?|gallery|galleries|images?|imgs?|gazo|picture|pictures|photopage|slideshow)(?:\/|\.html|$)|[?&](?:p|pn|photo|img|image)=\d/i;
 const photoLabel =
   /写真|画像|フォト|グラビア|ギャラリー|ショット|カット集|オフショット|全\s*\d+\s*枚|\d+\s*枚|photo|gallery/i;
-const nonPhotoLabel = /^【?(?:関連記事|関連|続きを読む|ランキング|PR)】?/;
+const nonPhotoLabel =
+  /^[【\[＜<]?(?:関連記事|関連|あわせて読みたい|合わせて読みたい|続きを読む|おすすめ|オススメ|ランキング|人気記事|注目記事|PR|広告)/;
+// Commercial calls to action are dropped even on an otherwise ordinary page.
+const promoLabel =
+  /購入|予約|通販|クーポン|ポイント還元|プレゼント|応募|キャンペーン|ダウンロード|アプリ|会員登録|無料体験|セール|楽天|Amazon|ショッピング/i;
 
 export function classifyPhotoLink(
   url: string,
@@ -45,6 +49,8 @@ export function classifyPhotoLink(
     /\.(?:pdf|zip|mp3|mp4|m3u8)$/i.test(u.pathname) ||
     (u.pathname === "/" && !u.search)
   )
+    return { kind: "ignore", score: 0 };
+  if (promoLabel.test(label) && !photoLabel.test(label))
     return { kind: "ignore", score: 0 };
   let score = 0;
   if (galleries.some((p) => p.test(u.pathname))) score += 5;

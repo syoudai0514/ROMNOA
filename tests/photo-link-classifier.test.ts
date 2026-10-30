@@ -92,3 +92,20 @@ describe("photo link classification", () => {
     ).toEqual(["https://pub.example/news/8/photo/1"]);
   });
 });
+
+describe("body link clean-up labels", () => {
+  it("drops promotional and related-story calls to action", () => {
+    expect(
+      classifyPhotoLink("https://shop.example/item/1", "予約はこちら").kind,
+    ).toBe("ignore");
+    expect(
+      classifyPhotoLink(
+        "https://pub.example/news/2",
+        "あわせて読みたい：別記事",
+      ).score,
+    ).toBeLessThan(0);
+    expect(
+      classifyPhotoLink("https://pub.example/news/3", "公式サイト").kind,
+    ).toBe("article");
+  });
+});

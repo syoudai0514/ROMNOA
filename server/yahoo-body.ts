@@ -1,6 +1,8 @@
 import { Parser } from "htmlparser2";
 import { yahooArticleUrl, yahooImageUrl } from "../src/lib/yahoo-model.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
+import { classifyPhotoLink } from "../src/lib/photo-link-classifier.js";
+import { socialPostUrl } from "../src/lib/reader-media.js";
 
 export function parseYahooBody(html: string, article: string, page: number) {
   if (Buffer.byteLength(html) > 2_000_000) throw Error("page_too_large");
@@ -62,7 +64,11 @@ export function parseYahooBody(html: string, article: string, page: number) {
     total > 100
   )
     throw Error("body_unavailable");
-  type Part = { kind: "text" | "link" | "image"; text: string; url?: string };
+  type Part = {
+    kind: "text" | "link" | "image" | "photo" | "social";
+    text: string;
+    url?: string;
+  };
   const rich: Part[] = [];
   let nodes = 0;
   const items = Array.isArray(detail.richObjectItems)
@@ -109,7 +115,31 @@ export function parseYahooBody(html: string, article: string, page: number) {
           !u.password &&
           href.length <= 2048
         ) {
-          rich.push({ kind: "link", url: u.href, text: label.slice(0, 2000) });
+          // Shops, apps, tickets, Yahoo's own duplicates and "related"/PR
+          // links are dropped with their label. SNS posts and photo pages are
+          // shown inside the app; only other story links stay external.
+          const post = socialPostUrl(u.href);
+          if (post) {
+            rich.push({
+              kind: "social",
+              url: post.url,
+              text: label.slice(0, 2000),
+            });
+            return;
+          }
+          const link = classifyPhotoLink(u.href, label);
+          if (link.kind === "gallery" || link.kind === "photo")
+            rich.push({
+              kind: "photo",
+              url: u.href,
+              text: label.slice(0, 2000),
+            });
+          else if (link.kind === "article" && link.score >= 0)
+            rich.push({
+              kind: "link",
+              url: u.href,
+              text: label.slice(0, 2000),
+            });
           return;
         }
       } catch {

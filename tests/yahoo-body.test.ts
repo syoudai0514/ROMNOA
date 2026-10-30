@@ -87,8 +87,14 @@ it("keeps inline links, text, article images and headings in their original orde
     "https://news.yahoo.co.jp/articles/d265f6978ffdeab58457f69f06aaa5813e2b3578";
   const result = parseYahooBody(fixture, url, 1);
   expect(
-    result.rich.some((p) => p.kind === "link" && p.text.includes("ショート丈")),
+    result.rich.some(
+      (p) => p.kind === "photo" && p.text.includes("ショート丈"),
+    ),
   ).toBe(true);
+  // Yahoo's own image-viewer link duplicates the article photos.
+  expect(
+    result.rich.some((p) => p.url?.startsWith("https://news.yahoo.co.jp/")),
+  ).toBe(false);
   expect(
     result.rich.some(
       (p) =>
@@ -99,4 +105,49 @@ it("keeps inline links, text, article images and headings in their original orde
   expect(
     result.rich.some((p) => p.kind === "text" && p.text.includes("購入者の声")),
   ).toBe(true);
+});
+
+it("drops shop, PR and related links, and marks SNS posts for in-app display", () => {
+  const url = `https://news.yahoo.co.jp/articles/${"e".repeat(40)}`;
+  const a = (href: string, value: string) => ({
+    tagName: "a",
+    attributes: { href },
+    children: [{ type: "text", value }],
+  });
+  const html = `<script>window.__PRELOADED_STATE__ = ${JSON.stringify({
+    articleDetail: {
+      contentId: "e".repeat(40),
+      newsLink: url,
+      paragraphs: [{ textDetails: [{ text: "本文" }] }],
+      richBody: [
+        {
+          tagName: "p",
+          children: [
+            { type: "text", value: "本文" },
+            a("https://www.amazon.co.jp/dp/B0", "Amazonで購入"),
+            a("https://pub.example/news/1", "【関連記事】別の話題"),
+            a("https://twitter.com/user/status/1234567890", "投稿"),
+            a("https://www.instagram.com/p/AbCdE12/", "投稿"),
+            a("https://pub.example/official", "公式サイト"),
+          ],
+        },
+      ],
+    },
+  })};</script>`;
+  const parts = parseYahooBody(html, url, 1).rich.filter(
+    (p) => p.kind !== "text",
+  );
+  expect(parts).toEqual([
+    {
+      kind: "social",
+      url: "https://x.com/user/status/1234567890",
+      text: "投稿",
+    },
+    {
+      kind: "social",
+      url: "https://www.instagram.com/p/AbCdE12/",
+      text: "投稿",
+    },
+    { kind: "link", url: "https://pub.example/official", text: "公式サイト" },
+  ]);
 });
