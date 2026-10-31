@@ -410,3 +410,19 @@ it("removes Yahoo tracking fragments and extracts the linked article photo inste
   expect(parsed.pictures).toHaveLength(1);
   expect(parsed.picture.url).toContain("4550723182102_org.avif");
 });
+
+it("extracts every editorial image in a multi-figure post while excluding affiliate and related images", () => {
+  const feature = "https://nlab.itmedia.co.jp/fav/articles/4077526/2/";
+  const html = `<div class="post-contents">
+    <figure><img src="https://research.image.itmedia.co.jp/wp-content/uploads/a.jpg" alt="一枚目"></figure>
+    <figure><img src="https://research.image.itmedia.co.jp/wp-content/uploads/b.jpg" alt="二枚目"></figure>
+    <figure><img src="https://research.image.itmedia.co.jp/wp-content/uploads/c.jpg" alt="三枚目"></figure>
+    <div class="embed-affiliate-result"><img src="https://m.media-amazon.com/ad.jpg"></div>
+    </div><aside class="related"><figure><img src="https://example.com/related.jpg"></figure></aside>`;
+  const parsed = parseLinkedPhotos(html, feature);
+  expect(parsed.pictures.map((p) => p.alt)).toEqual([
+    "一枚目",
+    "二枚目",
+    "三枚目",
+  ]);
+});

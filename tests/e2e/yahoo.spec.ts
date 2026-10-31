@@ -90,8 +90,9 @@ async function setup(page: Page) {
 }
 async function channel(page: Page) {
   await page
-    .getByRole("combobox", { name: "配信チャンネル", exact: true })
-    .selectOption("yahoo");
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
   await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
 }
 async function tab(page: Page, name: string) {
@@ -279,8 +280,9 @@ test("Yahoo category failures and invalid updates keep safe cached content witho
   ).toBeVisible();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
   await page
-    .getByRole("combobox", { name: "配信チャンネル", exact: true })
-    .selectOption("roundup");
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(page.getByTestId("article-row").first()).toBeVisible();
 });
 
@@ -498,8 +500,9 @@ test("categories switch between roundup and news and filter the news list", asyn
   await setup(page);
   await tab(page, "カテゴリ");
   await page
-    .getByRole("combobox", { name: "配信チャンネル" })
-    .selectOption("yahoo");
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
   await page.getByRole("button", { name: /スポーツ.*ニュースを見る/ }).click();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
   await expect(page.getByTestId("yahoo-row").first()).toContainText(
@@ -654,4 +657,37 @@ test("saved news switches between saving order and publication date", async ({
   await expect(page.getByTestId("yahoo-row").first()).toContainText(
     articles[1].title,
   );
+});
+
+test("switches between roundup and news with one tap across tabs", async ({
+  page,
+}) => {
+  await setup(page);
+  const switcher = page.getByRole("group", { name: "配信チャンネル" });
+  const roundup = switcher.getByRole("button", { name: "まとめ", exact: true });
+  const news = switcher.getByRole("button", { name: "ニュース", exact: true });
+  await expect(roundup).toHaveAttribute("aria-pressed", "true");
+  await news.click();
+  await expect(news).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("yahoo-row").first()).toBeVisible();
+  await tab(page, "検索");
+  await roundup.click();
+  await expect(roundup).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("searchbox", { name: "記事を検索" }),
+  ).toBeVisible();
+  await news.click();
+  await expect(page.getByLabel("Yahooニュースの検索語")).toBeVisible();
+  await tab(page, "カテゴリ");
+  await roundup.click();
+  await expect(roundup).toHaveAttribute("aria-pressed", "true");
+  await news.click();
+  await expect(news).toHaveAttribute("aria-pressed", "true");
+  await page.setViewportSize({ width: 320, height: 700 });
+  const box = await switcher.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(320);
+  await roundup.click();
+  await expect(roundup).toHaveAttribute("aria-pressed", "true");
 });

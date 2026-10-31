@@ -157,8 +157,10 @@ async function setup(
   );
   await page.goto("/");
   await page
-    .getByRole("combobox", { name: "配信チャンネル", exact: true })
-    .selectOption("yahoo");
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
+  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
   await page
     .getByRole("button", {
       name: `ニュースを開く: ${article.title}`,
@@ -512,8 +514,10 @@ test("publisher gallery exposes its embedded Instagram post alongside its photog
   });
   await page.reload();
   await page
-    .getByRole("combobox", { name: "配信チャンネル", exact: true })
-    .selectOption("yahoo");
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
+  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
   await page
     .getByRole("button", {
       name: `ニュースを開く: ${article.title}`,
@@ -551,8 +555,10 @@ test("a one-image fallback does not claim that the complete gallery has one phot
   });
   await page.reload();
   await page
-    .getByRole("combobox", { name: "配信チャンネル", exact: true })
-    .selectOption("yahoo");
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
+  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
   await page
     .getByRole("button", {
       name: `ニュースを開く: ${article.title}`,

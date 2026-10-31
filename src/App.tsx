@@ -522,17 +522,28 @@ export default function App() {
             <span className="topbar-label">あなたの、読む時間。</span>
             <div className="topbar-tools">
               {showList || tab === "categories" ? (
-                <select
-                  className="channel-select"
+                <div
+                  className="channel-switch"
+                  role="group"
                   aria-label="配信チャンネル"
-                  value={channel}
-                  onChange={(event) =>
-                    setChannel(event.target.value as "roundup" | "yahoo")
-                  }
                 >
-                  <option value="roundup">まとめ</option>
-                  <option value="yahoo">Yahoo!ニュース</option>
-                </select>
+                  <button
+                    type="button"
+                    className={channel === "roundup" ? "selected" : ""}
+                    aria-pressed={channel === "roundup"}
+                    onClick={() => setChannel("roundup")}
+                  >
+                    まとめ
+                  </button>
+                  <button
+                    type="button"
+                    className={channel === "yahoo" ? "selected" : ""}
+                    aria-pressed={channel === "yahoo"}
+                    onClick={() => setChannel("yahoo")}
+                  >
+                    ニュース
+                  </button>
+                </div>
               ) : (
                 <span className="ad-free">
                   <span />

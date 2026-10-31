@@ -19,7 +19,8 @@ function blocked(node: Element) {
     blockedTags.has(node.name) ||
     a.hidden !== undefined ||
     a["aria-hidden"] === "true" ||
-    /(?:^|[-_\s])(?:ad|ads|adunit|advertisement|banner|logo|social)(?:$|[-_\s])|recommend|related|ranking|pagenation|pagination/i.test(
+    a["data-embed-affiliate"] !== undefined ||
+    /(?:^|[-_\s])(?:ad|ads|adunit|advertisement|banner|logo|social)(?:$|[-_\s])|recommend|related|ranking|affiliate|pagenation|pagination/i.test(
       `${a.id || ""} ${a.class || ""}`,
     )
   );
@@ -52,7 +53,9 @@ function priority(node: Element) {
     /(?:entry|article|post)[-_]?(?:content|body)(?:$|[-_\s])/i.test(label) ||
     a.itemprop === "articleBody" ||
     a.id === "entry" ||
-    (a.class || "").split(/\s+/).includes("details-cntarea")
+    (a.class || "")
+      .split(/\s+/)
+      .some((c) => ["details-cntarea", "post-contents"].includes(c))
   )
     return 3;
   if (node.name === "article") return 2;
