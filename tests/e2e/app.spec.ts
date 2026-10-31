@@ -827,6 +827,9 @@ test("transfers roundup and news favorites into existing libraries", async ({
   await page.reload();
   await nav(page).getByRole("button", { name: "設定", exact: true }).click();
   await page.getByRole("button", { name: "引き継ぎデータを作成" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "まとめ 1件、ニュース 1件" }),
+  ).toBeVisible();
   const exported = await page.getByLabel("作成した引き継ぎデータ").inputValue();
   await page.evaluate(() => {
     const raw = JSON.parse(localStorage.getItem("romnoa:preferences:v1")!);
@@ -841,13 +844,11 @@ test("transfers roundup and news favorites into existing libraries", async ({
   });
   await page.reload();
   await nav(page).getByRole("button", { name: "設定", exact: true }).click();
-  await page
-    .getByLabel("お気に入りの引き継ぎファイル")
-    .setInputFiles({
-      name: "romnoa-favorites.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(exported),
-    });
+  await page.getByLabel("お気に入りの引き継ぎファイル").setInputFiles({
+    name: "romnoa-favorites.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(exported),
+  });
   await expect(page.getByLabel("取り込む引き継ぎデータ")).toHaveValue(exported);
   await page.getByRole("button", { name: "お気に入りを取り込む" }).click();
   await expect(

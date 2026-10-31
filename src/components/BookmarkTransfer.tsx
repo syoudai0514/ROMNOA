@@ -20,8 +20,12 @@ export function BookmarkTransfer({
       const data = exportBookmarks();
       setExported(data);
       setError("");
+      const counts = JSON.parse(data) as {
+        roundup: unknown[];
+        news: unknown[];
+      };
       setMessage(
-        "引き継ぎデータを作成しました。ファイルを共有するか、コピーしてください。",
+        `引き継ぎデータを作成しました。まとめ ${counts.roundup.length}件、ニュース ${counts.news.length}件。`,
       );
     } catch (e) {
       fail(e);
