@@ -32,7 +32,8 @@ for (const channel of ["ニュース", "まとめ"]) {
     await expect(rows).toHaveCount(1);
     await filters.getByRole("button", { name: "絞り込みを解除" }).click();
     await expect(rows).toHaveCount(3);
-    await filters.getByRole("group", { name: "キーワード" }).getByRole("button", { name: /写真集/ }).click();
+    await filters.getByRole("group", { name: "分類の種類" }).getByRole("button", { name: "キーワード", exact: true }).click();
+    await filters.getByRole("group", { name: "キーワード", exact: true }).getByRole("button", { name: /写真集/ }).click();
     await expect(rows).toHaveCount(1);
     await rows.first().getByRole("button", { name: channel === "ニュース" ? /^ニュースの保存を解除:/ : /^保存を解除:/ }).click();
     await expect(rows).toHaveCount(2);
