@@ -1,3 +1,4 @@
+import { dailyGallery } from "./daily-gallery.js";
 import { nikkansportsGallery } from "./nikkansports-gallery.js";
 import { declaredGallery } from "./declared-gallery.js";
 import { oriconGallery } from "./oricon-gallery.js";
@@ -375,6 +376,7 @@ export async function resolvePhotoPage(
     ],
     ["declared", () => declaredGallery(html, url)],
     ["nikkansports", () => nikkansportsGallery(html, url)],
+    ["daily", () => dailyGallery(html, url)],
     ["oricon", () => oriconGallery(html, url)],
     ["entame", () => entameGallery(html, url)],
     ["mdpr", () => mdprGallery(html, url)],
@@ -422,7 +424,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v18" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v19" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -584,6 +586,13 @@ export class YahooPhotoService {
           : await this.entry(selected),
       photo = current.data!;
     if (photo.kind !== "gallery") throw Error("wrong_cache_kind");
+    if (
+      new URL(feature).hostname === "www.daily.co.jp" &&
+      (gallery.pages.join("\n") !== photo.pages.join("\n") ||
+        gallery.thumbnails.map((t) => t.url).join("\n") !==
+          photo.thumbnails.map((t) => t.url).join("\n"))
+    )
+      throw Error("gallery_structure_changed");
     if (
       new URL(feature).hostname === "www.nikkansports.com" &&
       gallery.pages.join("\n") !== photo.pages.join("\n")
