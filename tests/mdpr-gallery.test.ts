@@ -59,3 +59,33 @@ describe("model press galleries", () => {
     );
   });
 });
+
+it("loads the reported 53-photo roster in order and validates the first and last images", async () => {
+  const source = "https://mdpr.jp/photo/detail/20609615";
+  const first = "https://mdpr.jp/photo/detail/20609614";
+  const last = "https://mdpr.jp/photo/detail/20609666";
+  const original = mdprGallery(html("20609615"), source)!;
+  expect(original.pages).toHaveLength(53);
+  expect(original.pages[0]).toBe(first);
+  expect(original.pages[2]).toBe(source);
+  expect(original.pages[52]).toBe(last);
+  expect(mdprGallery(html("20609614"), first)?.pages).toEqual(original.pages);
+  expect(mdprGallery(html("20609666"), last)?.pages).toEqual(original.pages);
+  const linkedMetadata = metadata.replaceAll(feature, source);
+  const service = new YahooPhotoService(new MemoryPhotoCache(), async (url) => {
+    if (url === article) return linkedMetadata;
+    const id = new URL(url).pathname.split("/").pop();
+    if (!["20609614", "20609615", "20609666"].includes(id || ""))
+      throw Error("unexpected page");
+    return html(id!);
+  });
+  const result = await service.get(article, source);
+  expect(result.kind === "gallery" && result.pages.length).toBe(53);
+  for (const page of [first, last]) {
+    const resolved = await service.get(article, source, page);
+    expect(resolved.kind === "gallery" && resolved.pageUrl).toBe(page);
+    expect(
+      (await service.imageSource(article, source, page, false)).url,
+    ).toContain("width=1520");
+  }
+});

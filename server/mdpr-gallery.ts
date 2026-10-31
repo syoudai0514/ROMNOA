@@ -20,7 +20,7 @@ export function mdprGallery(html: string, pageUrl: string) {
   const current = position ? Number(position[1]) - 1 : -1;
   const count = position ? Number(position[2]) : 0;
   if (!position || count === 1) return null;
-  if (count < 2 || count > 40 || current < 0 || current >= count)
+  if (count < 2 || count > 80 || current < 0 || current >= count)
     throw Error("gallery_structure_changed");
   const figure = DomUtils.findOne(
     (n) =>
