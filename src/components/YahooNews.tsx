@@ -146,6 +146,17 @@ export function YahooNews({
     return () => window.removeEventListener("romnoa:close-yahoo-reader", close);
   }, []);
   useEffect(() => {
+    const refreshLibrary = () => {
+      const next = readLibrary();
+      libraryRef.current = next.value;
+      setLibrary(next.value);
+      if (next.warning) setNotice(next.warning);
+    };
+    window.addEventListener("romnoa:bookmarks-imported", refreshLibrary);
+    return () =>
+      window.removeEventListener("romnoa:bookmarks-imported", refreshLibrary);
+  }, []);
+  useEffect(() => {
     // History deletion in Settings also applies to this separate RSS library.
     const clear = () => {
       const next = { ...libraryRef.current, read: {} };

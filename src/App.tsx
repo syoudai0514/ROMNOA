@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ArticleRow } from "./components/ArticleRow";
+import { BookmarkTransfer } from "./components/BookmarkTransfer";
 import { Reader } from "./components/Reader";
 import { YahooNews } from "./components/YahooNews";
 import { yahooCategories } from "./lib/yahoo-model";
@@ -1438,6 +1439,15 @@ export default function App() {
                       )}
                     </div>
                   </section>
+                  <BookmarkTransfer
+                    onImported={(next) => {
+                      prefsRef.current = next;
+                      setPrefs(next);
+                      window.dispatchEvent(
+                        new Event("romnoa:bookmarks-imported"),
+                      );
+                    }}
+                  />
                   <section className="settings-card">
                     <div className="settings-title">
                       <Clock3 size={19} />

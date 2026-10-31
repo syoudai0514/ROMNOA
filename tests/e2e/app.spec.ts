@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { article, feed, readerFixture } from "../fixtures";
+import { defaults } from "../../src/lib/storage";
 
 async function fixture(page: Page) {
   await page.route("**/api/reader**", (route) => {
@@ -789,5 +790,78 @@ test("saved roundup articles switch between save order and publication date", as
   await page.getByLabel("保存した記事の並び順").selectOption("saved");
   await expect(page.getByTestId("article-row").first()).toContainText(
     feed.articles[1].title,
+  );
+});
+
+test("transfers roundup and news favorites into existing libraries", async ({
+  page,
+}) => {
+  await fixture(page);
+  const sourceArticle = feed.articles[0];
+  const yahoo = {
+    id: `https://news.yahoo.co.jp/articles/${"a".repeat(40)}`,
+    url: `https://news.yahoo.co.jp/articles/${"a".repeat(40)}`,
+    title: "ニュースの保存記事",
+    summary: "",
+    image: null,
+    category: "domestic",
+    publishedAt: null,
+  };
+  await page.evaluate(
+    ({ sourceArticle, yahoo, initialDefaults }) => {
+      const raw = JSON.parse(
+        localStorage.getItem("romnoa:preferences:v1") ||
+          JSON.stringify(initialDefaults),
+      );
+      localStorage.setItem(
+        "romnoa:preferences:v1",
+        JSON.stringify({ ...raw, saved: [sourceArticle] }),
+      );
+      localStorage.setItem(
+        "romnoa:yahoo-library:v1",
+        JSON.stringify({ saved: [yahoo], read: {} }),
+      );
+    },
+    { sourceArticle, yahoo, initialDefaults: defaults },
+  );
+  await page.reload();
+  await nav(page).getByRole("button", { name: "設定", exact: true }).click();
+  await page.getByRole("button", { name: "引き継ぎデータを作成" }).click();
+  const exported = await page.getByLabel("作成した引き継ぎデータ").inputValue();
+  await page.evaluate(() => {
+    const raw = JSON.parse(localStorage.getItem("romnoa:preferences:v1")!);
+    localStorage.setItem(
+      "romnoa:preferences:v1",
+      JSON.stringify({ ...raw, saved: [] }),
+    );
+    localStorage.setItem(
+      "romnoa:yahoo-library:v1",
+      JSON.stringify({ saved: [], read: {} }),
+    );
+  });
+  await page.reload();
+  await nav(page).getByRole("button", { name: "設定", exact: true }).click();
+  await page
+    .getByLabel("お気に入りの引き継ぎファイル")
+    .setInputFiles({
+      name: "romnoa-favorites.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(exported),
+    });
+  await expect(page.getByLabel("取り込む引き継ぎデータ")).toHaveValue(exported);
+  await page.getByRole("button", { name: "お気に入りを取り込む" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "まとめ 1件、ニュース 1件" }),
+  ).toBeVisible();
+  await nav(page).getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page.getByTestId("article-row").first()).toContainText(
+    sourceArticle.title,
+  );
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
+  await expect(page.getByTestId("yahoo-row").first()).toContainText(
+    yahoo.title,
   );
 });
