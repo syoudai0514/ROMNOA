@@ -371,7 +371,7 @@ export const searchService = new SearchService(runtimeCache());
 export async function handleSearch(
   request: Request,
   service: Pick<SearchService, "get"> = searchService,
-  preview = !process.env.VERCEL || process.env.VERCEL_ENV === "preview",
+  enabled = true,
 ) {
   const headers = {
     "Cache-Control": "private, no-store",
@@ -412,9 +412,9 @@ export async function handleSearch(
       { error: "検索語（80文字以内）またはページ指定を確認してください。" },
       { status: 400, headers },
     );
-  if (scope === "body" && !preview)
+  if (scope === "body" && !enabled)
     return Response.json(
-      { error: "本文検索は個人用プレビュー専用です。" },
+      { error: "本文検索はこの機能は現在利用できません。" },
       { status: 403, headers },
     );
   try {

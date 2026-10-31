@@ -686,17 +686,16 @@ export const readerService = new ReaderService(runtimeCache());
 export async function handleReader(
   request: Request,
   service: Pick<ReaderService, "get"> = readerService,
-  preview = !process.env.VERCEL || process.env.VERCEL_ENV === "preview",
+  enabled = true,
 ) {
   const headers = {
     "Cache-Control": "private, no-store",
     "Vercel-CDN-Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
   };
-  // Owner-protected Preview only. Public/production deployment needs a separate rights review.
-  if (!preview)
+  if (!enabled)
     return Response.json(
-      { error: "個人用プレビュー専用のリーダーです。", code: "private_only" },
+      { error: "このリーダーは現在利用できません。", code: "unavailable" },
       { status: 403, headers },
     );
   if (request.method !== "GET")

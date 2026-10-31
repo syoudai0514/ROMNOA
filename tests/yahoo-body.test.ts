@@ -34,7 +34,7 @@ describe("Yahoo article body", () => {
     expect(partial.pages).toHaveLength(1);
     expect(partial.complete).toBe(false);
   });
-  it("only accepts a single canonical Yahoo article and limits the API to preview", async () => {
+  it("only accepts a single canonical Yahoo article and supports an explicit disabled mode", async () => {
     const load = async () => ({
       article,
       pages: ["本文"],

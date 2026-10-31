@@ -187,7 +187,7 @@ describe("Yahoo publisher search beyond RSS", () => {
     await expect(failed.get(q, "title")).rejects.toThrow();
     await expect(failed.get(q, "title")).rejects.toThrow();
   });
-  it("validates query/method/preview before loading and isolates upstream failures", async () => {
+  it("validates query/method and disabled mode before loading and isolates upstream failures", async () => {
     const load = vi.fn(async () => d);
     const service = new YahooSearchService(new MemoryYahooSearchCache(), load);
     for (const tail of [

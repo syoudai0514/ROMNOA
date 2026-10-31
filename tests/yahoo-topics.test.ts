@@ -12,7 +12,7 @@ describe("Yahoo topics", () => {
       publishedAt: "2026-10-31T01:10:17.000Z",
     });
   });
-  it("reports upstream failures and blocks production access", async () => {
+  it("reports upstream failures and supports an explicit disabled mode", async () => {
     expect(
       (
         await handleYahooTopics(

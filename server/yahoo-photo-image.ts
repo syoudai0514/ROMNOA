@@ -133,7 +133,7 @@ const service = new PhotoImageService();
 export async function handleYahooPhotoImage(
   request: Request,
   engine = service,
-  preview = !process.env.VERCEL || process.env.VERCEL_ENV === "preview",
+  enabled = true,
 ) {
   const headers = {
     "Cache-Control": "private, no-store",
@@ -166,9 +166,9 @@ export async function handleYahooPhotoImage(
       { error: "対応していない写真です。" },
       { status: 400, headers },
     );
-  if (!preview)
+  if (!enabled)
     return Response.json(
-      { error: "個人用プレビュー専用です。" },
+      { error: "この機能は現在利用できません。" },
       { status: 403, headers },
     );
   try {

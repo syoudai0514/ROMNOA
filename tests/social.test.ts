@@ -119,7 +119,7 @@ describe("in-app SNS posts without login", () => {
       fetchSocialPost("https://twitter.com/user/status/1234567890123", fetcher),
     ).rejects.toThrow("invalid_post");
   });
-  it("rejects arbitrary URLs, limits to preview and caches results", async () => {
+  it("rejects arbitrary URLs, supports an explicit disabled mode and caches results", async () => {
     let calls = 0;
     const memory = new Map<string, any>();
     const service = new SocialService(

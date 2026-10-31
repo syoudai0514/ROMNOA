@@ -515,7 +515,7 @@ export function Reader({
             </div>
           </details>
           <p className="rights-note">
-            個人用プレビューの読書表示です。配信元の文章・画像の権利は各権利者に帰属します。
+            配信元の文章・画像の権利は各権利者に帰属します。
           </p>
         </div>
         <footer className="reader-footer">

@@ -298,7 +298,7 @@ export const socialService = new SocialService();
 export async function handleSocial(
   request: Request,
   engine: Pick<SocialService, "get"> = socialService,
-  preview = !process.env.VERCEL || process.env.VERCEL_ENV === "preview",
+  enabled = true,
 ) {
   const headers = {
     "Cache-Control": "private, no-store",
@@ -320,9 +320,9 @@ export async function handleSocial(
       { error: "対応していない投稿です。" },
       { status: 400, headers },
     );
-  if (!preview)
+  if (!enabled)
     return Response.json(
-      { error: "個人用プレビュー専用です。" },
+      { error: "この機能は現在利用できません。" },
       { status: 403, headers },
     );
   try {
