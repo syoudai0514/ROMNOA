@@ -831,7 +831,7 @@ test("search defaults to 2000 candidates and displays 100 results per page", asy
   await page.route("**/api/yahoo-search?**", (r) => {
     const p = new URL(r.request().url()).searchParams;
     limit = p.get("limit") || "";
-    return r.fulfill({ json: { query: p.get("q"), scope: p.get("scope"), articles: many, candidateCount: many.length, providerTotal: 1800, status: "ok", incomplete: true, fetchedAt: new Date().toISOString() } });
+    return r.fulfill({ json: { query: p.get("q"), scope: p.get("scope"), articles: many, candidateCount: many.length, providerTotal: 1800, status: "ok", incomplete: true, supplemented: 12, fetchedAt: new Date().toISOString() } });
   });
   await channel(page);
   await tab(page, "検索");
@@ -841,6 +841,7 @@ test("search defaults to 2000 candidates and displays 100 results per page", asy
   await expect(page.getByTestId("yahoo-row")).toHaveCount(100);
   expect(limit).toBe("2000");
   await expect(page.getByText(/すべての候補を取得できませんでした/)).toBeVisible();
+  await expect(page.getByText(/12件を追加しました/)).toBeVisible();
   const nav = page.getByRole("navigation", { name: "ニュース検索結果のページ移動" });
   await expect(nav).toContainText("1 / 3ページ");
   await nav.getByRole("button", { name: "次へ" }).click();

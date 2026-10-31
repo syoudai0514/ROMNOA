@@ -561,6 +561,9 @@ export function YahooNews({
           {remote.data.status === "cached" && (
             <p>取得に失敗したため前回の検索結果を表示しています。</p>
           )}
+          {!!remote.data.supplemented && (
+            <p>カテゴリ別の検索から重複を除き、{remote.data.supplemented}件を追加しました。追加分は一覧の後ろに表示します。</p>
+          )}
           {remote.data.incomplete && (
             <p>Yahoo側の取得制限または通信エラーにより、すべての候補を取得できませんでした。続きはYahooの検索画面で確認してください。</p>
           )}

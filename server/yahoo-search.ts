@@ -172,7 +172,7 @@ export async function fetchYahooSearch(
   query: string,
   fetcher: typeof fetch = fetch,
   limit = 50,
-): Promise<{ articles: YahooArticle[]; providerTotal: number; incomplete?: boolean }> {
+): Promise<{ articles: YahooArticle[]; providerTotal: number; incomplete?: boolean; supplemented?: number }> {
   if (!validSearch(query)) throw new Error("invalid_query");
   const response = await fetcher(
     `https://news.yahoo.co.jp/search?p=${encodeURIComponent(normalizeSearch(query))}`,
@@ -214,21 +214,17 @@ export async function fetchYahooSearch(
   }
   const first = parseYahooSearch(Buffer.concat(chunks).toString("utf8"), query);
   if (limit <= 50 || first.providerTotal <= 50) return first;
+  // Leave time to return partial results before the function deadline.
+  const deadline = Date.now() + 38_000;
   const starts = Array.from(
     { length: Math.ceil(Math.min(limit, first.providerTotal) / 50) - 1 },
     (_, i) => 51 + i * 50,
   );
-  const more: YahooArticle[][] = [];
-  let incomplete = false;
-  // Limit concurrent requests and retain earlier pages when Yahoo refuses a
-  // deeper offset or a later page is temporarily unavailable.
-  for (let i = 0; i < starts.length; i += 10) {
-    const batch = await Promise.allSettled(
-      starts.slice(i, i + 10).map(async (start) => {
+  async function fetchPage(start: number, category = "") {
       const params = new URLSearchParams({
         start: String(start),
         query: normalizeSearch(query),
-        categories: "",
+        categories: category,
         qrw: "true",
         results: "50",
         ei: "utf-8",
@@ -238,7 +234,7 @@ export async function fetchYahooSearch(
         `https://news.yahoo.co.jp/api/public/search-feed?${params}`,
         {
           redirect: "error",
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(Math.max(1, Math.min(8000, deadline - Date.now()))),
           headers: { Accept: "application/json" },
         },
       );
@@ -277,29 +273,60 @@ export async function fetchYahooSearch(
           contents: z.array(z.unknown()).max(200),
         })
         .parse(JSON.parse(bytes.toString("utf8")));
-      return parseSearchItems(data.contents, data.totalResults).articles;
-      }),
-    );
+      return parseSearchItems(data.contents, data.totalResults);
+  }
+  const found = new Map(first.articles.map((article) => [article.id, article]));
+  const add = (articles: YahooArticle[]) => {
+    for (const article of articles) {
+      if (found.size >= limit) break;
+      if (!found.has(article.id)) found.set(article.id, article);
+    }
+  };
+  let incomplete = false;
+  // Fetch global results in order, retaining successful pages on failure.
+  for (let i = 0; i < starts.length; i += 10) {
+    if (Date.now() >= deadline) {
+      incomplete = true;
+      break;
+    }
+    const batch = await Promise.allSettled(starts.slice(i, i + 10).map((start) => fetchPage(start)));
     for (const result of batch) {
-      if (result.status === "fulfilled") more.push(result.value);
+      if (result.status === "fulfilled") add(result.value.articles);
       else incomplete = true;
     }
     if (incomplete) break;
   }
+  const beforeCategories = found.size;
+  // Yahoo's news search does not expose a verified date range. Its own category
+  // filter does provide independent result windows, which can contain older
+  // items beyond the global window. Merge unique IDs, keeping the original order.
+  if (incomplete && limit > 1000 && first.providerTotal > 1000 && found.size < limit) {
+    const categories = ["domestic", "world", "business", "entertainment", "sports", "it", "science", "life", "local"];
+    let active = categories;
+    for (let start = 1; start <= 1000 && active.length && found.size < limit && Date.now() < deadline; start += 50) {
+      const batch = await Promise.allSettled(active.map((category) => fetchPage(start, category)));
+      const next: string[] = [];
+      for (let i = 0; i < batch.length; i++) {
+        const result = batch[i];
+        if (result.status !== "fulfilled") continue;
+        add(result.value.articles);
+        if (result.value.providerTotal > start + 49) next.push(active[i]);
+      }
+      active = next;
+    }
+  }
   return {
-    articles: [
-      ...new Map(
-        [...first.articles, ...more.flat()].map((a) => [a.id, a]),
-      ).values(),
-    ].slice(0, limit),
+    articles: [...found.values()],
     providerTotal: first.providerTotal,
     incomplete,
+    supplemented: found.size - beforeCategories,
   };
 }
 const entrySchema = z.object({
   articles: z.array(yahooArticleSchema).max(2000),
   providerTotal: z.number().int().min(0).max(10000000),
   incomplete: z.boolean().optional(),
+  supplemented: z.number().int().min(0).max(2000).optional(),
   fetchedAt: z.number(),
   checkedAt: z.number(),
   failed: z.boolean(),
@@ -322,7 +349,7 @@ export class MemoryYahooSearchCache implements YahooSearchCache {
 }
 function cacheAdapter(): YahooSearchCache {
   if (!process.env.VERCEL) return new MemoryYahooSearchCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-search-v2" });
+  const cache = getCache({ namespace: "romnoa-yahoo-search-v3" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -382,6 +409,7 @@ export class YahooSearchService {
           articles: usable && old ? old.articles : [],
           providerTotal: usable && old ? old.providerTotal : 0,
           incomplete: usable && old ? old.incomplete : false,
+          supplemented: usable && old ? old.supplemented : 0,
           fetchedAt: usable && old ? old.fetchedAt : 0,
           checkedAt: now,
           failed: true,
@@ -424,6 +452,7 @@ export class YahooSearchService {
       providerTotal: entry.providerTotal,
       status: entry.failed ? "cached" : "ok",
       incomplete: entry.incomplete || false,
+      supplemented: entry.supplemented || 0,
       fetchedAt: new Date(entry.fetchedAt).toISOString(),
     };
   }

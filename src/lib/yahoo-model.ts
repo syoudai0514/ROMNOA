@@ -92,6 +92,7 @@ export const yahooSearchResponseSchema = z.object({
   articles: z.array(yahooArticleSchema).max(2000),
   candidateCount: z.number().int().min(0).max(2000),
   incomplete: z.boolean().optional(),
+  supplemented: z.number().int().min(0).max(2000).optional(),
   providerTotal: z.number().int().min(0).max(10000000),
   status: z.enum(["ok", "cached"]),
   fetchedAt: z.iso.datetime(),

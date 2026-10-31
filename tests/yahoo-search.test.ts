@@ -324,3 +324,23 @@ describe("large Yahoo search", () => {
     expect(result.incomplete).toBe(true);
   });
 });
+
+it("supplements a capped search using independent category windows and removes duplicates", async () => {
+  const make = (n: number) => item(n.toString(16).padStart(40, "0"));
+  const first = html(Array.from({ length: 50 }, (_, i) => make(i + 1)), q, 1889);
+  const result = await fetchYahooSearch(q, async (input) => {
+    const u = new URL(String(input));
+    if (!u.pathname.includes("search-feed")) return new Response(first, { headers: { "content-type": "text/html" } });
+    const start = Number(u.searchParams.get("start"));
+    const category = u.searchParams.get("categories");
+    if (category) {
+      return Response.json({ startIndex: start, totalResults: category === "life" ? 2 : 0, contents: category === "life" ? [make(1), make(3001)] : [] });
+    }
+    if (start >= 1001) return new Response("unavailable", { status: 500 });
+    return Response.json({ startIndex: start, totalResults: 1889, contents: Array.from({ length: 50 }, (_, i) => make(start + i)) });
+  }, 2000);
+  expect(result.articles).toHaveLength(1001);
+  expect(result.supplemented).toBe(1);
+  expect(result.incomplete).toBe(true);
+  expect(result.articles.at(-1)?.id).toBe(make(3001).permalink);
+});
