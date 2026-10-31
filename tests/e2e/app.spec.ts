@@ -906,3 +906,51 @@ test("transfers roundup and news favorites into existing libraries", async ({
     yahoo.title,
   );
 });
+
+test("shares an introduction and setup steps through LINE or the device share sheet", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
+        (window as unknown as { shared: ShareData }).shared = data;
+      },
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          (window as unknown as { copied: string }).copied = text;
+        },
+      },
+    });
+  });
+  await fixture(page);
+  await nav(page).getByRole("button", { name: "設定", exact: true }).click();
+  const section = page.locator(".share-romnoa");
+  const introduction = await section
+    .getByLabel("ROMNOAの紹介文と使い方")
+    .inputValue();
+  expect(introduction).toContain("https://romnoa.vercel.app/");
+  expect(introduction).toContain("ホーム画面に追加");
+  expect(introduction).toContain("端末ごと");
+  const lineUrl = new URL(
+    (await section
+      .getByRole("link", { name: /LINEで送る/ })
+      .getAttribute("href"))!,
+  );
+  expect(lineUrl.hostname).toBe("line.me");
+  expect(decodeURIComponent(lineUrl.search.slice(1))).toBe(introduction);
+  await section.getByRole("button", { name: "コピー" }).click();
+  await expect(section.getByRole("status")).toContainText("コピーしました");
+  expect(
+    await page.evaluate(() => (window as unknown as { copied: string }).copied),
+  ).toBe(introduction);
+  await section.getByRole("button", { name: "共有する" }).click();
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { shared: ShareData }).shared.text,
+    ),
+  ).toBe(introduction);
+});

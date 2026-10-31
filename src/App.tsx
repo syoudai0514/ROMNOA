@@ -23,6 +23,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { ArticleRow } from "./components/ArticleRow";
 import { BookmarkTransfer } from "./components/BookmarkTransfer";
+import { ShareRomnoa } from "./components/ShareRomnoa";
 import { Reader } from "./components/Reader";
 import { YahooNews } from "./components/YahooNews";
 import { yahooCategories } from "./lib/yahoo-model";
@@ -1440,6 +1441,7 @@ export default function App() {
                       )}
                     </div>
                   </section>
+                  <ShareRomnoa />
                   <BookmarkTransfer
                     onImported={(next) => {
                       prefsRef.current = next;
