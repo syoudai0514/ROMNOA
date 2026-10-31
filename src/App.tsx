@@ -81,6 +81,7 @@ type ReaderSelection = {
   from?: string;
   collection?: string;
   collections?: Record<string, string>;
+  resolved?: { index: number; article: Article; from: string };
 };
 
 export default function App() {
@@ -351,7 +352,9 @@ export default function App() {
     [articles, prefs.groupSimilar, sort],
   );
   const savedIds = new Set(prefs.saved.map((a) => a.id));
-  const selected = selection?.articles[selection.index];
+  const selected = selection && selection.resolved?.index === selection.index
+    ? selection.resolved.article
+    : selection?.articles[selection.index];
   const filteredCount = filterArticles(all, {
     category: "すべて",
     query: "",
@@ -1534,12 +1537,21 @@ export default function App() {
           article={selected}
           bottomNav={readerBottomNav}
           channelSwitch={channelSwitch}
-          from={selection.from}
+          from={selection.resolved?.index === selection.index ? selection.resolved.from : selection.from}
           collection={
             selection.collections
-              ? selection.collections[selected.id]
+              ? selection.collections[selection.articles[selection.index].id]
               : selection.collection
           }
+          allowAutoRelated={!selection.resolved}
+          onAutoRelated={(article) => {
+            update((p) => markRead(p, article));
+            setSelection((current) =>
+              current && current === selection
+                ? { ...current, resolved: { index: current.index, article, from: selected.id } }
+                : current,
+            );
+          }}
           onRelated={(article) => {
             setReaderTrail((trail) => [...trail, selection].slice(-50));
             update((p) => markRead(p, article));
@@ -1556,6 +1568,7 @@ export default function App() {
           hiddenSources={prefs.hiddenSources}
           ngWords={prefs.ngWords}
           saved={savedIds.has(selected.id)}
+          parentSaved={savedIds.has(selection.resolved?.from || selection.from || "")}
           read={!!prefs.read[selected.id]}
           index={selection.index}
           total={selection.articles.length}
@@ -1566,7 +1579,7 @@ export default function App() {
             const index = selection.index + delta;
             if (index >= 0 && index < selection.articles.length) {
               update((p) => markRead(p, selection.articles[index]));
-              setSelection({ ...selection, index });
+              setSelection({ ...selection, index, resolved: undefined, from: undefined });
             }
           }}
         />

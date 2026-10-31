@@ -506,7 +506,7 @@ test("Pickup title opens its real story with X photos; original-page and body li
 }) => {
   await fixture(page);
   const first = feed.articles[0];
-  const story = article(90, { title: "[テスト用] 写真が載っている本編" });
+  const story = article(90, { title: first.title });
   const external = "https://example.com/romnoa-source";
   const photos = ["PhotoA", "PhotoB"].map(
     (name) => `https://pbs.twimg.com/media/${name}.jpg`,
@@ -569,13 +569,7 @@ test("Pickup title opens its real story with X photos; original-page and body li
     .getByRole("button", { name: /^記事を開く/ })
     .click();
   const reader = page.getByRole("dialog");
-  await expect(
-    reader.getByText("記事への案内ページです", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    reader.getByRole("region", { name: "この記事の画像", exact: true }),
-  ).toHaveCount(0);
-  await reader.getByRole("button", { name: /写真が載っている本編/ }).click();
+  await expect(reader.getByText("記事への案内ページです", { exact: true })).toHaveCount(0);
   await expect(reader.getByRole("heading", { level: 1 })).toHaveText(
     story.title,
   );
@@ -953,4 +947,42 @@ test("shares an introduction and setup steps through LINE or the device share sh
       () => (window as unknown as { shared: ShareData }).shared.text,
     ),
   ).toBe(introduction);
+});
+
+
+test("matching Pickup opens directly and preserves next and previous navigation", async ({ page }) => {
+  const parent = { ...feed.articles[0], title: "【画像】柴咲コウ（44）とイチャイチャできますか？【Pickup30091415】" };
+  const story = article(90, { title: "【画像】柴咲コウ（44）とイチャイチャできますか？" });
+  const other = article(91, { title: "別の記事" });
+  await fixture(page);
+  await page.route("**/api/articles", (route) => route.fulfill({ json: { ...feed, articles: [parent, ...feed.articles.slice(1)] } }));
+  await page.route("**/api/reader**", (route) => {
+    const id = new URL(route.request().url()).searchParams.get("article");
+    const value = id === parent.id ? { ...readerFixture(parent), pageKind: "roundup", related: [{ article: other, thumbnail: null }, { article: story, thumbnail: null }] } : readerFixture(id === story.id ? story : feed.articles.find((a) => a.id === id)!);
+    return route.fulfill({ json: value });
+  });
+  await page.reload();
+  await page.getByRole("group", { name: "配信チャンネル" }).getByRole("button", { name: "まとめ", exact: true }).click();
+  await page.getByTestId("article-row").first().getByRole("button", { name: /^記事を開く/ }).click();
+  const reader = page.getByRole("dialog");
+  await expect(reader.getByRole("heading", { level: 1 })).toHaveText(story.title);
+  await expect(reader.getByText("記事への案内ページです")).toHaveCount(0);
+  await reader.getByRole("button", { name: "次の記事" }).click();
+  await expect(reader.getByRole("heading", { level: 1 })).toHaveText(feed.articles[1].title);
+  await reader.getByRole("button", { name: "前の記事" }).click();
+  await expect(reader.getByRole("heading", { level: 1 })).toHaveText(story.title);
+});
+
+test("ambiguous Pickup links remain selectable", async ({ page }) => {
+  const parent = { ...feed.articles[0], title: "同じ見出し【Pickup123】" };
+  const candidates = [article(90, { title: "同じ見出し" }), article(91, { title: "同じ見出し" })];
+  await fixture(page);
+  await page.route("**/api/articles", (route) => route.fulfill({ json: { ...feed, articles: [parent, ...feed.articles.slice(1)] } }));
+  await page.route("**/api/reader**", (route) => route.fulfill({ json: { ...readerFixture(parent), pageKind: "roundup", related: candidates.map((article) => ({ article, thumbnail: null })) } }));
+  await page.reload();
+  await page.getByRole("group", { name: "配信チャンネル" }).getByRole("button", { name: "まとめ", exact: true }).click();
+  await page.getByTestId("article-row").first().getByRole("button", { name: /^記事を開く/ }).click();
+  const reader = page.getByRole("dialog");
+  await expect(reader.getByText("記事への案内ページです", { exact: true })).toBeVisible();
+  await expect(reader.getByRole("region", { name: "ほかのまとめ" }).getByRole("button", { name: /同じ見出し/ })).toHaveCount(2);
 });

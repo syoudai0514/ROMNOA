@@ -7,6 +7,7 @@ export function useReader(
   from?: string,
   collection?: string,
   saved = false,
+  parentSaved = false,
 ) {
   const [state, setState] = useState<{
     id: string;
@@ -42,10 +43,17 @@ export function useReader(
         return;
       }
       try {
-        const response = await fetch(
-          `/api/reader?article=${encodeURIComponent(id)}${from ? `&from=${encodeURIComponent(from)}` : ""}${collection ? `&collection=${encodeURIComponent(collection)}` : ""}${saved ? "&saved=1" : ""}`,
-          { signal: abort.signal },
-        );
+        const url = `/api/reader?article=${encodeURIComponent(id)}${from ? `&from=${encodeURIComponent(from)}` : ""}${collection ? `&collection=${encodeURIComponent(collection)}` : ""}${saved ? "&saved=1" : ""}`;
+        let response = await fetch(url, { signal: abort.signal });
+        if (response.status === 404 && from) {
+          // A locally cached parent can outlive the server's short-lived cache.
+          // Refresh it through the same verified endpoint before retrying.
+          const parent = await fetch(
+            `/api/reader?article=${encodeURIComponent(from)}${collection ? `&collection=${encodeURIComponent(collection)}` : ""}${parentSaved ? "&saved=1" : ""}`,
+            { signal: abort.signal },
+          );
+          if (parent.ok) response = await fetch(url, { signal: abort.signal });
+        }
         const value = await response.json();
         if (!response.ok)
           throw new Error(
@@ -90,7 +98,7 @@ export function useReader(
       clearTimeout(timeout);
       abort.abort();
     };
-  }, [id, from, collection, saved, attempt]);
+  }, [id, from, collection, saved, parentSaved, attempt]);
   return {
     ...(state.id === id
       ? state

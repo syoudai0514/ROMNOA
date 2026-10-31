@@ -1,6 +1,6 @@
 import { compactReaderText } from "../lib/reader-layout";
 import { SocialPostCard } from "./SocialPost";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,6 +22,7 @@ export function Reader({
   bottomNav,
   channelSwitch,
   saved,
+  parentSaved,
   read,
   index,
   total,
@@ -32,6 +33,8 @@ export function Reader({
   from,
   collection,
   onRelated,
+  onAutoRelated,
+  allowAutoRelated,
   onBack,
   hiddenSources,
   ngWords,
@@ -40,6 +43,7 @@ export function Reader({
   bottomNav?: React.ReactNode;
   channelSwitch?: React.ReactNode;
   saved: boolean;
+  parentSaved: boolean;
   read: boolean;
   index: number;
   total: number;
@@ -50,6 +54,8 @@ export function Reader({
   from?: string;
   collection?: string;
   onRelated: (article: Article) => void;
+  onAutoRelated: (article: Article) => void;
+  allowAutoRelated: boolean;
   onBack?: () => void;
   hiddenSources: string[];
   ngWords: string[];
@@ -57,7 +63,7 @@ export function Reader({
   const dialog = useRef<HTMLDialogElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const source = sourceInfo.find((s) => s.id === article.sourceId)!;
-  const reading = useReader(article.id, from, collection, saved);
+  const reading = useReader(article.id, from, collection, saved, parentSaved);
   const [textFor, setTextFor] = useState<Set<string>>(() => new Set());
   const allPictures = reading.document ? readerPictures(reading.document) : [];
   const bodyPictures = allPictures.filter((b) => b.role !== "cover");
@@ -90,6 +96,28 @@ export function Reader({
             .includes(word.toLocaleLowerCase()),
         ),
     ) || [];
+  // Follow only an unambiguous headline match; a Pickup page can also contain
+  // many unrelated recommendations which must never be opened automatically.
+  const normalizeHeadline = (title: string) =>
+    title.normalize("NFKC").replace(/\s+/gu, "").toLocaleLowerCase();
+  const headline = normalizeHeadline(article.title).replace(
+    /(?:【pickup\d*】|\[pickup\d*\])$/i,
+    "",
+  );
+  const matches = allowAutoRelated && roundup && headline
+    ? related.filter((item) => normalizeHeadline(item.article.title) === headline)
+    : [];
+  const automaticTarget = matches.length === 1 ? matches[0].article : null;
+  const forwarded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!automaticTarget) {
+      forwarded.current = null;
+      return;
+    }
+    if (forwarded.current === article.id) return;
+    forwarded.current = article.id;
+    onAutoRelated(automaticTarget);
+  }, [article.id, automaticTarget, onAutoRelated]);
   const positions = useRef<Record<string, number>>({});
   const restoring = useRef(false);
   function rememberPosition() {
@@ -268,7 +296,7 @@ export function Reader({
           <p className="external-link-note">
             元ページや外部リンクでは広告が表示される場合があります。
           </p>
-          {reading.loading && (
+          {(reading.loading || automaticTarget) && (
             <div className="reader-loading" role="status">
               <BookOpen size={28} />
               <p>本文を読み込んでいます…</p>
@@ -283,7 +311,7 @@ export function Reader({
               </button>
             </section>
           )}
-          {reading.document && (
+          {reading.document && !automaticTarget && (
             <section className="reading-body" aria-label="記事本文">
               <div className="reading-body-label">
                 <Check size={14} />
@@ -427,7 +455,7 @@ export function Reader({
               )}
             </section>
           )}
-          {reading.document && (
+          {reading.document && !automaticTarget && (
             <section className="reader-related" aria-label="ほかのまとめ">
               <h2>
                 {roundup
