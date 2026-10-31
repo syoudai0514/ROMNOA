@@ -1,6 +1,6 @@
 export type SavedTitle = { id: string; title: string };
-export type SavedTopic = { id: string; label: string; group: "人物・グループ" | "作品・イベント" | "キーワード"; articleIds: Set<string> };
-export const savedTopicGroups = ["人物・グループ", "作品・イベント", "キーワード"] as const;
+export type SavedTopic = { id: string; label: string; group: "人物・グループ" | "作品・イベント" | "キーワード" | "記事の種類"; articleIds: Set<string> };
+export const savedTopicGroups = ["人物・グループ", "作品・イベント", "キーワード", "記事の種類"] as const;
 const normalize = (s: string) => s.normalize("NFKC").toLocaleLowerCase().replace(/\s+/g, " ").trim();
 const stop = new Set("の は が を に で と も な へ や から まで より について という する した して され された いる ある なる です ます さん 氏 選手 写真 画像 動画 速報 悲報 朗報 話題 公開 披露 登場 最新 注目 人気 美人 反響 理由 判明 本当 これ それ どこ いつ こと もの ため 今回 新しい ニュース テスト まとめ 記事 配信社 Yahoo web Pickup".split(" ").map(normalize));
 const themes = ["美脚", "写真集", "グラビア", "ファッション", "美容", "スキンケア", "メイク", "ダイエット", "筋トレ", "料理", "旅行", "結婚", "育児", "仕事", "政治", "選挙", "経済", "投資", "年金", "医療", "ゲーム", "アニメ", "映画", "音楽", "ライブ", "コスプレ", "水着", "スポーツ", "野球", "サッカー", "麻雀", "AI", "iPhone", "Instagram", "YouTube"];
@@ -17,6 +17,8 @@ export function buildSavedTopics(articles: readonly SavedTitle[]): SavedTopic[] 
   for (const article of articles) {
     const title = article.title.normalize("NFKC").replace(/【(?:画像|写真|動画|悲報|朗報|速報|Pickup\d*)】/gi, " ").trim();
     const lower = normalize(title);
+    for (const [label, pattern] of [["写真・画像", /写真|画像|フォト/], ["動画・映像", /動画|映像/], ["インタビュー", /インタビュー/], ["解説", /解説/], ["レビュー", /レビュー|使ってみた/]] as const)
+      if (pattern.test(article.title)) add(article, label, "記事の種類");
     for (const word of themes) if (lower.includes(normalize(word))) add(article, word, "キーワード");
     for (const match of title.matchAll(/(?:乃木坂|櫻坂|日向坂)46|[A-Z]{2,8}\d{2,3}|Snow Man|SixTONES/gi)) add(article, match[0], "人物・グループ");
     const member = title.match(/(?:乃木坂|櫻坂|日向坂)46(?:の)?([\p{Script=Han}]{2,6})(?=[、,「『(]|さん|が|の)/u)?.[1];

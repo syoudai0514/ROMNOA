@@ -7,6 +7,7 @@ describe("saved title classification shared by news and roundup", () => {
     expect([...topics.find((t) => t.label === "岡田紗佳")!.articleIds]).toEqual(["one", "two"]);
     expect([...topics.find((t) => t.label === "写真集")!.articleIds]).toEqual(["one"]);
     expect(topics.find((t) => t.label === "公開")).toBeUndefined();
+    expect(topics.find((t) => t.label === "写真・画像")?.group).toBe("記事の種類");
   });
   it("discovers recurring words without a fixed entity dictionary and updates with removals", () => {
     const items = [{ id: "a", title: "量子通信の新しい実験" }, { id: "b", title: "量子通信が実用化へ" }];
