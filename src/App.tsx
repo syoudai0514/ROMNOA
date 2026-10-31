@@ -434,6 +434,34 @@ export default function App() {
     update((p) => ({ ...p, ngWords: [...p.ngWords, word] }));
     setNgInput("");
   }
+  function switchChannel(next: "roundup" | "yahoo") {
+    if (next === channel && tab !== "settings") return;
+    if (tab === "settings") setTab("home");
+    setSelection(null);
+    setReaderTrail([]);
+    window.dispatchEvent(new Event("romnoa:close-yahoo-reader"));
+    setChannel(next);
+  }
+  const channelSwitch = (
+    <div className="channel-switch" role="group" aria-label="配信チャンネル">
+      <button
+        type="button"
+        className={channel === "yahoo" ? "selected" : ""}
+        aria-pressed={channel === "yahoo"}
+        onClick={() => switchChannel("yahoo")}
+      >
+        ニュース
+      </button>
+      <button
+        type="button"
+        className={channel === "roundup" ? "selected" : ""}
+        aria-pressed={channel === "roundup"}
+        onClick={() => switchChannel("roundup")}
+      >
+        まとめ
+      </button>
+    </div>
+  );
   const showList = tab === "home" || tab === "search" || tab === "saved";
   const readerBottomNav = (
     <nav
@@ -522,35 +550,7 @@ export default function App() {
             </a>
             <span className="topbar-label">あなたの、読む時間。</span>
             <div className="topbar-tools">
-              {showList || tab === "categories" ? (
-                <div
-                  className="channel-switch"
-                  role="group"
-                  aria-label="配信チャンネル"
-                >
-                  <button
-                    type="button"
-                    className={channel === "yahoo" ? "selected" : ""}
-                    aria-pressed={channel === "yahoo"}
-                    onClick={() => setChannel("yahoo")}
-                  >
-                    ニュース
-                  </button>
-                  <button
-                    type="button"
-                    className={channel === "roundup" ? "selected" : ""}
-                    aria-pressed={channel === "roundup"}
-                    onClick={() => setChannel("roundup")}
-                  >
-                    まとめ
-                  </button>
-                </div>
-              ) : (
-                <span className="ad-free">
-                  <span />
-                  アプリ内リーダー
-                </span>
-              )}
+              {channelSwitch}
               <button
                 className="icon-button"
                 aria-label={
@@ -687,6 +687,7 @@ export default function App() {
               }
               onSearch={() => navigate("search")}
               bottomNav={readerBottomNav}
+              channelSwitch={channelSwitch}
               ngWords={prefs.ngWords}
               category={yahooCategory}
               onCategory={setYahooCategory}
@@ -1530,6 +1531,7 @@ export default function App() {
         <Reader
           article={selected}
           bottomNav={readerBottomNav}
+          channelSwitch={channelSwitch}
           from={selection.from}
           collection={
             selection.collections

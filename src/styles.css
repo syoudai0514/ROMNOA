@@ -271,6 +271,10 @@ button {
   min-width: 0;
 }
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
   height: 87px;
   border-bottom: 1px solid var(--line);
   display: flex;

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { feed } from "../fixtures";
+import { feed, readerFixture } from "../fixtures";
 import {
   yahooCategories,
   filterYahoo,
@@ -253,6 +253,7 @@ test("Yahoo category failures and invalid updates keep safe cached content witho
       },
     }),
   );
+  await page.reload();
   await channel(page);
   await expect(
     page.getByRole("status").filter({ hasText: "国際：取得できません" }),
@@ -697,6 +698,13 @@ test("switches between roundup and news with one tap across tabs", async ({
   expect(box!.x + box!.width).toBeLessThanOrEqual(320);
   await roundup.click();
   await expect(roundup).toHaveAttribute("aria-pressed", "true");
+  await tab(page, "設定");
+  await expect(switcher).toBeVisible();
+  await news.click();
+  await expect(news).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("heading", { name: "Yahoo!ニュース", exact: true }),
+  ).toBeVisible();
 });
 
 test("topic thumbnails load from the matching article without blocking other topics", async ({
@@ -744,4 +752,71 @@ test("topic thumbnails load from the matching article without blocking other top
   await expect(rows.nth(1).locator("img")).toHaveAttribute("src", secondImage);
   await expect(rows.nth(2)).toContainText(articles[2].title);
   await expect(rows.nth(2).locator("img")).toHaveCount(0);
+});
+
+test("channel switch stays visible while scrolling the article list", async ({
+  page,
+}) => {
+  await setup(page);
+  const switcher = page.getByRole("group", { name: "配信チャンネル" });
+  await switcher.getByRole("button", { name: "まとめ", exact: true }).click();
+  await expect(page.getByTestId("article-row")).toHaveCount(
+    feed.articles.length,
+  );
+  await page.evaluate(() => window.scrollTo(0, 1000));
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(500);
+  const header = page.locator(".topbar");
+  await expect
+    .poll(async () => Math.round((await header.boundingBox())?.y ?? -100))
+    .toBe(0);
+  await switcher.getByRole("button", { name: "ニュース", exact: true }).click();
+  await expect(
+    switcher.getByRole("button", { name: "ニュース", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("yahoo-row").first()).toBeVisible();
+});
+
+test("channel switch stays available inside news and roundup readers", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.route("**/api/reader**", (r) =>
+    r.fulfill({ json: readerFixture(feed.articles[0]) }),
+  );
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${articles[0].title}`,
+      exact: true,
+    })
+    .click();
+  const newsReader = page.getByRole("dialog", { name: articles[0].title });
+  const newsSwitch = newsReader.getByRole("group", { name: "配信チャンネル" });
+  await expect(newsSwitch).toBeVisible();
+  await newsSwitch.getByRole("button", { name: "まとめ", exact: true }).click();
+  await expect(newsReader).toHaveCount(0);
+  const first = page.getByTestId("article-row").first();
+  await first.getByRole("button", { name: /^記事を開く/ }).click();
+  const roundupReader = page.getByRole("dialog");
+  await expect(
+    roundupReader.getByRole("region", { name: "記事本文" }),
+  ).toBeVisible();
+  await roundupReader.locator(".reader-content").evaluate((el) => {
+    el.scrollTop = 800;
+  });
+  await expect
+    .poll(() =>
+      roundupReader.locator(".reader-content").evaluate((el) => el.scrollTop),
+    )
+    .toBeGreaterThan(300);
+  const roundupSwitch = roundupReader.getByRole("group", {
+    name: "配信チャンネル",
+  });
+  await expect(roundupSwitch).toBeVisible();
+  await roundupSwitch
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
+  await expect(roundupReader).toHaveCount(0);
+  await expect(page.getByTestId("yahoo-row").first()).toBeVisible();
 });

@@ -20,6 +20,7 @@ import { ArticleImages, ImageViewer } from "./ArticleImages";
 export function Reader({
   article,
   bottomNav,
+  channelSwitch,
   saved,
   read,
   index,
@@ -37,6 +38,7 @@ export function Reader({
 }: {
   article: Article;
   bottomNav?: React.ReactNode;
+  channelSwitch?: React.ReactNode;
   saved: boolean;
   read: boolean;
   index: number;
@@ -211,6 +213,7 @@ export function Reader({
             <ArrowLeft size={17} />
             戻る
           </button>
+          {channelSwitch}
         </header>
         <div
           className="reader-content"

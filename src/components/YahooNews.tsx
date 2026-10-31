@@ -97,6 +97,7 @@ export function YahooNews({
   mode,
   onSearch,
   bottomNav,
+  channelSwitch,
   ngWords,
   category,
   onCategory,
@@ -105,6 +106,7 @@ export function YahooNews({
   mode: "home" | "search" | "saved";
   onSearch: () => void;
   bottomNav?: React.ReactNode;
+  channelSwitch?: React.ReactNode;
   ngWords: string[];
   category: string;
   onCategory: (category: string) => void;
@@ -664,6 +666,7 @@ export function YahooNews({
           key={selection.article.id}
           article={selection.article}
           bottomNav={bottomNav}
+          channelSwitch={channelSwitch}
           saved={saved.has(selection.article.id)}
           related={[
             ...new Map(
@@ -726,6 +729,7 @@ export function YahooNews({
 function YahooReader({
   article,
   bottomNav,
+  channelSwitch,
   saved,
   related,
   index,
@@ -738,6 +742,7 @@ function YahooReader({
 }: {
   article: YahooArticle;
   bottomNav?: React.ReactNode;
+  channelSwitch?: React.ReactNode;
   saved: boolean;
   related: YahooArticle[];
   index: number;
@@ -910,6 +915,7 @@ function YahooReader({
             <ArrowLeft size={17} />
             戻る
           </button>
+          {channelSwitch}
         </header>
         <nav className="yahoo-detail-sections" aria-label="ニュース内の移動">
           <button onClick={() => jump(newsHeading.current)}>
