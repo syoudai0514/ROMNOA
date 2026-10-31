@@ -1,3 +1,5 @@
+import { SavedTopicFilters } from "./components/SavedTopicFilters";
+import { useSavedTopics } from "./lib/use-saved-topics";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import {
@@ -302,10 +304,10 @@ export default function App() {
           : tab === "search" && !query
             ? []
             : all;
-  const articles = useMemo(() => {
+  const listedArticles = useMemo(() => {
     const filtered = filterArticles(base, {
       category,
-      query: searchActive ? "" : query,
+      query: searchActive || (tab === "saved" && savedView === "saved") ? "" : query,
       sort: effectiveSort,
       read: prefs.read,
       hiddenSources: prefs.hiddenSources,
@@ -347,6 +349,8 @@ export default function App() {
     discovery.data,
     pastSearch.data,
   ]);
+  const savedTopics = useSavedTopics(listedArticles, tab === "saved" && savedView === "saved");
+  const articles = savedTopics.articles;
   const groups = useMemo(
     () => groupArticles(articles, prefs.groupSimilar && sort !== "popular"),
     [articles, prefs.groupSimilar, sort],
@@ -768,6 +772,8 @@ export default function App() {
                         />
                       )}
                     </>
+                  ) : tab === "saved" && savedView === "saved" ? (
+                    <SavedTopicFilters topics={savedTopics.topics} selected={savedTopics.selected} onSelect={savedTopics.select} query={savedTopics.query} onQuery={savedTopics.setQuery} />
                   ) : tab === "saved" ? (
                     <div className="search-box">
                       <Search size={18} />
@@ -1007,7 +1013,7 @@ export default function App() {
                       />
                     )}
                   </div>
-                  {query && !searchActive && (
+                  {query && !searchActive && !(tab === "saved" && savedView === "saved") && (
                     <p className="search-note">
                       取得済みの記事から検索しています。
                     </p>
@@ -1039,7 +1045,7 @@ export default function App() {
                         <h3>
                           {tab === "saved"
                             ? savedView === "saved"
-                              ? "気になる記事を、ここに。"
+                              ? prefs.saved.length ? "この条件に一致する保存記事はありません" : "気になる記事を、ここに。"
                               : "読んだ記事がここに並びます"
                             : error
                               ? "記事を取得できませんでした"
@@ -1049,16 +1055,18 @@ export default function App() {
                         </h3>
                         <p>
                           {tab === "saved" && savedView === "saved"
-                            ? "記事のしおりをタップすると、あとで読む記事を保存できます。"
+                            ? prefs.saved.length ? "名前・キーワードやカテゴリの絞り込みを変更してください。" : "記事のしおりをタップすると、あとで読む記事を保存できます。"
                             : tab === "search" && !query
                               ? "名前やキーワードを入力し、「検索」で全期間の記事を探せます。"
                               : "検索・カテゴリ・配信元・NGワードの設定をご確認ください。"}
                         </p>
-                        {(query || category !== "すべて" || date) && (
+                        {(query || category !== "すべて" || date || (tab === "saved" && savedView === "saved" && (savedTopics.selected || savedTopics.query))) && (
                           <button
                             className="button secondary"
                             onClick={() => {
                               setQuery("");
+                              savedTopics.select(null);
+                              savedTopics.setQuery("");
                               setCategory("すべて");
                               setDate("");
                             }}

@@ -1,3 +1,5 @@
+import { SavedTopicFilters } from "./SavedTopicFilters";
+import { useSavedTopics } from "../lib/use-saved-topics";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -282,7 +284,7 @@ export function YahooNews({
         .toLowerCase()
         .includes(w.normalize("NFKC").toLowerCase()),
     );
-  const articles = useMemo(
+  const listedArticles = useMemo(
     () =>
       filterYahoo(
         mode === "saved"
@@ -318,6 +320,8 @@ export function YahooNews({
       remote.data,
     ],
   );
+  const savedTopics = useSavedTopics(listedArticles, mode === "saved");
+  const articles = savedTopics.articles;
   const pageCount = Math.max(1, Math.ceil(articles.length / 100));
   const currentPage = Math.min(searchPage, pageCount);
   const visibleArticles = searchActive
@@ -494,6 +498,7 @@ export function YahooNews({
           </select>
         </label>
       )}
+      {mode === "saved" && <SavedTopicFilters topics={savedTopics.topics} selected={savedTopics.selected} onSelect={savedTopics.select} query={savedTopics.query} onQuery={savedTopics.setQuery} />}
       {(mode !== "home" || homeView !== "topics") && (
         <div
           className="category-chips yahoo-categories"
@@ -674,7 +679,7 @@ export function YahooNews({
         !articles.length && (
           <p className="yahoo-empty">
             {mode === "saved"
-              ? "保存したYahooニュースはまだありません。"
+              ? library.saved.length ? "この条件に一致する保存記事はありません。絞り込みを変更してください。" : "保存したYahooニュースはまだありません。"
               : searchActive
                 ? "取得した検索候補に一致するニュースはありません。検索対象・カテゴリを変えるか、Yahooで続きを確認してください。"
                 : "この条件に一致するニュースはありません。カテゴリや検索語を変えてください。"}
