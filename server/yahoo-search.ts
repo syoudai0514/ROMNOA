@@ -305,8 +305,12 @@ export async function fetchYahooSearch(
     type Partition = { query: string; total: number; used: string[]; first: YahooArticle[]; blocked?: boolean };
     const pivots = ["写真", "公開", "さん", "画像", "女性"];
     const partitions: Partition[] = [{ query: normalizeSearch(query), total: first.providerTotal, used: [], first: first.articles }];
-    for (let splits = 0; splits < 4 && Date.now() < deadline; splits++) {
-      const index = partitions.findIndex((part) => part.total > 1000 && !part.blocked);
+    // Split the largest remaining window first, so older results are not
+    // starved by repeatedly splitting only the first branch.
+    const maxSplits = limit > 2000 ? 8 : 4;
+    for (let splits = 0; splits < maxSplits && Date.now() < deadline; splits++) {
+      const index = partitions.reduce((best, part, i) =>
+        part.total > 1000 && !part.blocked && (best < 0 || part.total > partitions[best].total) ? i : best, -1);
       if (index < 0) break;
       const parent = partitions[index];
       const words = pivots.filter((word) => !parent.used.includes(word) && !normalizeSearch(query).includes(word));
