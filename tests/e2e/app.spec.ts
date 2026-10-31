@@ -14,6 +14,10 @@ async function fixture(page: Page) {
   });
   await page.route("**/api/articles", (route) => route.fulfill({ json: feed }));
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(page.getByTestId("article-row").first()).toBeVisible();
 }
 function nav(page: Page) {
@@ -57,6 +61,10 @@ test("discovery → article → save → persistent read and favorites (R04/R05/
   await expect(reader.getByRole("heading", { level: 1 })).toContainText("料理");
   await reader.getByRole("button", { name: "記事を閉じる" }).click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(
     page.getByTestId("article-row").first().getByText("既読"),
   ).toBeVisible();
@@ -105,6 +113,10 @@ test("search, category, unread order, source and NG word filters (R03/R09/R13)",
   await nav(page).getByRole("button", { name: "ホーム", exact: true }).click();
   await expect(page.getByText("表示する記事がありません")).toBeVisible();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(page.getByText("表示する記事がありません")).toBeVisible();
 });
 
@@ -121,6 +133,10 @@ test("theme, type size, categories and narrow screen fit (R04/R07)", async ({
   await page.getByLabel("表示モード").selectOption("dark");
   await page.getByRole("button", { name: "大", exact: true }).click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-font", "large");
   await expect
@@ -149,6 +165,10 @@ test("feed outage uses browser cache without blocking saved articles (R02)", asy
     route.fulfill({ status: 503, json: { error: "unavailable" } }),
   );
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(
     page.getByText(/新しい記事を取得できませんでした/),
   ).toBeVisible();
@@ -174,6 +194,10 @@ test("partial source failure remains usable and sends no requests to external ho
     }),
   );
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(
     page.getByText(/ハムスター速報: 現在取得できません/),
   ).toBeVisible();
@@ -316,6 +340,10 @@ test("cached body survives reload and works offline; uncached failures never red
   await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
   await page.getByRole("button", { name: "記事を閉じる" }).click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(page.getByTestId("article-row").first()).toBeVisible();
   await page.unroute("**/api/reader**");
   await context.setOffline(true);
@@ -462,6 +490,10 @@ test("follows two related articles outside the feed, saves them, and restores th
   expect(new URL(page.url()).hostname).toBe("127.0.0.1");
   await page.getByRole("button", { name: "記事を閉じる", exact: true }).click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await nav(page).getByRole("button", { name: /^保存/ }).click();
   await expect(
     page.getByTestId("article-row").getByText(second.title, { exact: true }),
@@ -825,6 +857,10 @@ test("transfers roundup and news favorites into existing libraries", async ({
     { sourceArticle, yahoo, initialDefaults: defaults },
   );
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await nav(page).getByRole("button", { name: "設定", exact: true }).click();
   await page.getByRole("button", { name: "引き継ぎデータを作成" }).click();
   await expect(
@@ -843,6 +879,10 @@ test("transfers roundup and news favorites into existing libraries", async ({
     );
   });
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await nav(page).getByRole("button", { name: "設定", exact: true }).click();
   await page.getByLabel("お気に入りの引き継ぎファイル").setInputFiles({
     name: "romnoa-favorites.json",

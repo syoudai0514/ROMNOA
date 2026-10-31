@@ -15,6 +15,10 @@ test("home immediately shows dense articles and new/popular controls; search has
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await expect(page.getByTestId("article-row").first()).toBeVisible();
   await expect(page.locator(".welcome-card")).toHaveCount(0);
   await expect(page.getByRole("searchbox")).toHaveCount(0);
@@ -107,6 +111,10 @@ test("home popularity and search bookmark sorting stay independent across tabs",
     });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByRole("button", { name: "人気", exact: true }).click();
   await expect(page.locator(".rank-label strong")).toHaveText(["1位"]);
   expect(searchRequests).toBe(0);

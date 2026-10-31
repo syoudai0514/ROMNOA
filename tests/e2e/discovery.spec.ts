@@ -63,6 +63,10 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
     return r.fulfill({ json: readerFixture(a) });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByTestId("home-filters").locator("summary").click();
   await page
     .getByRole("combobox", { name: "記事の並び順" })
@@ -129,6 +133,10 @@ test("date archive finds older stories, keeps favorites/read, changes day and cl
     r.fulfill({ json: readerFixture(first) }),
   );
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByTestId("home-filters").locator("summary").click();
   await page.getByLabel("掲載日", { exact: true }).fill(past);
   await page.getByRole("button", { name: "表示", exact: true }).click();
@@ -157,6 +165,10 @@ test("date archive finds older stories, keeps favorites/read, changes day and cl
   );
   expect(queries).toContain("2026-10-19");
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page
     .getByRole("navigation", {
       name: /メインナビゲーション|下部ナビゲーション/,
@@ -197,6 +209,10 @@ test("rapid day changes and a failed date never display another date's stories; 
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByTestId("home-filters").locator("summary").click();
   await page.getByRole("button", { name: "今日", exact: true }).click();
   await page.getByRole("button", { name: "前の日", exact: true }).click();
@@ -220,6 +236,10 @@ test("rapid day changes and a failed date never display another date's stories; 
   ).toBe(false);
   failedLists = true;
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByTestId("home-filters").locator("summary").click();
   await page.getByLabel("掲載日", { exact: true }).fill(yesterday);
   await page.getByRole("button", { name: "表示", exact: true }).click();

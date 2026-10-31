@@ -86,6 +86,10 @@ test("calendar chooses an older year; keyword search ignores dates and sorts by 
     });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByTestId("home-filters").locator("summary").click();
   await page
     .getByRole("button", { name: "年・月から日付を選ぶ", exact: true })
@@ -143,6 +147,10 @@ test("My Search is visible normally, persists registered terms and searches all 
     return r.fulfill({ json: result(sent) });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await searchTab(page);
   await expect(
     page.getByRole("button", { name: "マイ検索", exact: true }),
@@ -155,6 +163,10 @@ test("My Search is visible normally, persists registered terms and searches all 
     .getByRole("button", { name: "キーワードを登録", exact: true })
     .click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await searchTab(page);
   await page.getByRole("button", { name: "マイ検索", exact: true }).click();
   const panel = page.getByRole("region", { name: "マイ検索", exact: true });
@@ -198,6 +210,10 @@ test("further search pages keep their authorization context when a story is save
     return r.fulfill({ json: readerFixture(older) });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await submit(page, "図書館");
   await expect(page.getByTestId("article-row")).toHaveCount(2);
   await expect(
@@ -237,6 +253,10 @@ test("slow or failed searches cannot replace a newer query, and the small screen
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await submit(page, "遅い");
   await submit(page, "速い");
   await expect(page.getByTestId("article-row")).toHaveCount(1);
@@ -276,6 +296,10 @@ test("search target defaults to titles, switches to clean body and keeps scope f
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await searchTab(page);
   await expect(
     page.getByRole("radio", { name: "タイトルのみ", exact: true }),
@@ -338,6 +362,10 @@ test("an empty title-filtered page still offers older results and late body resp
       .catch(() => {});
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await submit(page, "図書館");
   await expect(page.locator(".search-results-note")).toContainText(
     "ここまで一致する記事はありません",
@@ -396,6 +424,10 @@ test("automatically searches past an empty first page, appends further batches, 
     });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await submit(page, "図書館");
   await expect(page.locator(".search-pagination")).toContainText(
     "5ページ分を検索済み",
@@ -458,6 +490,10 @@ test("saved and history titles with unknown dates appear in both scopes and stay
     });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await submit(page, "岡田紗佳");
   await expect(page.getByTestId("article-row")).toHaveCount(2);
   await expect(page.locator(".search-results-note")).toContainText(
@@ -497,6 +533,10 @@ test("a later page failure keeps earlier results and retries the same cursor wit
     });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await submit(page, "図書館");
   await expect(page.getByTestId("article-row")).toHaveCount(1);
   await expect(

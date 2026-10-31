@@ -70,6 +70,10 @@ test("MP4 actually plays inline and GIF changes frames without external navigati
   );
   await page.goto("/");
   await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
+  await page
     .getByTestId("article-row")
     .first()
     .getByRole("button", { name: /^記事を開く/ })
@@ -170,6 +174,10 @@ test("Instagram CDN photos render without a widget; post-only URLs get an explic
   });
   await page.goto("/");
   await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
+  await page
     .getByTestId("article-row")
     .first()
     .getByRole("button", { name: /^記事を開く/ })
@@ -216,6 +224,10 @@ test("a missing MP4 shows a recoverable error and retry plays without navigating
     }),
   );
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page
     .getByTestId("article-row")
     .first()

@@ -88,7 +88,7 @@ export default function App() {
   const prefsRef = useRef(prefs);
   const [notice, setNotice] = useState(initial.warning);
   const [tab, setTab] = useState<Tab>("home");
-  const [channel, setChannel] = useState<"roundup" | "yahoo">("roundup");
+  const [channel, setChannel] = useState<"roundup" | "yahoo">("yahoo");
   const [category, setCategory] = useState<Category>("すべて");
   const [yahooCategory, setYahooCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -530,19 +530,19 @@ export default function App() {
                 >
                   <button
                     type="button"
-                    className={channel === "roundup" ? "selected" : ""}
-                    aria-pressed={channel === "roundup"}
-                    onClick={() => setChannel("roundup")}
-                  >
-                    まとめ
-                  </button>
-                  <button
-                    type="button"
                     className={channel === "yahoo" ? "selected" : ""}
                     aria-pressed={channel === "yahoo"}
                     onClick={() => setChannel("yahoo")}
                   >
                     ニュース
+                  </button>
+                  <button
+                    type="button"
+                    className={channel === "roundup" ? "selected" : ""}
+                    aria-pressed={channel === "roundup"}
+                    onClick={() => setChannel("roundup")}
+                  >
+                    まとめ
                   </button>
                 </div>
               ) : (

@@ -498,6 +498,10 @@ test("categories switch between roundup and news and filter the news list", asyn
   page,
 }) => {
   await setup(page);
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await tab(page, "カテゴリ");
   await page
     .getByRole("group", { name: "配信チャンネル" })
@@ -666,6 +670,9 @@ test("switches between roundup and news with one tap across tabs", async ({
   const switcher = page.getByRole("group", { name: "配信チャンネル" });
   const roundup = switcher.getByRole("button", { name: "まとめ", exact: true });
   const news = switcher.getByRole("button", { name: "ニュース", exact: true });
+  await expect(news).toHaveAttribute("aria-pressed", "true");
+  await expect(switcher.getByRole("button")).toHaveText(["ニュース", "まとめ"]);
+  await roundup.click();
   await expect(roundup).toHaveAttribute("aria-pressed", "true");
   await news.click();
   await expect(news).toHaveAttribute("aria-pressed", "true");
@@ -726,6 +733,7 @@ test("topic thumbnails load from the matching article without blocking other top
       },
     });
   });
+  await page.reload();
   await page
     .getByRole("group", { name: "配信チャンネル" })
     .getByRole("button", { name: "ニュース", exact: true })

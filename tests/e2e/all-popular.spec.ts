@@ -45,6 +45,10 @@ test("popularity shows all 80 articles including zeros, and saved unread catalog
     return r.fulfill({ json: readerFixture(pool[79]) });
   });
   await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page.getByRole("button", { name: "人気", exact: true }).click();
   await expect(page.getByTestId("article-row")).toHaveCount(80);
   await expect(page.getByTestId("article-row").first()).toContainText(
@@ -58,6 +62,10 @@ test("popularity shows all 80 articles including zeros, and saved unread catalog
     .getByRole("button", { name: `保存する: ${pool[79].title}`, exact: true })
     .click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await nav(page).getByRole("button", { name: /^保存/ }).click();
   await page
     .getByRole("button", { name: `記事を開く: ${pool[79].title}`, exact: true })
@@ -103,6 +111,10 @@ test("reader spacing stays compact with repeated blank lines, preserves response
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
   await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: `記事を開く: ${a.title}`, exact: true })
     .click();
   const body = page.getByRole("region", { name: "記事本文" });
@@ -124,6 +136,10 @@ test("reader spacing stays compact with repeated blank lines, preserves response
   expect(size.margin).toBeLessThanOrEqual(8);
   await page.getByRole("button", { name: "記事を閉じる", exact: true }).click();
   await page.reload();
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
   await page
     .getByRole("button", { name: `記事を開く: ${a.title}`, exact: true })
     .click();
