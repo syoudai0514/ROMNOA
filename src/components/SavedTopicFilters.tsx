@@ -7,7 +7,7 @@ export function SavedTopicFilters({ topics, selected, onSelect, query, onQuery }
   return <section className="saved-topics" aria-label="保存記事の自動分類">
     <h3>保存記事の自動分類</h3>
     <p>タイトルをもとに分類します。1つの記事が複数の分類に入ることもあります。</p>
-    <label className="saved-topic-search">名前・キーワードで絞り込み<input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="例：山田太郎、写真集" /></label>
+    <label className="saved-topic-search">名前・キーワードで絞り込み<input type="search" value={query} onChange={(event) => onQuery(event.target.value)} placeholder="例：山田太郎" /></label>
     <button className="text-button" onClick={() => { onSelect(null); onQuery(""); }} disabled={!selected && !query}>絞り込みを解除</button>
     {!!available.length && <div className="saved-topic-kinds" role="group" aria-label="分類の種類">{available.map((name) => <button key={name} aria-pressed={active === name} onClick={() => setGroup(name)}>{name}</button>)}</div>}
     {available.filter((name) => name === active).map((group) => {
