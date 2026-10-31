@@ -220,10 +220,10 @@ export async function fetchYahooSearch(
     { length: Math.ceil(Math.min(limit, first.providerTotal) / 50) - 1 },
     (_, i) => 51 + i * 50,
   );
-  async function fetchPage(start: number, category = "") {
+  async function fetchPage(start: number, category = "", partitionQuery = normalizeSearch(query)) {
       const params = new URLSearchParams({
         start: String(start),
-        query: normalizeSearch(query),
+        query: partitionQuery,
         categories: category,
         qrw: "true",
         results: "50",
@@ -297,13 +297,58 @@ export async function fetchYahooSearch(
     if (incomplete) break;
   }
   const beforeCategories = found.size;
+  const target = Math.min(limit, first.providerTotal);
+  // Yahoo supports positive and negative terms. If their counts partition the
+  // parent and their first pages do not overlap, use independent result windows
+  // to get older candidates. Always filter against the original query later.
+  if (incomplete && limit > 1000 && first.providerTotal > 1000 && found.size < target) {
+    type Partition = { query: string; total: number; used: string[]; first: YahooArticle[]; blocked?: boolean };
+    const pivots = ["写真", "公開", "さん", "画像", "女性"];
+    const partitions: Partition[] = [{ query: normalizeSearch(query), total: first.providerTotal, used: [], first: first.articles }];
+    for (let splits = 0; splits < 4 && Date.now() < deadline; splits++) {
+      const index = partitions.findIndex((part) => part.total > 1000 && !part.blocked);
+      if (index < 0) break;
+      const parent = partitions[index];
+      const words = pivots.filter((word) => !parent.used.includes(word) && !normalizeSearch(query).includes(word));
+      if (!words.length) { parent.blocked = true; continue; }
+      const probes = await Promise.allSettled(words.flatMap((word) => [
+        fetchPage(1, "", `${parent.query} ${word}`),
+        fetchPage(1, "", `${parent.query} -${word}`),
+      ]));
+      let best: { word: string; yes: { articles: YahooArticle[]; providerTotal: number }; no: { articles: YahooArticle[]; providerTotal: number } } | null = null;
+      for (let i = 0; i < words.length; i++) {
+        const yes = probes[i * 2], no = probes[i * 2 + 1];
+        if (yes.status !== "fulfilled" || no.status !== "fulfilled") continue;
+        if (!yes.value.providerTotal || !no.value.providerTotal || yes.value.providerTotal + no.value.providerTotal !== parent.total) continue;
+        const ids = new Set(yes.value.articles.map((article) => article.id));
+        if (no.value.articles.some((article) => ids.has(article.id))) continue;
+        if (!best || Math.max(yes.value.providerTotal, no.value.providerTotal) < Math.max(best.yes.providerTotal, best.no.providerTotal))
+          best = { word: words[i], yes: yes.value, no: no.value };
+      }
+      if (!best) { parent.blocked = true; continue; }
+      const used = [...parent.used, best.word];
+      partitions.splice(index, 1,
+        { query: `${parent.query} ${best.word}`, total: best.yes.providerTotal, used, first: best.yes.articles },
+        { query: `${parent.query} -${best.word}`, total: best.no.providerTotal, used, first: best.no.articles },
+      );
+    }
+    if (partitions.length > 1) {
+      for (const part of partitions) add(part.first);
+      for (let start = 51; start <= 1000 && found.size < target && Date.now() < deadline; start += 50) {
+        const active = partitions.filter((part) => part.total >= start);
+        if (!active.length) break;
+        const batch = await Promise.allSettled(active.map((part) => fetchPage(start, "", part.query)));
+        for (const result of batch) if (result.status === "fulfilled") add(result.value.articles);
+      }
+    }
+  }
   // Yahoo's news search does not expose a verified date range. Its own category
   // filter does provide independent result windows, which can contain older
   // items beyond the global window. Merge unique IDs, keeping the original order.
-  if (incomplete && limit > 1000 && first.providerTotal > 1000 && found.size < limit) {
+  if (incomplete && limit > 1000 && first.providerTotal > 1000 && found.size < target) {
     const categories = ["domestic", "world", "business", "entertainment", "sports", "it", "science", "life", "local"];
     let active = categories;
-    for (let start = 1; start <= 1000 && active.length && found.size < limit && Date.now() < deadline; start += 50) {
+    for (let start = 1; start <= 1000 && active.length && found.size < target && Date.now() < deadline; start += 50) {
       const batch = await Promise.allSettled(active.map((category) => fetchPage(start, category)));
       const next: string[] = [];
       for (let i = 0; i < batch.length; i++) {
@@ -349,7 +394,7 @@ export class MemoryYahooSearchCache implements YahooSearchCache {
 }
 function cacheAdapter(): YahooSearchCache {
   if (!process.env.VERCEL) return new MemoryYahooSearchCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-search-v3" });
+  const cache = getCache({ namespace: "romnoa-yahoo-search-v4" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

@@ -344,3 +344,30 @@ it("supplements a capped search using independent category windows and removes d
   expect(result.incomplete).toBe(true);
   expect(result.articles.at(-1)?.id).toBe(make(3001).permalink);
 });
+
+it("uses complementary Yahoo query partitions to recover candidates beyond the global window", async () => {
+  const make = (n: number) => item(n.toString(16).padStart(40, "0"));
+  const original = html(Array.from({ length: 50 }, (_, i) => make(i + 1)), q, 1200);
+  const load = async (input: RequestInfo | URL) => {
+    const u = new URL(String(input));
+    if (!u.pathname.includes("search-feed")) return new Response(original, { headers: { "content-type": "text/html" } });
+    const start = Number(u.searchParams.get("start"));
+    const term = u.searchParams.get("query");
+    const cat = u.searchParams.get("categories");
+    if (cat) return Response.json({ startIndex: start, totalResults: 0, contents: [] });
+    if (term === q) {
+      if (start >= 1001) return new Response("unavailable", { status: 500 });
+      return Response.json({ startIndex: start, totalResults: 1200, contents: Array.from({ length: 50 }, (_, i) => make(start + i)) });
+    }
+    if (term === `${q} 写真` || term === `${q} -写真`) {
+      const offset = term.includes("-写真") ? 600 : 0;
+      const n = Math.max(0, Math.min(50, 601 - start));
+      return Response.json({ startIndex: start, totalResults: 600, contents: Array.from({ length: n }, (_, i) => make(offset + start + i)) });
+    }
+    return Response.json({ startIndex: start, totalResults: 0, contents: [] });
+  };
+  const result = await fetchYahooSearch(q, load, 2000);
+  expect(result.articles).toHaveLength(1200);
+  expect(result.supplemented).toBe(200);
+  expect(new Set(result.articles.map((a) => a.id)).size).toBe(1200);
+});
