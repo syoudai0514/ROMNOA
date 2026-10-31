@@ -691,3 +691,49 @@ test("switches between roundup and news with one tap across tabs", async ({
   await roundup.click();
   await expect(roundup).toHaveAttribute("aria-pressed", "true");
 });
+
+test("topic thumbnails load from the matching article without blocking other topics", async ({
+  page,
+}) => {
+  await setup(page);
+  const topicItems = articles.map((a) => ({
+    ...a,
+    origin: "topic",
+    image: null,
+  }));
+  const secondImage =
+    "https://newsatcl-pctr.c.yimg.jp/t/amd-img/second-news-view.jpg?w=450";
+  await page.route("**/api/yahoo-topics", (r) =>
+    r.fulfill({ json: { articles: topicItems } }),
+  );
+  await page.route("**/api/yahoo-photos?**", (r) => {
+    const id = new URL(r.request().url()).searchParams.get("article");
+    if (id === articles[2].id)
+      return r.fulfill({ status: 503, json: { error: "unavailable" } });
+    return r.fulfill({
+      json: {
+        kind: "article",
+        articleId: id,
+        pictures: [
+          {
+            url: id === articles[0].id ? image : secondImage,
+            alt: "記事の写真",
+          },
+        ],
+        features: [],
+        status: "ok",
+        fetchedAt: new Date().toISOString(),
+      },
+    });
+  });
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "ニュース", exact: true })
+    .click();
+  const rows = page.getByTestId("yahoo-row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0).locator("img")).toHaveAttribute("src", image);
+  await expect(rows.nth(1).locator("img")).toHaveAttribute("src", secondImage);
+  await expect(rows.nth(2)).toContainText(articles[2].title);
+  await expect(rows.nth(2).locator("img")).toHaveCount(0);
+});

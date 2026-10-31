@@ -68,6 +68,30 @@ function cachedFeed(): YahooResponse | null {
   }
 }
 
+// Topics RSS has no thumbnail; reuse the article photo metadata already used
+// by the reader, and load it independently so headlines appear immediately.
+function TopicThumbnail({ articleId }: { articleId: string }) {
+  const { resource } = useYahooPhotos(articleId);
+  const image =
+    resource?.kind === "article"
+      ? resource.pictures.find((p) => yahooImageUrl(p.url))?.url
+      : null;
+  if (!image) return null;
+  return (
+    <img
+      className="yahoo-list-thumbnail"
+      src={image}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      onError={(event) => {
+        event.currentTarget.style.visibility = "hidden";
+      }}
+    />
+  );
+}
+
 export function YahooNews({
   active,
   mode,
@@ -552,6 +576,9 @@ export function YahooNews({
               aria-label={`ニュースを開く: ${a.title}`}
               onClick={() => open(a)}
             >
+              {!a.image && a.origin === "topic" && (
+                <TopicThumbnail articleId={a.id} />
+              )}
               {a.image && (
                 <img
                   className="yahoo-list-thumbnail"
