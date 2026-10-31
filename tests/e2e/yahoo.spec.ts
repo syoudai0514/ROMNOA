@@ -820,3 +820,36 @@ test("channel switch stays available inside news and roundup readers", async ({
   await expect(roundupReader).toHaveCount(0);
   await expect(page.getByTestId("yahoo-row").first()).toBeVisible();
 });
+
+test("search defaults to 2000 candidates and displays 100 results per page", async ({ page }) => {
+  await setup(page);
+  const many: YahooArticle[] = Array.from({ length: 205 }, (_, i) => {
+    const id = `https://news.yahoo.co.jp/articles/${(i + 1).toString(16).padStart(40, "0")}`;
+    return { ...articles[0], id, url: id, title: `テスト記事 ${i + 1}`, image: null, origin: "search" };
+  });
+  let limit = "";
+  await page.route("**/api/yahoo-search?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    limit = p.get("limit") || "";
+    return r.fulfill({ json: { query: p.get("q"), scope: p.get("scope"), articles: many, candidateCount: many.length, providerTotal: 1800, status: "ok", incomplete: true, fetchedAt: new Date().toISOString() } });
+  });
+  await channel(page);
+  await tab(page, "検索");
+  await expect(page.getByLabel("ニュースの検索候補数")).toHaveValue("2000");
+  await page.getByLabel("Yahooニュースの検索語").fill("テスト");
+  await page.getByRole("search", { name: "Yahooニュースを探す" }).getByRole("button", { name: "検索", exact: true }).click();
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(100);
+  expect(limit).toBe("2000");
+  await expect(page.getByText(/すべての候補を取得できませんでした/)).toBeVisible();
+  const nav = page.getByRole("navigation", { name: "ニュース検索結果のページ移動" });
+  await expect(nav).toContainText("1 / 3ページ");
+  await nav.getByRole("button", { name: "次へ" }).click();
+  await expect(page.getByTestId("yahoo-row").first()).toContainText("テスト記事 101");
+  await nav.getByRole("button", { name: "次へ" }).click();
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(5);
+  await expect(nav.getByRole("button", { name: "次へ" })).toBeDisabled();
+  await nav.getByRole("button", { name: "前へ" }).click();
+  await expect(page.getByTestId("yahoo-row").first()).toContainText("テスト記事 101");
+  await page.getByLabel("未読のみ").check();
+  await expect(nav).toContainText("1 / 3ページ");
+});

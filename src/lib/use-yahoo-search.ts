@@ -7,7 +7,7 @@ import {
 export function useYahooSearch(
   query: string,
   scope: "title" | "summary",
-  limit = 50,
+  limit = 2000,
 ) {
   const [attempt, setAttempt] = useState(0);
   const key = `${query}\n${scope}\n${limit}\n${attempt}`;
@@ -21,7 +21,7 @@ export function useYahooSearch(
     if (!query) return;
     const controller = new AbortController();
     let live = true;
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 55000);
     setState({ key, data: null, searching: true, error: "" });
     void (async () => {
       try {

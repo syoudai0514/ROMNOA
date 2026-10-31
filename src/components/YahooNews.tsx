@@ -129,9 +129,14 @@ export function YahooNews({
   useEffect(() => {
     if (category !== "all" && mode === "home") setHomeView("latest");
   }, [category, mode]);
-  const [resultLimit, setResultLimit] = useState(50);
+  const [resultLimit, setResultLimit] = useState(2000);
+  const [searchPage, setSearchPage] = useState(1);
   const [savedOrder, setSavedOrder] = useState<"saved" | "date">("saved");
   const [scope, setScope] = useState<"title" | "summary">("title");
+  useEffect(() => {
+    setSearchPage(1);
+  }, [term, scope, resultLimit, category, unreadOnly]);
+
   const searchActive = active && mode === "search" && !!term;
   const remote = useYahooSearch(searchActive ? term : "", scope, resultLimit);
   const [selection, setSelection] = useState<{
@@ -313,6 +318,15 @@ export function YahooNews({
       remote.data,
     ],
   );
+  const pageCount = Math.max(1, Math.ceil(articles.length / 100));
+  const currentPage = Math.min(searchPage, pageCount);
+  const visibleArticles = searchActive
+    ? articles.slice((currentPage - 1) * 100, currentPage * 100)
+    : articles;
+  function moveSearchPage(page: number) {
+    setSearchPage(page);
+    document.querySelector(".yahoo-result-heading")?.scrollIntoView({ block: "start" });
+  }
   const saved = new Set(library.saved.map((a) => a.id));
   function open(article: YahooArticle, sequence = articles) {
     mark(article);
@@ -411,6 +425,9 @@ export function YahooNews({
               <option value={50}>50件</option>
               <option value={100}>100件</option>
               <option value={200}>200件</option>
+              <option value={500}>500件</option>
+              <option value={1000}>1,000件</option>
+              <option value={2000}>2,000件</option>
             </select>
           </label>
           <label>
@@ -530,7 +547,7 @@ export function YahooNews({
       {searchActive && remote.data && (
         <details
           className="yahoo-note yahoo-search-range"
-          open={remote.data.status === "cached"}
+          open={remote.data.status === "cached" || remote.data.incomplete}
         >
           <summary>
             <span role="status">
@@ -543,6 +560,9 @@ export function YahooNews({
           </p>
           {remote.data.status === "cached" && (
             <p>取得に失敗したため前回の検索結果を表示しています。</p>
+          )}
+          {remote.data.incomplete && (
+            <p>Yahoo側の取得制限または通信エラーにより、すべての候補を取得できませんでした。続きはYahooの検索画面で確認してください。</p>
           )}
         </details>
       )}
@@ -578,7 +598,7 @@ export function YahooNews({
         )}
       </div>
       <div className="article-list yahoo-list">
-        {articles.map((a) => (
+        {visibleArticles.map((a) => (
           <article
             className={`article-row ${library.read[a.id] ? "is-read" : ""}`}
             key={a.id}
@@ -640,6 +660,13 @@ export function YahooNews({
           </article>
         ))}
       </div>
+      {searchActive && articles.length > 100 && (
+        <nav className="search-pagination" aria-label="ニュース検索結果のページ移動">
+          <button className="button secondary" disabled={currentPage <= 1} onClick={() => moveSearchPage(currentPage - 1)}>前へ</button>
+          <span>{currentPage} / {pageCount}ページ（{(currentPage - 1) * 100 + 1}〜{Math.min(currentPage * 100, articles.length)}件）</span>
+          <button className="button secondary" disabled={currentPage >= pageCount} onClick={() => moveSearchPage(currentPage + 1)}>次へ</button>
+        </nav>
+      )}
       {!(searchActive ? remote.searching || remote.error : loading) &&
         !articles.length && (
           <p className="yahoo-empty">

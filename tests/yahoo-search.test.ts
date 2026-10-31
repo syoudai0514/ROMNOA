@@ -283,5 +283,44 @@ it("loads subsequent public search pages and rejects a mismatched offset", async
       );
     return load(input, init);
   };
-  await expect(fetchYahooSearch(q, wrong, 100)).rejects.toThrow();
+  const partial = await fetchYahooSearch(q, wrong, 100);
+  expect(partial.incomplete).toBe(true);
+  expect(partial.articles).toHaveLength(1);
+});
+
+describe("large Yahoo search", () => {
+  const make = (n: number) => item(n.toString(16).padStart(40, "0"));
+  const first = html(Array.from({ length: 50 }, (_, i) => make(i + 1)), q, 2000);
+  it("collects and validates up to 2000 candidates with bounded concurrency", async () => {
+    let active = 0, peak = 0;
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const u = new URL(String(input));
+      if (!u.pathname.includes("search-feed")) return new Response(first, { headers: { "content-type": "text/html" } });
+      active++; peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      const start = Number(u.searchParams.get("start"));
+      active--;
+      return Response.json({ startIndex: start, totalResults: 2000, contents: Array.from({ length: 50 }, (_, i) => make(start + i)) });
+    });
+    const result = await fetchYahooSearch(q, fetcher, 2000);
+    expect(result.articles).toHaveLength(2000);
+    expect(result.incomplete).toBe(false);
+    expect(peak).toBeLessThanOrEqual(10);
+    expect(fetcher).toHaveBeenCalledTimes(40);
+    const service = new YahooSearchService(new MemoryYahooSearchCache(), async () => result);
+    const response = await service.get(q, "title", 2000);
+    expect(response.candidateCount).toBe(2000);
+    expect(yahooSearchResponseSchema.safeParse(response).success).toBe(true);
+  });
+  it("keeps successfully fetched results and reports incomplete when deeper pages fail", async () => {
+    const result = await fetchYahooSearch(q, async (input) => {
+      const u = new URL(String(input));
+      if (!u.pathname.includes("search-feed")) return new Response(first, { headers: { "content-type": "text/html" } });
+      const start = Number(u.searchParams.get("start"));
+      if (start >= 1001) return new Response("unavailable", { status: 500 });
+      return Response.json({ startIndex: start, totalResults: 2000, contents: Array.from({ length: 50 }, (_, i) => make(start + i)) });
+    }, 2000);
+    expect(result.articles).toHaveLength(1000);
+    expect(result.incomplete).toBe(true);
+  });
 });

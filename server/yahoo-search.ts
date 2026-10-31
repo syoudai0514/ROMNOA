@@ -172,7 +172,7 @@ export async function fetchYahooSearch(
   query: string,
   fetcher: typeof fetch = fetch,
   limit = 50,
-) {
+): Promise<{ articles: YahooArticle[]; providerTotal: number; incomplete?: boolean }> {
   if (!validSearch(query)) throw new Error("invalid_query");
   const response = await fetcher(
     `https://news.yahoo.co.jp/search?p=${encodeURIComponent(normalizeSearch(query))}`,
@@ -218,8 +218,13 @@ export async function fetchYahooSearch(
     { length: Math.ceil(Math.min(limit, first.providerTotal) / 50) - 1 },
     (_, i) => 51 + i * 50,
   );
-  const more = await Promise.all(
-    starts.map(async (start) => {
+  const more: YahooArticle[][] = [];
+  let incomplete = false;
+  // Limit concurrent requests and retain earlier pages when Yahoo refuses a
+  // deeper offset or a later page is temporarily unavailable.
+  for (let i = 0; i < starts.length; i += 10) {
+    const batch = await Promise.allSettled(
+      starts.slice(i, i + 10).map(async (start) => {
       const params = new URLSearchParams({
         start: String(start),
         query: normalizeSearch(query),
@@ -273,8 +278,14 @@ export async function fetchYahooSearch(
         })
         .parse(JSON.parse(bytes.toString("utf8")));
       return parseSearchItems(data.contents, data.totalResults).articles;
-    }),
-  );
+      }),
+    );
+    for (const result of batch) {
+      if (result.status === "fulfilled") more.push(result.value);
+      else incomplete = true;
+    }
+    if (incomplete) break;
+  }
   return {
     articles: [
       ...new Map(
@@ -282,11 +293,13 @@ export async function fetchYahooSearch(
       ).values(),
     ].slice(0, limit),
     providerTotal: first.providerTotal,
+    incomplete,
   };
 }
 const entrySchema = z.object({
-  articles: z.array(yahooArticleSchema).max(200),
+  articles: z.array(yahooArticleSchema).max(2000),
   providerTotal: z.number().int().min(0).max(10000000),
+  incomplete: z.boolean().optional(),
   fetchedAt: z.number(),
   checkedAt: z.number(),
   failed: z.boolean(),
@@ -351,7 +364,7 @@ export class YahooSearchService {
       if (
         old &&
         now - old.checkedAt >= 0 &&
-        now - old.checkedAt < (old.failed ? 60000 : 600000)
+        now - old.checkedAt < (old.failed || old.incomplete ? 60000 : 600000)
       ) {
         if (!usable) throw new Error("search_unavailable");
         return old;
@@ -368,6 +381,7 @@ export class YahooSearchService {
         entry = {
           articles: usable && old ? old.articles : [],
           providerTotal: usable && old ? old.providerTotal : 0,
+          incomplete: usable && old ? old.incomplete : false,
           fetchedAt: usable && old ? old.fetchedAt : 0,
           checkedAt: now,
           failed: true,
@@ -409,6 +423,7 @@ export class YahooSearchService {
       candidateCount: entry.articles.length,
       providerTotal: entry.providerTotal,
       status: entry.failed ? "cached" : "ok",
+      incomplete: entry.incomplete || false,
       fetchedAt: new Date(entry.fetchedAt).toISOString(),
     };
   }
@@ -432,11 +447,11 @@ export async function handleYahooSearch(
   const p = new URL(request.url).searchParams,
     q = p.get("q") || "",
     scope = p.get("scope") || "title",
-    limit = Number(p.get("limit") || 50);
+    limit = Number(p.get("limit") || 2000);
   if (
     !validSearch(q) ||
     !["title", "summary"].includes(scope) ||
-    ![50, 100, 200].includes(limit) ||
+    ![50, 100, 200, 500, 1000, 2000].includes(limit) ||
     [...p.keys()].some(
       (k) => !["q", "scope", "limit"].includes(k) || p.getAll(k).length !== 1,
     )
