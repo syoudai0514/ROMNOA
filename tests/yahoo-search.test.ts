@@ -249,3 +249,39 @@ describe("Yahoo publisher search beyond RSS", () => {
     ).toBe(503);
   });
 });
+
+it("loads subsequent public search pages and rejects a mismatched offset", async () => {
+  const moreId = "b".repeat(40);
+  const load: typeof fetch = async (input) => {
+    if (String(input).includes("search-feed"))
+      return new Response(
+        JSON.stringify({
+          totalResults: 100,
+          startIndex: 51,
+          contents: [item(moreId)],
+        }),
+        { headers: { "content-type": "application/json" } },
+      );
+    return new Response(html([item()], q, 100), {
+      headers: { "content-type": "text/html" },
+    });
+  };
+  const result = await fetchYahooSearch(q, load, 100);
+  expect(result.articles.map((a) => a.id)).toEqual([
+    url,
+    `https://news.yahoo.co.jp/articles/${moreId}`,
+  ]);
+  const wrong: typeof fetch = async (input, init) => {
+    if (String(input).includes("search-feed"))
+      return new Response(
+        JSON.stringify({
+          totalResults: 100,
+          startIndex: 1,
+          contents: [item(moreId)],
+        }),
+        { headers: { "content-type": "application/json" } },
+      );
+    return load(input, init);
+  };
+  await expect(fetchYahooSearch(q, wrong, 100)).rejects.toThrow();
+});

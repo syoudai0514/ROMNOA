@@ -66,7 +66,7 @@ export const yahooArticleSchema = z
       .refine((s) => s === null || yahooImageUrl(s) === s),
     category: yahooCategorySchema,
     publishedAt: z.iso.datetime().nullable(),
-    origin: z.enum(["rss", "search"]).optional(),
+    origin: z.enum(["rss", "search", "topic"]).optional(),
     displayDate: z.string().max(40).optional(),
     provider: z.string().max(100).optional(),
   })
@@ -89,8 +89,8 @@ export type YahooResponse = z.infer<typeof yahooResponseSchema>;
 export const yahooSearchResponseSchema = z.object({
   query: z.string().min(1).max(80),
   scope: z.enum(["title", "summary"]),
-  articles: z.array(yahooArticleSchema).max(50),
-  candidateCount: z.number().int().min(0).max(50),
+  articles: z.array(yahooArticleSchema).max(200),
+  candidateCount: z.number().int().min(0).max(200),
   providerTotal: z.number().int().min(0).max(10000000),
   status: z.enum(["ok", "cached"]),
   fetchedAt: z.iso.datetime(),

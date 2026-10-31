@@ -110,6 +110,9 @@ export function parseYahooSearch(html: string, query: string) {
   const state = stateSchema.parse(states[0]);
   if (normalizeSearch(state.searchConditions.query) !== normalizeSearch(query))
     throw new Error("search_query_mismatch");
+  return parseSearchItems(state.search.contents, state.search.totalResults);
+}
+function parseSearchItems(contents: unknown[], totalResults: number) {
   const categoryMap: Record<string, YahooCategory> = {
     dom: "domestic",
     domestic: "domestic",
@@ -128,7 +131,7 @@ export function parseYahooSearch(html: string, query: string) {
     local: "local",
   };
   const articles: YahooArticle[] = [];
-  for (const raw of state.search.contents) {
+  for (const raw of contents) {
     const parsed = itemSchema.safeParse(raw);
     if (!parsed.success) continue; // includes viewType=1 advertising slots
     const i = parsed.data,
@@ -155,19 +158,20 @@ export function parseYahooSearch(html: string, query: string) {
       }),
     );
   }
-  if (state.search.totalResults > 0 && !articles.length)
+  if (totalResults > 0 && !articles.length)
     throw new Error("search_structure_changed");
   return {
     articles: [...new Map(articles.map((a) => [a.id, a])).values()].slice(
       0,
       50,
     ),
-    providerTotal: state.search.totalResults,
+    providerTotal: totalResults,
   };
 }
 export async function fetchYahooSearch(
   query: string,
   fetcher: typeof fetch = fetch,
+  limit = 50,
 ) {
   if (!validSearch(query)) throw new Error("invalid_query");
   const response = await fetcher(
@@ -208,10 +212,80 @@ export async function fetchYahooSearch(
     await reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
-  return parseYahooSearch(Buffer.concat(chunks).toString("utf8"), query);
+  const first = parseYahooSearch(Buffer.concat(chunks).toString("utf8"), query);
+  if (limit <= 50 || first.providerTotal <= 50) return first;
+  const starts = Array.from(
+    { length: Math.ceil(Math.min(limit, first.providerTotal) / 50) - 1 },
+    (_, i) => 51 + i * 50,
+  );
+  const more = await Promise.all(
+    starts.map(async (start) => {
+      const params = new URLSearchParams({
+        start: String(start),
+        query: normalizeSearch(query),
+        categories: "",
+        qrw: "true",
+        results: "50",
+        ei: "utf-8",
+        source: "other",
+      });
+      const response = await fetcher(
+        `https://news.yahoo.co.jp/api/public/search-feed?${params}`,
+        {
+          redirect: "error",
+          signal: AbortSignal.timeout(8000),
+          headers: { Accept: "application/json" },
+        },
+      );
+      if (
+        !response.ok ||
+        !response.body ||
+        !/application\/json/i.test(response.headers.get("content-type") || "")
+      ) {
+        await response.body?.cancel();
+        throw Error("search_unavailable");
+      }
+      if (Number(response.headers.get("content-length")) > MAX_BYTES) {
+        await response.body.cancel();
+        throw Error("search_too_large");
+      }
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.length;
+          if (size > MAX_BYTES) throw Error("search_too_large");
+          chunks.push(value);
+        }
+      } finally {
+        await reader.cancel().catch(() => undefined);
+        reader.releaseLock();
+      }
+      const bytes = Buffer.concat(chunks);
+      const data = z
+        .object({
+          totalResults: z.number().int().min(0).max(10000000),
+          startIndex: z.literal(start),
+          contents: z.array(z.unknown()).max(200),
+        })
+        .parse(JSON.parse(bytes.toString("utf8")));
+      return parseSearchItems(data.contents, data.totalResults).articles;
+    }),
+  );
+  return {
+    articles: [
+      ...new Map(
+        [...first.articles, ...more.flat()].map((a) => [a.id, a]),
+      ).values(),
+    ].slice(0, limit),
+    providerTotal: first.providerTotal,
+  };
 }
 const entrySchema = z.object({
-  articles: z.array(yahooArticleSchema).max(50),
+  articles: z.array(yahooArticleSchema).max(200),
   providerTotal: z.number().int().min(0).max(10000000),
   fetchedAt: z.number(),
   checkedAt: z.number(),
@@ -235,7 +309,7 @@ export class MemoryYahooSearchCache implements YahooSearchCache {
 }
 function cacheAdapter(): YahooSearchCache {
   if (!process.env.VERCEL) return new MemoryYahooSearchCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-search-v1" });
+  const cache = getCache({ namespace: "romnoa-yahoo-search-v2" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -256,8 +330,8 @@ export class YahooSearchService {
     private load = fetchYahooSearch,
     private now = Date.now,
   ) {}
-  private async entry(q: string): Promise<Entry> {
-    const key = createHash("sha256").update(q).digest("hex");
+  private async entry(q: string, limit: number): Promise<Entry> {
+    const key = createHash("sha256").update(`${q}:${limit}`).digest("hex");
     const pending = this.pending.get(key);
     if (pending) return pending;
     const work = (async () => {
@@ -285,7 +359,7 @@ export class YahooSearchService {
       let entry: Entry;
       try {
         entry = {
-          ...(await this.load(q)),
+          ...(await this.load(q, undefined, limit)),
           fetchedAt: now,
           checkedAt: now,
           failed: false,
@@ -317,11 +391,12 @@ export class YahooSearchService {
   async get(
     query: string,
     scope: "title" | "summary",
+    limit = 50,
   ): Promise<YahooSearchResponse> {
     if (!validSearch(query) || !["title", "summary"].includes(scope))
       throw new Error("invalid_query");
     const q = normalizeSearch(query),
-      entry = await this.entry(q);
+      entry = await this.entry(q, limit);
     return {
       query: q,
       scope,
@@ -356,12 +431,14 @@ export async function handleYahooSearch(
     );
   const p = new URL(request.url).searchParams,
     q = p.get("q") || "",
-    scope = p.get("scope") || "title";
+    scope = p.get("scope") || "title",
+    limit = Number(p.get("limit") || 50);
   if (
     !validSearch(q) ||
     !["title", "summary"].includes(scope) ||
+    ![50, 100, 200].includes(limit) ||
     [...p.keys()].some(
-      (k) => !["q", "scope"].includes(k) || p.getAll(k).length !== 1,
+      (k) => !["q", "scope", "limit"].includes(k) || p.getAll(k).length !== 1,
     )
   )
     return Response.json(
@@ -374,9 +451,12 @@ export async function handleYahooSearch(
       { status: 403, headers },
     );
   try {
-    return Response.json(await engine.get(q, scope as "title" | "summary"), {
-      headers,
-    });
+    return Response.json(
+      await engine.get(q, scope as "title" | "summary", limit),
+      {
+        headers,
+      },
+    );
   } catch {
     return Response.json(
       {

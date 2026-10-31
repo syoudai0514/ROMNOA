@@ -770,3 +770,24 @@ test("roundup article shows embedded post videos alongside body images", async (
   await expect(post.locator("video")).toHaveAttribute("src", videoUrl);
   await expect(post.locator("video")).toHaveAttribute("controls", "");
 });
+
+test("saved roundup articles switch between save order and publication date", async ({
+  page,
+}) => {
+  await fixture(page);
+  for (const a of feed.articles.slice(0, 2)) {
+    await page.getByRole("button", { name: `保存する: ${a.title}` }).click();
+  }
+  await nav(page).getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page.getByTestId("article-row").first()).toContainText(
+    feed.articles[1].title,
+  );
+  await page.getByLabel("保存した記事の並び順").selectOption("date");
+  await expect(page.getByTestId("article-row").first()).toContainText(
+    feed.articles[0].title,
+  );
+  await page.getByLabel("保存した記事の並び順").selectOption("saved");
+  await expect(page.getByTestId("article-row").first()).toContainText(
+    feed.articles[1].title,
+  );
+});

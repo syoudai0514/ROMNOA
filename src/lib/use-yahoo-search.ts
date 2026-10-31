@@ -4,9 +4,13 @@ import {
   type YahooSearchResponse,
 } from "./yahoo-model";
 
-export function useYahooSearch(query: string, scope: "title" | "summary") {
+export function useYahooSearch(
+  query: string,
+  scope: "title" | "summary",
+  limit = 50,
+) {
   const [attempt, setAttempt] = useState(0);
-  const key = `${query}\n${scope}\n${attempt}`;
+  const key = `${query}\n${scope}\n${limit}\n${attempt}`;
   const [state, setState] = useState<{
     key: string;
     data: YahooSearchResponse | null;
@@ -22,7 +26,7 @@ export function useYahooSearch(query: string, scope: "title" | "summary") {
     void (async () => {
       try {
         const res = await fetch(
-          `/api/yahoo-search?q=${encodeURIComponent(query)}&scope=${scope}`,
+          `/api/yahoo-search?q=${encodeURIComponent(query)}&scope=${scope}&limit=${limit}`,
           { signal: controller.signal },
         );
         if (!res.ok) throw new Error("unavailable");

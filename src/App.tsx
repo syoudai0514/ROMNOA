@@ -98,6 +98,7 @@ export default function App() {
     tab === "search" ? setSearchQuery(value) : setShelfQuery(value);
   const [homeSort, setHomeSort] = useState<Sort>("newest");
   const [searchSort, setSearchSort] = useState<Sort>("newest");
+  const [shelfOrder, setShelfOrder] = useState<"saved" | "date">("saved");
   const [shelfSort, setShelfSort] = useState<Sort>("newest");
   const sort =
     tab === "search" ? searchSort : tab === "saved" ? shelfSort : homeSort;
@@ -315,6 +316,12 @@ export default function App() {
           : undefined,
     });
     const visible = filtered;
+    if (tab === "saved" && savedView === "saved" && shelfOrder === "saved") {
+      const positions = new Map(prefs.saved.map((a, i) => [a.id, i]));
+      return visible.sort(
+        (a, b) => positions.get(a.id)! - positions.get(b.id)!,
+      );
+    }
     if (tab === "saved" && savedView === "history")
       return visible.sort(
         (a, b) =>
@@ -330,6 +337,7 @@ export default function App() {
     prefs,
     tab,
     savedView,
+    shelfOrder,
     ranks,
     searchActive,
     fullPopularity,
@@ -956,17 +964,31 @@ export default function App() {
                                     : category}
                       <span>{groups.length}</span>
                     </h2>
-                    {tab !== "home" &&
-                      !(tab === "saved" && savedView === "history") && (
-                        <SortControl
-                          sort={sort}
-                          onChange={setSort}
-                          popular={tab === "search" ? "bookmarks" : undefined}
-                          popularityUnavailable={
-                            searchActive && pastSearch.data?.bookmarks === null
+                    {tab === "saved" && savedView === "saved" && (
+                      <label className="sort-control">
+                        並び順{" "}
+                        <select
+                          aria-label="保存した記事の並び順"
+                          value={shelfOrder}
+                          onChange={(e) =>
+                            setShelfOrder(e.target.value as "saved" | "date")
                           }
-                        />
-                      )}
+                        >
+                          <option value="saved">保存した順</option>
+                          <option value="date">記事の日付順</option>
+                        </select>
+                      </label>
+                    )}
+                    {tab !== "home" && tab !== "saved" && (
+                      <SortControl
+                        sort={sort}
+                        onChange={setSort}
+                        popular={tab === "search" ? "bookmarks" : undefined}
+                        popularityUnavailable={
+                          searchActive && pastSearch.data?.bookmarks === null
+                        }
+                      />
+                    )}
                   </div>
                   {query && !searchActive && (
                     <p className="search-note">

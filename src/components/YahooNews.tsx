@@ -96,9 +96,18 @@ export function YahooNews({
   const [refresh, setRefresh] = useState(0);
   const [query, setQuery] = useState("");
   const [term, setTerm] = useState("");
+  const [homeView, setHomeView] = useState<"topics" | "latest">("topics");
+  const [topics, setTopics] = useState<YahooArticle[] | null>(null);
+  const [topicsError, setTopicsError] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  useEffect(() => {
+    if (category !== "all" && mode === "home") setHomeView("latest");
+  }, [category, mode]);
+  const [resultLimit, setResultLimit] = useState(50);
+  const [savedOrder, setSavedOrder] = useState<"saved" | "date">("saved");
   const [scope, setScope] = useState<"title" | "summary">("title");
   const searchActive = active && mode === "search" && !!term;
-  const remote = useYahooSearch(searchActive ? term : "", scope);
+  const remote = useYahooSearch(searchActive ? term : "", scope, resultLimit);
   const [selection, setSelection] = useState<{
     article: YahooArticle;
     sequence: YahooArticle[];
@@ -176,6 +185,23 @@ export function YahooNews({
       clearTimeout(timeout);
     };
   }, [active, refresh]);
+  useEffect(() => {
+    if (!active || mode !== "home") return;
+    const controller = new AbortController();
+    setTopicsError(false);
+    void fetch("/api/yahoo-topics", { signal: controller.signal })
+      .then(async (r) => {
+        if (!r.ok) throw Error("unavailable");
+        const data = z
+          .object({ articles: z.array(yahooArticleSchema).max(30) })
+          .parse(await r.json());
+        setTopics(data.articles);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setTopicsError(true);
+      });
+    return () => controller.abort();
+  }, [active, mode, refresh]);
   function update(next: Library) {
     libraryRef.current = next;
     setLibrary(next);
@@ -221,15 +247,26 @@ export function YahooNews({
           ? library.saved
           : searchActive
             ? remote.data?.articles || []
-            : data?.articles || [],
+            : mode === "home" && homeView === "topics"
+              ? topics || []
+              : data?.articles || [],
         "",
         scope,
-        category,
-        searchActive,
-      ).filter(allowed),
+        mode === "home" && homeView === "topics" ? "all" : category,
+        searchActive ||
+          (mode === "home" && homeView === "topics") ||
+          (mode === "saved" && savedOrder === "saved"),
+      )
+        .filter(allowed)
+        .filter((a) => !searchActive || !unreadOnly || !library.read[a.id]),
     [
       data,
       library.saved,
+      library.read,
+      unreadOnly,
+      topics,
+      homeView,
+      savedOrder,
       mode,
       term,
       scope,
@@ -327,8 +364,28 @@ export function YahooNews({
               タイトル・検索の抜粋
             </label>
           </fieldset>
+          <label>
+            取得する候補数{" "}
+            <select
+              aria-label="ニュースの検索候補数"
+              value={resultLimit}
+              onChange={(e) => setResultLimit(Number(e.target.value))}
+            >
+              <option value={50}>50件</option>
+              <option value={100}>100件</option>
+              <option value={200}>200件</option>
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={unreadOnly}
+              onChange={(e) => setUnreadOnly(e.target.checked)}
+            />{" "}
+            未読のみ
+          </label>
           <p className="yahoo-note">
-            Yahoo掲載記事を期間指定なしで検索します（先頭50候補）。
+            Yahoo掲載記事を期間指定なしで検索します。取得した候補から絞り込みます。
           </p>
           {term && (
             <a
@@ -343,22 +400,64 @@ export function YahooNews({
           )}
         </form>
       )}
-      <div
-        className="category-chips yahoo-categories"
-        role="group"
-        aria-label="ニュースのカテゴリ"
-      >
-        {[{ id: "all", label: "すべて" }, ...yahooCategories].map((c) => (
+      {mode === "home" && (
+        <div
+          className="category-chips"
+          role="group"
+          aria-label="ニュースの表示"
+        >
           <button
-            key={c.id}
-            className={category === c.id ? "selected" : ""}
-            aria-pressed={category === c.id}
-            onClick={() => onCategory(c.id)}
+            className={homeView === "topics" ? "selected" : ""}
+            aria-pressed={homeView === "topics"}
+            onClick={() => setHomeView("topics")}
           >
-            {c.label}
+            トピックス
           </button>
-        ))}
-      </div>
+          <button
+            className={homeView === "latest" ? "selected" : ""}
+            aria-pressed={homeView === "latest"}
+            onClick={() => setHomeView("latest")}
+          >
+            新着ニュース
+          </button>
+        </div>
+      )}
+      {mode === "home" && homeView === "topics" && topicsError && (
+        <p className="status-banner warning" role="status">
+          トピックスを取得できませんでした。更新をお試しください。
+        </p>
+      )}
+      {mode === "saved" && (
+        <label>
+          並び順{" "}
+          <select
+            aria-label="保存したニュースの並び順"
+            value={savedOrder}
+            onChange={(e) => setSavedOrder(e.target.value as "saved" | "date")}
+          >
+            <option value="saved">保存した順</option>
+            <option value="date">記事の日付順</option>
+          </select>
+        </label>
+      )}
+      {(mode !== "home" || homeView !== "topics") && (
+        <div
+          className="category-chips yahoo-categories"
+          role="group"
+          aria-label="ニュースのカテゴリ"
+        >
+          {[{ id: "all", label: "すべて" }, ...yahooCategories].map((c) => (
+            <button
+              key={c.id}
+              className={category === c.id ? "selected" : ""}
+              aria-pressed={category === c.id}
+              onClick={() => onCategory(c.id)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
       {notice && (
         <p role="alert" className="status-banner warning">
           {notice}
@@ -432,7 +531,9 @@ export function YahooNews({
             ? `「${term}」の検索結果`
             : mode === "saved"
               ? "保存したニュース"
-              : "配信中のニュース"}{" "}
+              : mode === "home" && homeView === "topics"
+                ? "トピックス"
+                : "配信中のニュース"}{" "}
           <span className="count-badge">{articles.length}</span>
         </strong>
         {(searchActive ? remote.searching : loading) && (
@@ -468,7 +569,9 @@ export function YahooNews({
                 <h3>{a.title}</h3>
                 <span className="article-meta">
                   <span>
-                    {yahooCategories.find((c) => c.id === a.category)?.label}
+                    {a.origin === "topic"
+                      ? "トピックス"
+                      : yahooCategories.find((c) => c.id === a.category)?.label}
                   </span>
                   <span>{a.provider || "Yahoo!ニュース"}</span>
                   <time dateTime={a.publishedAt || undefined}>

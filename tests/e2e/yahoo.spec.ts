@@ -47,6 +47,9 @@ const response = {
 };
 async function setup(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
+  await page.route("**/api/yahoo-topics", (r) =>
+    r.fulfill({ json: { articles } }),
+  );
   await page.route("**/api/yahoo", (r) => r.fulfill({ json: response }));
   await page.route("**/api/yahoo-body?**", (r) =>
     r.fulfill({ status: 502, json: { error: "unavailable" } }),
@@ -89,6 +92,7 @@ async function channel(page: Page) {
   await page
     .getByRole("combobox", { name: "配信チャンネル", exact: true })
     .selectOption("yahoo");
+  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
 }
 async function tab(page: Page, name: string) {
   await page
@@ -202,6 +206,9 @@ test("Yahoo search separates titles from feed leads, has no date restriction, an
   await channel(page);
   await tab(page, "保存");
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
+  await page.route("**/api/yahoo-topics", (r) =>
+    r.fulfill({ json: { articles } }),
+  );
   await page.route("**/api/yahoo", (r) =>
     r.fulfill({ status: 503, json: { error: "down" } }),
   );
@@ -231,6 +238,9 @@ test("Yahoo category failures and invalid updates keep safe cached content witho
   page,
 }) => {
   await setup(page);
+  await page.route("**/api/yahoo-topics", (r) =>
+    r.fulfill({ json: { articles } }),
+  );
   await page.route("**/api/yahoo", (r) =>
     r.fulfill({
       json: {
@@ -252,6 +262,9 @@ test("Yahoo category failures and invalid updates keep safe cached content witho
     .click();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
   await expect(page.getByTestId("yahoo-row")).toContainText("スポーツ");
+  await page.route("**/api/yahoo-topics", (r) =>
+    r.fulfill({ json: { articles } }),
+  );
   await page.route("**/api/yahoo", (r) =>
     r.fulfill({
       json: {
@@ -592,4 +605,53 @@ test("an unavailable in-app gallery keeps its article photo link usable", async 
   await expect(
     reader.getByRole("link", { name: "写真を見る" }),
   ).toHaveAttribute("href", url);
+});
+
+test("topics, unread search and selectable result count", async ({ page }) => {
+  await setup(page);
+  await channel(page);
+  await page.getByRole("button", { name: "トピックス", exact: true }).click();
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(3);
+  await page
+    .getByRole("button", { name: `ニュースを開く: ${articles[0].title}` })
+    .click();
+  await page
+    .getByRole("button", { name: "ニュースを閉じる", exact: true })
+    .click();
+  await tab(page, "検索");
+  await page.getByLabel("Yahooニュースの検索語").fill("テスト");
+  await page
+    .getByRole("search", { name: "Yahooニュースを探す" })
+    .getByRole("button", { name: "検索", exact: true })
+    .click();
+  await page.getByLabel("ニュースの検索候補数").selectOption("100");
+  await expect(page.getByLabel("ニュースの検索候補数")).toHaveValue("100");
+  await page.getByLabel("未読のみ").check();
+  await expect(page.getByTestId("yahoo-row")).toHaveCount(2);
+  await expect(page.getByText(articles[0].title)).toHaveCount(0);
+});
+
+test("saved news switches between saving order and publication date", async ({
+  page,
+}) => {
+  await setup(page);
+  await channel(page);
+  await page
+    .getByRole("button", { name: `ニュースを保存: ${articles[0].title}` })
+    .click();
+  await page
+    .getByRole("button", { name: `ニュースを保存: ${articles[1].title}` })
+    .click();
+  await tab(page, "保存");
+  await expect(page.getByTestId("yahoo-row").first()).toContainText(
+    articles[1].title,
+  );
+  await page.getByLabel("保存したニュースの並び順").selectOption("date");
+  await expect(page.getByTestId("yahoo-row").first()).toContainText(
+    articles[0].title,
+  );
+  await page.getByLabel("保存したニュースの並び順").selectOption("saved");
+  await expect(page.getByTestId("yahoo-row").first()).toContainText(
+    articles[1].title,
+  );
 });
