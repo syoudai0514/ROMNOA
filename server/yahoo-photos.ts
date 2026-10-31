@@ -1,3 +1,4 @@
+import { voisGallery } from "./vois-gallery.js";
 import { dailyGallery } from "./daily-gallery.js";
 import { nikkansportsGallery } from "./nikkansports-gallery.js";
 import { declaredGallery } from "./declared-gallery.js";
@@ -374,6 +375,7 @@ export async function resolvePhotoPage(
       "mantan",
       () => (photoFeatureTarget(url) ? parseMantanPhotoPage(html, url) : null),
     ],
+    ["vois", () => voisGallery(html, url)],
     ["declared", () => declaredGallery(html, url)],
     ["nikkansports", () => nikkansportsGallery(html, url)],
     ["daily", () => dailyGallery(html, url)],
@@ -424,7 +426,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v21" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v22" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -602,6 +604,12 @@ export class YahooPhotoService {
       const paths = (g: typeof gallery) =>
         g.pages.map((p) => new URL(p).pathname).join("\n");
       if (paths(photo) !== paths(gallery))
+        throw Error("gallery_structure_changed");
+    }
+
+    if (/^(?:www\.)?voisjp\.me$/.test(new URL(feature).hostname)) {
+      const thumb = gallery.thumbnails.find((t) => t.pageUrl === selected);
+      if (!thumb || gallery.pages.join("\n") !== photo.pages.join("\n"))
         throw Error("gallery_structure_changed");
     }
 
