@@ -89,10 +89,10 @@ export type YahooResponse = z.infer<typeof yahooResponseSchema>;
 export const yahooSearchResponseSchema = z.object({
   query: z.string().min(1).max(80),
   scope: z.enum(["title", "summary"]),
-  articles: z.array(yahooArticleSchema).max(2000),
-  candidateCount: z.number().int().min(0).max(2000),
+  articles: z.array(yahooArticleSchema).max(5000),
+  candidateCount: z.number().int().min(0).max(5000),
   incomplete: z.boolean().optional(),
-  supplemented: z.number().int().min(0).max(2000).optional(),
+  supplemented: z.number().int().min(0).max(5000).optional(),
   providerTotal: z.number().int().min(0).max(10000000),
   status: z.enum(["ok", "cached"]),
   fetchedAt: z.iso.datetime(),

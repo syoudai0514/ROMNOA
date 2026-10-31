@@ -1,3 +1,4 @@
+import { yahooSearchDay, inYahooSearchPeriod } from "../lib/yahoo-search-date";
 import { SavedTopicFilters } from "./SavedTopicFilters";
 import { useSavedTopics } from "../lib/use-saved-topics";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -132,14 +133,30 @@ export function YahooNews({
     if (category !== "all" && mode === "home") setHomeView("latest");
   }, [category, mode]);
   const [resultLimit, setResultLimit] = useState(2000);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const previousSearchLimit = useRef(2000);
+  const periodActive = !!(dateFrom || dateTo);
+  const invalidPeriod = !!(dateFrom && dateTo && dateFrom > dateTo);
   const [searchPage, setSearchPage] = useState(1);
   const [savedOrder, setSavedOrder] = useState<"saved" | "date">("saved");
   const [scope, setScope] = useState<"title" | "summary">("title");
   useEffect(() => {
     setSearchPage(1);
-  }, [term, scope, resultLimit, category, unreadOnly]);
+  }, [term, scope, resultLimit, category, unreadOnly, dateFrom, dateTo]);
 
   const searchActive = active && mode === "search" && !!term;
+  function changePeriod(from: string, to: string) {
+    const nextActive = !!(from || to);
+    if (!periodActive && nextActive) {
+      previousSearchLimit.current = resultLimit;
+      setResultLimit(5000);
+    } else if (periodActive && !nextActive) {
+      setResultLimit(previousSearchLimit.current);
+    }
+    setDateFrom(from);
+    setDateTo(to);
+  }
   const remote = useYahooSearch(searchActive ? term : "", scope, resultLimit);
   const [selection, setSelection] = useState<{
     article: YahooArticle;
@@ -320,7 +337,13 @@ export function YahooNews({
       remote.data,
     ],
   );
-  const savedTopics = useSavedTopics(listedArticles, mode === "saved");
+  const unknownDates = searchActive && periodActive
+    ? listedArticles.filter((article) => yahooSearchDay(article) === null).length
+    : 0;
+  const datedArticles = searchActive && periodActive
+    ? listedArticles.filter((article) => !invalidPeriod && inYahooSearchPeriod(yahooSearchDay(article), dateFrom, dateTo))
+    : listedArticles;
+  const savedTopics = useSavedTopics(datedArticles, mode === "saved");
   const articles = savedTopics.articles;
   const pageCount = Math.max(1, Math.ceil(articles.length / 100));
   const currentPage = Math.min(searchPage, pageCount);
@@ -419,6 +442,14 @@ export function YahooNews({
               タイトル・検索の抜粋
             </label>
           </fieldset>
+          <fieldset className="yahoo-period">
+            <legend>期間（未指定は全期間）</legend>
+            <label>開始日 <input type="date" aria-label="期間の開始日" value={dateFrom} onChange={(event) => changePeriod(event.target.value, dateTo)} max={dateTo || undefined} /></label>
+            <label>終了日 <input type="date" aria-label="期間の終了日" value={dateTo} onChange={(event) => changePeriod(dateFrom, event.target.value)} min={dateFrom || undefined} /></label>
+            {periodActive && <button className="text-button" type="button" onClick={() => changePeriod("", "")}>全期間に戻す</button>}
+          </fieldset>
+          {invalidPeriod && <p role="alert" className="yahoo-note">開始日は終了日以前にしてください。</p>}
+          {periodActive && <p className="yahoo-note">取得済みの検索候補から期間で絞り込みます。{unknownDates > 0 && `日付を確認できない${unknownDates}件は除いています。`}</p>}
           <label>
             取得する候補数{" "}
             <select
@@ -432,6 +463,7 @@ export function YahooNews({
               <option value={500}>500件</option>
               <option value={1000}>1,000件</option>
               <option value={2000}>2,000件</option>
+              <option value={5000}>5,000件</option>
             </select>
           </label>
           <label>
@@ -681,7 +713,7 @@ export function YahooNews({
             {mode === "saved"
               ? library.saved.length ? "この条件に一致する保存記事はありません。絞り込みを変更してください。" : "保存したYahooニュースはまだありません。"
               : searchActive
-                ? "取得した検索候補に一致するニュースはありません。検索対象・カテゴリを変えるか、Yahooで続きを確認してください。"
+                ? invalidPeriod ? "開始日と終了日を確認してください。" : periodActive ? "取得済みの検索候補には、この期間に一致するニュースがありません。期間を変更するか、Yahooで続きを確認してください。" : "取得した検索候補に一致するニュースはありません。検索対象・カテゴリを変えるか、Yahooで続きを確認してください。"
                 : "この条件に一致するニュースはありません。カテゴリや検索語を変えてください。"}
           </p>
         )}

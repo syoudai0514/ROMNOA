@@ -2612,3 +2612,5 @@ button {
 .saved-topic-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .saved-topic-kinds button { min-height: 40px; border: 0; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 12px; background: var(--soft); color: var(--ink); }
 .saved-topic-kinds button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.yahoo-search .yahoo-period { gap: 4px 12px; margin: 12px 0; }
+.yahoo-period input[type="date"] { min-height: 42px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: var(--surface); color: var(--ink); font: inherit; }

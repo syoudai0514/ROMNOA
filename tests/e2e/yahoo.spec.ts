@@ -854,3 +854,34 @@ test("search defaults to 2000 candidates and displays 100 results per page", asy
   await page.getByLabel("未読のみ").check();
   await expect(nav).toContainText("1 / 3ページ");
 });
+
+test("Yahoo search filters acquired candidates by an inclusive date range", async ({ page }) => {
+  await setup(page);
+  const dates = ["2026/10/29(木) 10:00", "2025/10/29(水) 11:00", "10/29(木) 12:00", "2026/1/15(木) 15:00"];
+  const searchItems: YahooArticle[] = dates.map((displayDate, i) => {
+    const id = `https://news.yahoo.co.jp/articles/${(i+10).toString(16).padStart(40, "0")}`;
+    return { ...articles[0], id, url: id, title: `テスト期間 ${i+1}`, image: null, publishedAt: null, origin: "search", displayDate };
+  });
+  const requests: string[] = [];
+  await page.route("**/api/yahoo-search?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    requests.push(p.get("limit") || "");
+    return r.fulfill({ json: { query: p.get("q"), scope: p.get("scope"), articles: searchItems, candidateCount: 4, providerTotal: 3943, status: "ok", incomplete: true, fetchedAt: new Date().toISOString() } });
+  });
+  await channel(page);
+  await tab(page, "検索");
+  await page.getByLabel("Yahooニュースの検索語").fill("テスト期間");
+  await page.getByRole("search", { name: "Yahooニュースを探す" }).getByRole("button", { name: "検索", exact: true }).click();
+  const rows = page.getByTestId("yahoo-row");
+  await expect(rows).toHaveCount(4);
+  expect(requests.at(-1)).toBe("2000");
+  await page.getByLabel("期間の開始日").fill("2026-10-29");
+  await page.getByLabel("期間の終了日").fill("2026-10-29");
+  await expect(rows).toHaveCount(1);
+  await expect(rows).toContainText("テスト期間 1");
+  expect(requests.at(-1)).toBe("5000");
+  await expect(page.getByText(/日付を確認できない1件/)).toBeVisible();
+  await page.getByRole("button", { name: "全期間に戻す" }).click();
+  await expect(rows).toHaveCount(4);
+  expect(requests.at(-1)).toBe("2000");
+});

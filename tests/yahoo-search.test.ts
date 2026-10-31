@@ -371,3 +371,20 @@ it("uses complementary Yahoo query partitions to recover candidates beyond the g
   expect(result.supplemented).toBe(200);
   expect(new Set(result.articles.map((a) => a.id)).size).toBe(1200);
 });
+
+it("accepts and shares up to 5000 candidates for a wider date search", async () => {
+  const make = (n: number) => item(n.toString(16).padStart(40, "0"));
+  const first = html(Array.from({ length: 50 }, (_, i) => make(i + 1)), q, 5000);
+  const result = await fetchYahooSearch(q, async (input) => {
+    const u = new URL(String(input));
+    if (!u.pathname.includes("search-feed")) return new Response(first, { headers: { "content-type": "text/html" } });
+    const start = Number(u.searchParams.get("start"));
+    return Response.json({ startIndex: start, totalResults: 5000, contents: Array.from({ length: 50 }, (_, i) => make(start + i)) });
+  }, 5000);
+  expect(result.articles).toHaveLength(5000);
+  const service = new YahooSearchService(new MemoryYahooSearchCache(), async () => result);
+  const response = await service.get(q, "title", 5000);
+  expect(response.candidateCount).toBe(5000);
+  expect(yahooSearchResponseSchema.safeParse(response).success).toBe(true);
+  expect((await handleYahooSearch(new Request(`https://app/api/yahoo-search?q=${encodeURIComponent(q)}&limit=5000`), service)).status).toBe(200);
+});

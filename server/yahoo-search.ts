@@ -368,10 +368,10 @@ export async function fetchYahooSearch(
   };
 }
 const entrySchema = z.object({
-  articles: z.array(yahooArticleSchema).max(2000),
+  articles: z.array(yahooArticleSchema).max(5000),
   providerTotal: z.number().int().min(0).max(10000000),
   incomplete: z.boolean().optional(),
-  supplemented: z.number().int().min(0).max(2000).optional(),
+  supplemented: z.number().int().min(0).max(5000).optional(),
   fetchedAt: z.number(),
   checkedAt: z.number(),
   failed: z.boolean(),
@@ -525,7 +525,7 @@ export async function handleYahooSearch(
   if (
     !validSearch(q) ||
     !["title", "summary"].includes(scope) ||
-    ![50, 100, 200, 500, 1000, 2000].includes(limit) ||
+    ![50, 100, 200, 500, 1000, 2000, 5000].includes(limit) ||
     [...p.keys()].some(
       (k) => !["q", "scope", "limit"].includes(k) || p.getAll(k).length !== 1,
     )
