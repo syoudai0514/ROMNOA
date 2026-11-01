@@ -66,6 +66,19 @@ async function setup(page: Page) {
       },
     }),
   );
+  await page.route("**/api/yahoo-comments?**", (r) =>
+    r.fulfill({
+      json: {
+        article: new URL(r.request().url()).searchParams.get("article"),
+        order: new URL(r.request().url()).searchParams.get("order"),
+        page: 1,
+        pages: 1,
+        total: 0,
+        totalWithReplies: 0,
+        comments: [],
+      },
+    }),
+  );
   await page.route("**/api/yahoo-search?**", (r) => {
     const params = new URL(r.request().url()).searchParams,
       q = params.get("q")!,
@@ -884,4 +897,83 @@ test("Yahoo search filters acquired candidates by an inclusive date range", asyn
   await page.getByRole("button", { name: "全期間に戻す" }).click();
   await expect(rows).toHaveCount(4);
   expect(requests.at(-1)).toBe("2000");
+});
+
+test("Yahoo comments load inside the reader with order switching and more pages", async ({
+  page,
+}) => {
+  await setup(page);
+  const requests: string[] = [];
+  await page.route("**/api/yahoo-comments?**", (r) => {
+    const p = new URL(r.request().url()).searchParams,
+      order = p.get("order")!,
+      n = Number(p.get("page"));
+    requests.push(`${order}:${n}`);
+    return r.fulfill({
+      json: {
+        article: p.get("article"),
+        order,
+        page: n,
+        pages: 2,
+        total: 12,
+        totalWithReplies: 15,
+        comments: [
+          ...(n === 1 && order === "recommended"
+            ? [
+                {
+                  id: "e1",
+                  kind: "expert",
+                  name: "専門家A",
+                  title: "大学教授",
+                  text: "専門家の解説",
+                  postedAt: "2時間前",
+                  empathy: 9,
+                  insight: 0,
+                  negative: 0,
+                  replies: 0,
+                },
+              ]
+            : []),
+          {
+            id: `${order}-${n}`,
+            kind: "user",
+            name: "us******",
+            text: `${order === "newer" ? "新着" : "おすすめ"}${n}ページ目のコメント`,
+            postedAt: "1時間前",
+            empathy: 120,
+            insight: 3,
+            negative: 1,
+            replies: 2,
+          },
+        ],
+      },
+    });
+  });
+  await channel(page);
+  await page
+    .getByRole("button", {
+      name: `ニュースを開く: ${articles[0].title}`,
+      exact: true,
+    })
+    .click();
+  const comments = page.getByRole("region", {
+    name: "Yahoo!ニュースのコメント",
+  });
+  await expect(comments.getByRole("heading")).toHaveText("コメント 15件");
+  await expect(comments).toContainText("専門家の解説");
+  await expect(comments).toContainText("おすすめ1ページ目のコメント");
+  await expect(comments).toContainText("返信 2件");
+  await comments.getByRole("button", { name: /さらにコメントを読む/ }).click();
+  await expect(comments).toContainText("おすすめ2ページ目のコメント");
+  await expect(comments).toContainText("おすすめ1ページ目のコメント");
+  await expect(
+    comments.getByRole("button", { name: /さらにコメントを読む/ }),
+  ).toHaveCount(0);
+  await comments.getByRole("button", { name: "新着順" }).click();
+  await expect(comments).toContainText("新着1ページ目のコメント");
+  await expect(comments).not.toContainText("おすすめ1ページ目のコメント");
+  await expect(
+    comments.getByRole("link", { name: /Yahoo!で開く/ }),
+  ).toHaveAttribute("href", `${articles[0].id}/comments`);
+  expect(requests).toEqual(["recommended:1", "recommended:2", "newer:1"]);
 });

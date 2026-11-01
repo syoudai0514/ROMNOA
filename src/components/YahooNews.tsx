@@ -32,6 +32,7 @@ import { normalizeSearch, validSearch } from "../lib/search-model";
 import { useYahooPhotos } from "../lib/use-yahoo-photos";
 import type { PhotoFeature } from "../lib/yahoo-photos-model";
 import { YahooPhotoFeature } from "./YahooPhotoFeature";
+import { YahooComments } from "./YahooComments";
 import { SocialPostCard } from "./SocialPost";
 import { socialPostUrl } from "../lib/social-model";
 import { linkedPhotoTarget } from "../lib/yahoo-photos-model";
@@ -1313,6 +1314,7 @@ function YahooReader({
                 ))}
               </section>
             )}
+            <YahooComments key={article.id} articleId={article.id} />
             <p className="yahoo-note">
               元記事では広告が表示される場合があります。Safariでは対応する記事でページメニューからリーダー表示を利用できます。
             </p>

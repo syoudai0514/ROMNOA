@@ -7,6 +7,7 @@ import { handleReader } from "./server/reader";
 import { handleDiscovery } from "./server/discovery";
 import { handleSearch } from "./server/search";
 import { handleYahooBody } from "./server/yahoo-body";
+import { handleYahooComments } from "./server/yahoo-comments";
 import { handleYahooTopics } from "./server/yahoo-topics";
 import { handleYahoo } from "./server/yahoo";
 import { handleYahooSearch } from "./server/yahoo-search";
@@ -25,6 +26,7 @@ const api = (): Plugin => ({
       ["/api/yahoo", handleYahoo],
       ["/api/yahoo-topics", handleYahooTopics],
       ["/api/yahoo-body", handleYahooBody],
+      ["/api/yahoo-comments", handleYahooComments],
       ["/api/yahoo-search", handleYahooSearch],
       ["/api/yahoo-photos", handleYahooPhotos],
       ["/api/yahoo-photo-image", handleYahooPhotoImage],

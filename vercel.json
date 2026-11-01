@@ -18,6 +18,7 @@
       "maxDuration": 40
     },
     "api/yahoo-body.ts": { "maxDuration": 25 },
+    "api/yahoo-comments.ts": { "maxDuration": 15 },
     "api/yahoo.ts": {
       "maxDuration": 30
     },
