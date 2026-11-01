@@ -11,6 +11,8 @@ import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
 import { siblingGallery } from "./sibling-gallery.js";
+import { sliderGallery } from "./slider-gallery.js";
+import { verticalGallery } from "./vertical-gallery.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
 import { getCache } from "@vercel/functions";
 import { Parser } from "htmlparser2";
@@ -456,6 +458,8 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
     ["entame", () => entameGallery(html, url)],
     ["mdpr", () => mdprGallery(html, url)],
     ["arena", () => bunshunGallery(html, url)],
+    ["vertical", () => verticalGallery(html, url, load)],
+    ["slider", () => sliderGallery(html, url)],
     ["sibling", () => siblingGallery(html, url)],
     ["generic", () => collectLinkedPhotos(html, url, load)],
   ] as const;
@@ -519,7 +523,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v25" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v26" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
