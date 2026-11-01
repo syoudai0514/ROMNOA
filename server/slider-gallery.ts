@@ -106,9 +106,10 @@ export function sliderGallery(html: string, pageUrl: string) {
         return true;
       },
     );
-    // A slide whose photo links to another document is a story card.
-    // (Caption credit links such as "Wikimedia Commons" are not.)
-    const linksOut = slides.some((s) =>
+    // A slide whose photo links to another document is a story card (some
+    // carousels append "next article" cards after the photos). Drop those
+    // slides; caption credit links such as "Wikimedia Commons" are kept.
+    const storyCard = (s: Element) =>
       DomUtils.findAll(
         (n) =>
           n.name === "a" &&
@@ -124,16 +125,15 @@ export function sliderGallery(html: string, pageUrl: string) {
           href.split("#")[0] !== pageUrl.split("#")[0] &&
           !/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href)
         );
-      }),
-    );
-    if (linksOut) continue;
+      });
+    const photoSlides = slides.filter((s) => !storyCard(s));
     const pictures: YahooPicture[] = [];
-    for (const s of slides) {
+    for (const s of photoSlides) {
       const photo = slidePhoto(s, pageUrl);
       if (photo && !pictures.some((p) => p.url === photo.url))
         pictures.push(photo);
     }
-    const thumbs = slides.map(
+    const thumbs = photoSlides.map(
       (s) => s.attribs["data-thumbnail"]?.replace(/^\/\//, "https://") || "",
     );
     if (pictures.length >= 2 && (!best || pictures.length > best.pictures.length))
