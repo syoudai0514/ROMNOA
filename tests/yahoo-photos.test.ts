@@ -349,3 +349,24 @@ it("accepts an article's own related gallery only with publisher and native-ID e
     parseYahooPhotoMetadata(html, article).features.map((f) => f.url),
   ).toEqual([own]);
 });
+
+describe("closed attachment pages", () => {
+  it("reads the article a WordPress attachment link names when the photo page is closed", async () => {
+    const { attachmentParent } = await import("../server/yahoo-photos");
+    const page = "https://mag.example.jp/archives/1730471/dma-s__58015778?postparent_id=1730471";
+    expect(attachmentParent(page)).toBe("https://mag.example.jp/archives/1730471");
+    expect(attachmentParent("https://mag.example.jp/archives/1730471/x?postparent_id=999")).toBeNull();
+    const article = `<html><body><article><div class="entry-content">${[1, 2, 3].map((n) => `<figure><img src="https://img.example.jp/p${n}.jpg"></figure>`).join("")}</div></article></body></html>`;
+    const load = async (u: RequestInfo | URL) =>
+      String(u) === page
+        ? new Response("closed", { status: 403, headers: { "content-type": "text/html" } })
+        : new Response(article, { headers: { "content-type": "text/html" } });
+    const text = await fetchPhotoHtml(page, load);
+    const resolved = await resolvePhotoPage(text, page);
+    expect(resolved.data.kind === "gallery" && resolved.data.pages[0]).toBe(page);
+    expect(resolved.data.kind === "gallery" && resolved.data.pages).toHaveLength(3);
+    await expect(
+      fetchPhotoHtml("https://mag.example.jp/archives/1/x", async () => new Response("closed", { status: 403 })),
+    ).rejects.toThrow("photo_source_unavailable");
+  });
+});

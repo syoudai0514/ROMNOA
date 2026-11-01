@@ -326,7 +326,7 @@ export function parseMantanPhotoPage(
 export async function fetchPhotoHtml(
   url: string,
   fetcher: typeof fetch = fetchPublicPhoto,
-) {
+): Promise<string> {
   if (yahooArticleUrl(url) !== url && linkedPhotoTarget(url)?.url !== url)
     throw Error("target_not_allowed");
   // Follow a few redirects within the same site (e.g. WordPress attachment
@@ -367,6 +367,13 @@ export async function fetchPhotoHtml(
     !/text\/html/i.test(res.headers.get("content-type") || "")
   ) {
     await res.body?.cancel();
+    // A WordPress attachment (photo) page may be closed while its article,
+    // named by the link itself, is public. Read the article instead.
+    const parent = attachmentParent(url);
+    if (parent && [403, 404, 410].includes(res.status)) {
+      const text: string = await fetchPhotoHtml(parent, fetcher);
+      return `${redirectMarker(parent)}${text.replace(/^<!--romnoa-final-url:[^>]*-->/, "")}`;
+    }
     throw Error("photo_source_unavailable");
   }
   if (Number(res.headers.get("content-length")) > MAX_BYTES) {
@@ -403,6 +410,19 @@ export async function fetchPhotoHtml(
     text = buffer.toString("utf8");
   }
   return finalUrl === url ? text : `${redirectMarker(finalUrl)}${text}`;
+}
+// /archives/123/photo-name?postparent_id=123 → /archives/123 (same origin).
+export function attachmentParent(raw: string) {
+  try {
+    const u = new URL(raw);
+    const id = u.searchParams.get("postparent_id")?.match(/^\d+/)?.[0];
+    const m = u.pathname.match(/^(\/[\w-]+\/(\d+))\/[^/]+\/?$/);
+    if (!id || !m || m[2] !== id) return null;
+    const parent = `${u.origin}${m[1]}`;
+    return linkedPhotoTarget(parent)?.url === parent ? parent : null;
+  } catch {
+    return null;
+  }
 }
 // Internal marker recording the same-origin URL a photo page redirected to.
 const redirectMarker = (url: string) =>
