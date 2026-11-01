@@ -68,14 +68,39 @@ export async function verticalGallery(
         new URL(u).pathname !== new URL(pageUrl).pathname,
     );
   if (!button) return single;
-  let photos: { url: string; alt: string; caption?: string }[] = [];
-  try {
-    photos = parseLinkedPhotos(await load(button), button).pictures;
-  } catch {
-    return single;
-  }
   const stem = photoStem(shown);
-  const at = stem ? photos.findIndex((p) => photoStem(p.url) === stem) : -1;
+  if (!stem) return single;
+  // The article body may continue on numbered pages of the same article
+  // (rel="next" → ?page=2). Follow only those, up to five pages.
+  let photos: { url: string; alt: string; caption?: string }[] = [];
+  let next: string | null = button;
+  for (let hop = 0; next && hop < 5; hop++) {
+    let articleHtml: string;
+    const current: string = next;
+    try {
+      articleHtml = await load(current);
+      for (const p of parseLinkedPhotos(articleHtml, current).pictures)
+        if (!photos.some((q) => photoStem(q.url) === photoStem(p.url)))
+          photos.push(p);
+    } catch {
+      break;
+    }
+    const at = photos.findIndex((p) => photoStem(p.url) === stem);
+    if (at >= 0 && photos.length - (at - (index - 1)) >= total) break;
+    const rel = DomUtils.findOne(
+      (n) => n.name === "link" && n.attribs.rel === "next",
+      parseDocument(articleHtml).children,
+    );
+    const candidate: string | null = rel ? publicPhotoUrl(rel.attribs.href || "", current) : null;
+    next =
+      candidate &&
+      new URL(candidate).origin === new URL(button).origin &&
+      new URL(candidate).pathname === new URL(button).pathname &&
+      linkedPhotoTarget(candidate)?.url === candidate
+        ? candidate
+        : null;
+  }
+  const at = photos.findIndex((p) => photoStem(p.url) === stem);
   if (at < 0) return single;
   const list = photos.slice(at - (index - 1), at - (index - 1) + total);
   if (at - (index - 1) < 0 || list.length < 2) return single;

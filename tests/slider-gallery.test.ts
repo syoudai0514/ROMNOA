@@ -64,4 +64,15 @@ describe("vertical gallery photo pages", () => {
     expect(g.pictures).toHaveLength(1);
     expect(g.truncated).toBe(true);
   });
+  it("follows the article's own next pages to reach later photos", async () => {
+    const page1 = `<html><head><link rel="next" href="/articles/-/5?page=2"></head><body><article><div class="article-body"><figure><img src="${cdn}/870m/photo_a1.jpg"></figure></div></article></body></html>`;
+    const page2 = `<html><body><article><div class="article-body"><figure><img src="${cdn}/870m/photo_a2.jpg"></figure><figure><img src="${cdn}/870m/photo_a3.jpg"></figure></div></article></body></html>`;
+    const pages: Record<string, string> = {
+      "https://limo.example.jp/articles/-/5?page=1": page1,
+      "https://limo.example.jp/articles/-/5?page=2": page2,
+    };
+    const g = (await verticalGallery(photoPage(1, 3, "photo_a1.jpg"), "https://limo.example.jp/articles/photo/5", async (u) => pages[u]))!;
+    expect(g.pictures.map((p) => p.url.split("/").pop())).toEqual(["photo_a1.jpg", "photo_a2.jpg", "photo_a3.jpg"]);
+    expect(g.truncated).toBe(false);
+  });
 });
