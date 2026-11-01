@@ -127,15 +127,17 @@ export function sliderGallery(html: string, pageUrl: string) {
         );
       });
     const photoSlides = slides.filter((s) => !storyCard(s));
-    const pictures: YahooPicture[] = [];
+    const pictures: YahooPicture[] = [],
+      thumbs: string[] = [];
     for (const s of photoSlides) {
       const photo = slidePhoto(s, pageUrl);
-      if (photo && !pictures.some((p) => p.url === photo.url))
+      if (photo && !pictures.some((p) => p.url === photo.url)) {
         pictures.push(photo);
+        thumbs.push(
+          s.attribs["data-thumbnail"]?.replace(/^\/\//, "https://") || "",
+        );
+      }
     }
-    const thumbs = photoSlides.map(
-      (s) => s.attribs["data-thumbnail"]?.replace(/^\/\//, "https://") || "",
-    );
     if (pictures.length >= 2 && (!best || pictures.length > best.pictures.length))
       best = { pictures, thumbs };
   }
