@@ -10,9 +10,22 @@ export function declaredGallery(html: string, pageUrl: string) {
   // CMS-delivered JSON roster; parse data only, never execute publisher JS.
   const roster = html.match(/window\.GALLERY\.photos\s*=\s*(\[[\s\S]*?\]);/);
   if (roster) {
-    const total = Number(html.match(/window\.GALLERY\.total\s*=\s*(\d+)/)?.[1]);
+    // Older pages declare GALLERY.total/page; newer ones put the same values
+    // on the lazy-load marker (data-max / data-page).
+    const more = DomUtils.findOne(
+      (n) => (n.attribs.class || "").split(/\s+/).includes("js-gallery-more"),
+      doc.children,
+    );
+    const total = Number(
+      html.match(/window\.GALLERY\.total\s*=\s*(\d+)/)?.[1] ||
+        more?.attribs["data-max"],
+    );
     const selected =
-      Number(html.match(/window\.GALLERY\.page\s*=\s*(\d+)/)?.[1]) - 1;
+      Number(
+        html.match(/window\.GALLERY\.page\s*=\s*(\d+)/)?.[1] ||
+          base.searchParams.get("image") ||
+          more?.attribs["data-page"],
+      ) - 1;
     const data = JSON.parse(roster[1]);
     if (
       !Array.isArray(data) ||

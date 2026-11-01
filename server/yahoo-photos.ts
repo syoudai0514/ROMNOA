@@ -327,14 +327,38 @@ export async function fetchPhotoHtml(
 ) {
   if (yahooArticleUrl(url) !== url && linkedPhotoTarget(url)?.url !== url)
     throw Error("target_not_allowed");
-  const res = await fetcher(url, {
-    redirect: "error",
-    signal: AbortSignal.timeout(8000),
-    headers: {
-      Accept: "text/html",
-      "User-Agent": "ROMNOA/0.1 (+https://github.com/syoudai0514/ROMNOA)",
-    },
-  });
+  // Follow a few redirects within the same site (e.g. WordPress attachment
+  // IDs to their permalink). Other origins are never followed.
+  let finalUrl = url,
+    res: Response | undefined;
+  for (let hop = 0; ; hop++) {
+    res = await fetcher(finalUrl, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(8000),
+      headers: {
+        Accept: "text/html",
+        "User-Agent": "ROMNOA/0.1 (+https://github.com/syoudai0514/ROMNOA)",
+      },
+    });
+    if (![301, 302, 303, 307, 308].includes(res.status)) break;
+    await res.body?.cancel();
+    let next: string | null = null;
+    try {
+      next = linkedPhotoTarget(
+        new URL(res.headers.get("location") || "", finalUrl).href,
+      )?.url ?? null;
+    } catch {
+      /* invalid location */
+    }
+    if (
+      hop >= 2 ||
+      yahooArticleUrl(url) ||
+      !next ||
+      new URL(next).origin !== new URL(url).origin
+    )
+      throw Error("photo_source_unavailable");
+    finalUrl = next;
+  }
   if (
     !res.ok ||
     !res.body ||
@@ -370,18 +394,52 @@ export async function fetchPhotoHtml(
       .toString("ascii")
       .match(/charset\s*=\s*["']?([\w-]+)/i)?.[1] ||
     "utf-8";
+  let text: string;
   try {
-    return new TextDecoder(declared).decode(buffer);
+    text = new TextDecoder(declared).decode(buffer);
   } catch {
-    return buffer.toString("utf8");
+    text = buffer.toString("utf8");
+  }
+  return finalUrl === url ? text : `${redirectMarker(finalUrl)}${text}`;
+}
+// Internal marker recording the same-origin URL a photo page redirected to.
+const redirectMarker = (url: string) =>
+  `<!--romnoa-final-url:${encodeURIComponent(url)}-->`;
+function redirectedUrl(html: string, url: string) {
+  const m = html.match(/^<!--romnoa-final-url:([^>\s]+)-->/);
+  if (!m) return url;
+  try {
+    const final = decodeURIComponent(m[1]);
+    return linkedPhotoTarget(final)?.url === final &&
+      new URL(final).origin === new URL(url).origin
+      ? final
+      : url;
+  } catch {
+    return url;
   }
 }
 // The production service and bulk audit use exactly the same resolver.
 export async function resolvePhotoPage(
   html: string,
-  url: string,
+  requested: string,
   load = fetchPhotoHtml,
 ) {
+  // Parse a redirected page at its final address, but keep the requested
+  // address as the gallery page the article links to.
+  const url = redirectedUrl(html, requested);
+  const result = await resolveAt(html, url, load);
+  if (url === requested || result.data.kind !== "gallery") return result;
+  const swap = (p: string) => (p === url ? requested : p);
+  return {
+    ...result,
+    data: galleryDataSchema.parse({
+      ...result.data,
+      pages: result.data.pages.map(swap),
+      thumbnails: result.data.thumbnails.map((t) => ({ ...t, pageUrl: swap(t.pageUrl) })),
+    }),
+  };
+}
+async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml) {
   const adapters = [
     [
       "mantan",

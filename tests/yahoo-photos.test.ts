@@ -8,6 +8,7 @@ import {
   parseYahooPhotoMetadata,
   parseMantanPhotoPage,
   fetchPhotoHtml,
+  resolvePhotoPage,
   YahooPhotoService,
   MemoryPhotoCache,
   handleYahooPhotos,
@@ -170,13 +171,33 @@ describe("private Yahoo article photos and linked MANTAN features", () => {
     );
     expect(thumb.url).toBe(parsed.thumbnails[10].url);
   });
+  it("follows only same-site redirects of publisher photo pages", async () => {
+    const page = "https://motor.example.jp/?attachment_id=5";
+    const final = "https://motor.example.jp/article/1/photo-5/";
+    const html = `<html><body><main><figure><img src="https://img.example.jp/photo-5.jpg"></figure></main></body></html>`;
+    const hop = (to: string) => async (u: RequestInfo | URL) =>
+      String(u) === page
+        ? new Response(null, { status: 301, headers: { location: to } })
+        : new Response(html, { headers: { "content-type": "text/html" } });
+    const text = await fetchPhotoHtml(page, hop(final));
+    const resolved = await resolvePhotoPage(text, page);
+    expect(resolved.data.kind === "gallery" && resolved.data.pages[0]).toBe(page);
+    await expect(
+      fetchPhotoHtml(page, hop("https://evil.example.com/x")),
+    ).rejects.toThrow("photo_source_unavailable");
+    await expect(
+      fetchPhotoHtml(article, async () =>
+        new Response(null, { status: 302, headers: { location: `${article}/images/000` } }),
+      ),
+    ).rejects.toThrow("photo_source_unavailable");
+  });
   it("fetches bounded fixed HTML targets without redirects and never acts as an image/URL proxy", async () => {
     const load = vi.fn(
       async () =>
         new Response(metadata(), { headers: { "content-type": "text/html" } }),
     );
     expect(await fetchPhotoHtml(article, load)).toContain("articleDetail");
-    expect(load.mock.calls[0]).toMatchObject([article, { redirect: "error" }]);
+    expect(load.mock.calls[0]).toMatchObject([article, { redirect: "manual" }]);
     for (const u of [
       "http://127.0.0.1/",
       "https://news.yahoo.co.jp/api/anything",
