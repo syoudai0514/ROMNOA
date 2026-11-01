@@ -267,7 +267,17 @@ export function siblingGallery(
   for (const child of "children" in container ? container.children : [])
     walk(child);
   const current = entries.find((e) => e.id === selfId);
-  if (!current || entries.length < 2 || entries.length > MAX_PAGES) {
+  // Very long rosters keep a window around the current photo and are
+  // reported as incomplete.
+  let truncated = false;
+  if (current && entries.length > MAX_PAGES) {
+    const at = entries.indexOf(current),
+      start = Math.max(0, Math.min(at - MAX_PAGES / 2, entries.length - MAX_PAGES));
+    entries.splice(0, start);
+    entries.splice(MAX_PAGES);
+    truncated = true;
+  }
+  if (!current || entries.length < 2) {
     trace("roster", { current: !!current, entries: entries.length, selfId });
     return null;
   }
@@ -306,6 +316,7 @@ export function siblingGallery(
   const alt = (picture.alt || current.alt).slice(0, 500);
   return {
     kind: "gallery" as const,
+    truncated,
     picture: { url: picture.url, alt, caption: alt },
     pages,
     thumbnails: entries.map((e, i) => ({ pageUrl: pages[i], url: e.thumb })),

@@ -401,8 +401,23 @@ export async function resolvePhotoPage(
     ["sibling", () => siblingGallery(html, url)],
     ["generic", () => collectLinkedPhotos(html, url, load)],
   ] as const;
+  // A publisher-specific adapter that recognises its markup but finds an
+  // unexpected roster no longer hides the page: later structural adapters
+  // still try, and only if none succeeds is the first error reported.
+  let failure: unknown = null;
   for (const [strategy, parse] of adapters) {
-    const data = await parse();
+    let data: Awaited<ReturnType<typeof parse>>;
+    try {
+      data = await parse();
+    } catch (e) {
+      if (
+        e instanceof Error &&
+        ["page_too_large", "target_not_allowed"].includes(e.message)
+      )
+        throw e;
+      failure ??= e;
+      continue;
+    }
     if (data?.kind === "social")
       return { strategy, data: socialDataSchema.parse(data) };
     if (data)
@@ -411,15 +426,16 @@ export async function resolvePhotoPage(
         data: galleryDataSchema.parse({
           ...data,
           complete:
-            strategy !== "generic" ||
-            (data.pages.length > 1 &&
-              !("truncated" in data && data.truncated) &&
-              (("linkedPages" in data && data.linkedPages.length > 0) ||
-                ("pictures" in data && data.pictures?.length === 0))),
+            !("truncated" in data && data.truncated) &&
+            (strategy !== "generic" ||
+              (!failure &&
+                data.pages.length > 1 &&
+                (("linkedPages" in data && data.linkedPages.length > 0) ||
+                  ("pictures" in data && data.pictures?.length === 0)))),
         }),
       };
   }
-  throw Error("gallery_structure_changed");
+  throw failure instanceof Error ? failure : Error("gallery_structure_changed");
 }
 const entrySchema = z.object({
   data: dataSchema.nullable(),
