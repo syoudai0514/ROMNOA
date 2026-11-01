@@ -574,7 +574,7 @@ export default function App() {
           </header>
           <main
             id="main"
-            className={tab === "home" ? "main-content is-home" : "main-content"}
+            className={tab === "home" ? "main-content is-home" : tab === "search" && yahooActive ? "main-content is-news-search" : "main-content"}
           >
             <div
               className={`page-heading ${tab === "home" ? "home-heading" : ""}`}

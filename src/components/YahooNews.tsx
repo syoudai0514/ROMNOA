@@ -363,21 +363,15 @@ export function YahooNews({
   if (!active) return null;
   return (
     <section className="yahoo-panel" aria-label="Yahooニュース">
-      <div className="yahoo-controls">
+      {mode !== "search" && <div className="yahoo-controls">
         <span>
-          {mode === "saved"
-            ? "保存したニュース"
-            : mode === "search"
-              ? "Yahooニュースを検索"
-              : "新着ニュース"}
+          {mode === "saved" ? "保存したニュース" : "新着ニュース"}
         </span>
         <div>
-          {mode !== "search" && (
-            <button className="text-button" onClick={onSearch}>
-              <Search size={16} />
-              ニュースを検索
-            </button>
-          )}
+          <button className="text-button" onClick={onSearch}>
+            <Search size={16} />
+            ニュースを検索
+          </button>
           <button
             className={`icon-button ${(searchActive ? remote.searching : loading) ? "refreshing" : ""}`}
             aria-label="Yahooニュースを更新"
@@ -389,7 +383,7 @@ export function YahooNews({
             <RefreshCw size={18} />
           </button>
         </div>
-      </div>
+      </div>}
       {mode === "search" && (
         <form
           className="yahoo-search"
@@ -404,6 +398,7 @@ export function YahooNews({
             remote.retry();
           }}
         >
+          <div className="yahoo-search-input-row">
           <div className="search-box">
             <Search size={18} />
             <input
@@ -421,7 +416,9 @@ export function YahooNews({
               検索
             </button>
           </div>
-          <fieldset>
+          <button type="button" className={`icon-button ${remote.searching ? "refreshing" : ""}`} aria-label="Yahooニュースを更新" disabled={remote.searching} onClick={() => searchActive ? remote.retry() : setRefresh((r) => r + 1)}><RefreshCw size={18} /></button>
+          </div>
+          <fieldset className="yahoo-search-scope">
             <legend>検索対象</legend>
             <label>
               <input
@@ -449,7 +446,7 @@ export function YahooNews({
             {periodActive && <button className="text-button" type="button" onClick={() => changePeriod("", "")}>全期間に戻す</button>}
           </fieldset>
           {invalidPeriod && <p role="alert" className="yahoo-note">開始日は終了日以前にしてください。</p>}
-          {periodActive && <p className="yahoo-note">取得済みの検索候補から期間で絞り込みます。{unknownDates > 0 && `日付を確認できない${unknownDates}件は除いています。`}</p>}
+          <div className="yahoo-search-options">
           <label>
             取得する候補数{" "}
             <select
@@ -474,9 +471,8 @@ export function YahooNews({
             />{" "}
             未読のみ
           </label>
-          <p className="yahoo-note">
-            Yahoo掲載記事を期間指定なしで検索します。取得した候補から絞り込みます。
-          </p>
+          </div>
+          <p className="yahoo-note">取得済みの検索候補から絞り込みます。{periodActive && unknownDates > 0 && `日付を確認できない${unknownDates}件は除いています。`}</p>
           {term && (
             <a
               className="text-button"
