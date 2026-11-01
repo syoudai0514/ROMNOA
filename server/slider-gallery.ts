@@ -14,8 +14,12 @@ import type { AnyNode, Element } from "domhandler";
 import { publicPhotoUrl } from "../src/lib/public-photo-url.js";
 import type { YahooPicture } from "../src/lib/yahoo-photos-model.js";
 
+// Ad / recommendation regions. Ad markers are matched per class token so a
+// page-level modifier such as "--ad-gate" does not hide the whole page.
+const adToken =
+  /^(?:ad|ads|adunit|advertisement|banner|sponsor|sponsored|pr|ad[-_].+|.+[-_]ads?)$/i;
 const excluded =
-  /(?:^|[-_\s])(?:ad|ads|adunit|advertisement|banner|sponsor|pr)(?:$|[-_\s])|related|recommend|ranking|popular|pickup|osusume|widget|latest|lastest|backnumber/i;
+  /related|recommend|ranking|popular|pickup|osusume|widget|latest|lastest|backnumber/i;
 const track =
   /(?:^|\s)(?:splide__list|swiper-wrapper|slick-track|glide__slides|n2-ss-slider-[0-9]+|n2-ss-slide-backgrounds|n2-ss-slider|keen-slider)(?:\s|$)/;
 const slide =
@@ -28,7 +32,10 @@ function blocked(node: AnyNode) {
     if (
       "attribs" in n &&
       (["aside", "footer", "nav", "header"].includes(n.name) ||
-        excluded.test(`${n.attribs.id || ""} ${n.attribs.class || ""}`))
+        excluded.test(`${n.attribs.id || ""} ${n.attribs.class || ""}`) ||
+        `${n.attribs.id || ""} ${n.attribs.class || ""}`
+          .split(/\s+/)
+          .some((t) => adToken.test(t)))
     )
       return true;
   return false;
@@ -76,7 +83,8 @@ function slidePhoto(node: Element, base: string): YahooPicture | null {
 
 export function sliderGallery(html: string, pageUrl: string) {
   if (Buffer.byteLength(html) > 2_000_000) throw Error("page_too_large");
-  if (!track.test(html)) return null;
+  if (!/splide__list|swiper-wrapper|slick-track|glide__slides|n2-ss-slide|keen-slider/.test(html))
+    return null;
   const doc = parseDocument(html, { decodeEntities: true });
   const base = new URL(pageUrl);
   let best: { pictures: YahooPicture[]; thumbs: string[] } | null = null;
