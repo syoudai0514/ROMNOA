@@ -1,3 +1,4 @@
+import { crankSocial } from "./crank-social.js";
 import { voisGallery } from "./vois-gallery.js";
 import { dailyGallery } from "./daily-gallery.js";
 import { nikkansportsGallery } from "./nikkansports-gallery.js";
@@ -23,9 +24,11 @@ import {
   photoThumbnailSchema,
   yahooPhotoMetadataSchema,
   yahooPhotoGallerySchema,
+  yahooSocialGallerySchema,
   embeddedPostSchema,
   type YahooPhotoMetadata,
   type YahooPhotoGallery,
+  type YahooSocialGallery,
   type YahooPicture,
   type PhotoFeature,
 } from "../src/lib/yahoo-photos-model.js";
@@ -62,9 +65,15 @@ const galleryDataSchema = z.object({
   thumbnails: z.array(photoThumbnailSchema).max(80).default([]),
   title: z.string().max(500),
 });
+const socialDataSchema = z.object({
+  kind: z.literal("social"),
+  posts: z.array(embeddedPostSchema).min(1).max(12),
+  title: z.string().max(500),
+});
 const dataSchema = z.discriminatedUnion("kind", [
   articleDataSchema,
   galleryDataSchema,
+  socialDataSchema,
 ]);
 type PhotoData = z.infer<typeof dataSchema>;
 
@@ -375,6 +384,7 @@ export async function resolvePhotoPage(
       "mantan",
       () => (photoFeatureTarget(url) ? parseMantanPhotoPage(html, url) : null),
     ],
+    ["crank-social", () => crankSocial(html, url)],
     ["vois", () => voisGallery(html, url)],
     ["declared", () => declaredGallery(html, url)],
     ["nikkansports", () => nikkansportsGallery(html, url)],
@@ -387,6 +397,8 @@ export async function resolvePhotoPage(
   ] as const;
   for (const [strategy, parse] of adapters) {
     const data = await parse();
+    if (data?.kind === "social")
+      return { strategy, data: socialDataSchema.parse(data) };
     if (data)
       return {
         strategy,
@@ -426,7 +438,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v22" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v23" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -544,7 +556,7 @@ export class YahooPhotoService {
     articleId: string,
     feature?: string,
     page?: string,
-  ): Promise<YahooPhotoMetadata | YahooPhotoGallery> {
+  ): Promise<YahooPhotoMetadata | YahooPhotoGallery | YahooSocialGallery> {
     if (yahooArticleUrl(articleId) !== articleId)
       throw new PhotoAccessError("invalid_article");
     if (
@@ -567,6 +579,10 @@ export class YahooPhotoService {
       throw new PhotoAccessError("feature_not_linked");
     const first = await this.entry(feature),
       gallery = first.data!;
+    if (gallery.kind === "social") {
+      if (page && page !== feature) throw new PhotoAccessError("page_not_linked");
+      return yahooSocialGallerySchema.parse({ ...gallery, articleId, featureUrl: feature, pageUrl: feature, fetchedAt: new Date(Math.min(meta.fetchedAt, first.fetchedAt)).toISOString(), status: meta.failed || first.failed ? "cached" : "ok" });
+    }
     if (gallery.kind !== "gallery") throw Error("wrong_cache_kind");
     const label =
       data.features.find((f) => f.url === feature)?.title.normalize("NFKC") ||

@@ -10,6 +10,7 @@ const page =
 describe("日刊スポーツ photo roster", () => {
   it("extracts all seven article photos in publisher order and the selected full image", async () => {
     const result = await resolvePhotoPage(html, page);
+    if (result.data.kind !== "gallery") throw Error("gallery expected");
     expect(result.strategy).toBe("nikkansports");
     expect(result.data.complete).toBe(true);
     expect(result.data.pages).toHaveLength(7);

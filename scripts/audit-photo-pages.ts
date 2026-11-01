@@ -83,52 +83,62 @@ await Promise.all(
           load,
         );
         row.strategy = strategy;
-        row.count = g.pages.length;
-        row.posts = g.posts?.length || 0;
-        row.expected = Math.max(
-          0,
-          ...target.labels.map((label) =>
-            Number(label.normalize("NFKC").match(/(?:全)?(\d+)枚/)?.[1] || 0),
-          ),
-        );
-        row.status =
-          row.expected > row.count
-            ? "incomplete"
-            : row.count === 1
-              ? "single_review"
-              : strategy === "generic"
-                ? "multiple_review"
-                : "roster_verified";
-        row.images = [];
-        for (const index of [...new Set([0, g.pages.length - 1])]) {
-          try {
-            const page = g.pages[index];
-            const pic = g.pictures?.length
-              ? g.pictures[index]
-              : page === target.url
-                ? g.picture
-                : (await resolvePhotoPage(await load(page), page, load)).data
-                    .picture;
-            const image = await fetchPhotoImage({
-              url: pic.url,
-              referer: page.split("#")[0],
-            });
-            const meta = await sharp(image.body).metadata();
-            row.images.push({
-              index,
-              url: pic.url,
-              width: meta.width,
-              height: meta.height,
-              type: image.type,
-            });
-          } catch (e) {
-            row.images.push({
-              index,
-              error: e instanceof Error ? e.message : String(e),
-            });
+        if (g.kind === "social") {
+          row.count = 0;
+          row.posts = g.posts.length;
+          row.status = "social_post";
+          row.images = [];
+        } else {
+          row.count = g.pages.length;
+          row.posts = g.posts?.length || 0;
+          row.expected = Math.max(
+            0,
+            ...target.labels.map((label) =>
+              Number(label.normalize("NFKC").match(/(?:全)?(\d+)枚/)?.[1] || 0),
+            ),
+          );
+          row.status =
+            row.expected > row.count
+              ? "incomplete"
+              : row.count === 1
+                ? "single_review"
+                : strategy === "generic"
+                  ? "multiple_review"
+                  : "roster_verified";
+          row.images = [];
+          for (const index of [...new Set([0, g.pages.length - 1])]) {
+            try {
+              const page = g.pages[index];
+              const pic = g.pictures?.length
+                ? g.pictures[index]
+                : page === target.url
+                  ? g.picture
+                  : await (async () => {
+                      const next = (await resolvePhotoPage(await load(page), page, load)).data;
+                      if (next.kind !== "gallery") throw Error("gallery_structure_changed");
+                      return next.picture;
+                    })();
+              const image = await fetchPhotoImage({
+                url: pic.url,
+                referer: page.split("#")[0],
+              });
+              const meta = await sharp(image.body).metadata();
+              row.images.push({
+                index,
+                url: pic.url,
+                width: meta.width,
+                height: meta.height,
+                type: image.type,
+              });
+            } catch (e) {
+              row.images.push({
+                index,
+                error: e instanceof Error ? e.message : String(e),
+              });
+            }
           }
+          if (row.images.some((x: any) => x.error)) row.status = "image_failed";
         }
-        if (row.images.some((x: any) => x.error)) row.status = "image_failed";
       } catch (e) {
         row.status = "failed";
         row.error = e instanceof Error ? e.message : String(e);

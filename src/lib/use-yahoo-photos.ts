@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import {
   yahooPhotoMetadataSchema,
   yahooPhotoGallerySchema,
+  yahooSocialGallerySchema,
+  type YahooSocialGallery,
   type YahooPhotoMetadata,
   type YahooPhotoGallery,
 } from "./yahoo-photos-model";
 
-type Resource = YahooPhotoMetadata | YahooPhotoGallery;
+type Resource = YahooPhotoMetadata | YahooPhotoGallery | YahooSocialGallery;
 const memory = new Map<string, Resource>();
 const prefetching = new Map<string, Promise<void>>();
 export function prefetchYahooPhoto(
@@ -88,11 +90,11 @@ export function useYahooPhotos(
           );
         }
         const data = (
-          feature ? yahooPhotoGallerySchema : yahooPhotoMetadataSchema
+          feature ? yahooPhotoGallerySchema.or(yahooSocialGallerySchema) : yahooPhotoMetadataSchema
         ).parse(await res.json());
         if (
           data.articleId !== articleId ||
-          (data.kind === "gallery" &&
+          (data.kind !== "article" &&
             (data.featureUrl !== feature || data.pageUrl !== (page || feature)))
         )
           throw Error("photo_mismatch");

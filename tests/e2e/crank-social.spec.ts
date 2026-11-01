@@ -1,0 +1,31 @@
+import { test, expect } from "@playwright/test";
+import { feed } from "../fixtures";
+const id = "https://news.yahoo.co.jp/articles/3328dac1c997f4d9eba093e73eab4d265c96cdfc";
+const feature = "https://www.crank-in.net/sns/news/192506/1";
+const post = "https://x.com/sayaka_okada219/status/2108704392061067649";
+test("a social-only news feature displays its actual X photo without a recommendation", async ({ page }) => {
+  const article = { id, url: id, title: "テスト記事", summary: "本文", image: null, category: "entertainment", publishedAt: null };
+  await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
+  await page.route("**/api/yahoo", (r) => r.fulfill({ json: { articles: [article], sources: [], generatedAt: new Date().toISOString() } }));
+  await page.route("**/api/yahoo-topics", (r) => r.fulfill({ json: { articles: [] } }));
+  await page.route("**/api/yahoo-body?**", (r) => r.fulfill({ status: 502, json: {} }));
+  let imageRequests = 0;
+  await page.route("**/api/yahoo-photo-image?**", (r) => { imageRequests++; return r.fulfill({ status: 500 }); });
+  await page.route("**/api/yahoo-photos?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    const common = { articleId: id, fetchedAt: new Date().toISOString(), status: "ok" };
+    return r.fulfill({ json: p.has("feature") ? { ...common, kind: "social", featureUrl: feature, pageUrl: feature, title: "投稿", posts: [{ provider: "X", url: post }] } : { ...common, kind: "article", pictures: [], features: [{ title: "【写真】投稿", url: feature }] } });
+  });
+  await page.route("**/api/social?**", (r) => r.fulfill({ json: { provider: "X", url: post, author: "テスト", handle: "sayaka_okada219", text: "おはようございます〜", media: [{ type: "photo", url: "https://pbs.twimg.com/media/test.jpg" }] } }));
+  await page.route("https://pbs.twimg.com/media/test.jpg", (r) => r.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" />' }));
+  await page.goto("/");
+  await page.getByRole("group", { name: "配信チャンネル" }).getByRole("button", { name: "ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "ニュースを開く: テスト記事" }).click();
+  const social = page.getByRole("region", { name: "リンク先の投稿" });
+  await expect(social.getByText("おはようございます〜")).toBeVisible();
+  const photo = social.getByRole("button", { name: "投稿の写真1を拡大" }).locator("img");
+  await expect(photo).toHaveJSProperty("naturalWidth", 600);
+  await expect(page.locator(".photo-feature-stage")).toHaveCount(0);
+  expect(imageRequests).toBe(0);
+});

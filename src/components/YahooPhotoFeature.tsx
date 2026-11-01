@@ -66,6 +66,14 @@ export function YahooPhotoFeature({
     if (next) choose(next);
   }
   const picture = gallery?.picture;
+  const social = request.resource?.kind === "social" ? request.resource : null;
+  if (social) return (
+    <section className="inline-photo-feature" aria-label="リンク先の投稿">
+      <header><h2>リンク先の投稿</h2></header>
+      <p className="photo-feature-title">{feature.title}</p>
+      {social.posts.map((post) => <SocialPostCard key={post.url} url={post.url} provider={post.provider} />)}
+    </section>
+  );
   return (
     <section
       className="inline-photo-feature"

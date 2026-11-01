@@ -9,6 +9,7 @@ const page = "https://www.daily.co.jp/gossip/2026/10/25/0020964686.shtml?ph=2";
 describe("Daily photo roster", () => {
   it("extracts all five publisher photo pages in order with the selected full-size photo", async () => {
     const result = await resolvePhotoPage(html, page);
+    if (result.data.kind !== "gallery") throw Error("gallery expected");
     expect(result.strategy).toBe("daily");
     expect(result.data.complete).toBe(true);
     expect(

@@ -142,3 +142,12 @@ export const yahooPhotoGallerySchema = z.object({
   title: z.string().max(500),
 });
 export type YahooPhotoGallery = z.infer<typeof yahooPhotoGallerySchema>;
+export const yahooSocialGallerySchema = z.object({
+  ...common,
+  kind: z.literal("social"),
+  featureUrl: photoFeatureSchema.shape.url,
+  pageUrl: photoFeatureSchema.shape.url,
+  posts: z.array(embeddedPostSchema).min(1).max(12),
+  title: z.string().max(500),
+});
+export type YahooSocialGallery = z.infer<typeof yahooSocialGallerySchema>;
