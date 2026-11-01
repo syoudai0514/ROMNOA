@@ -311,7 +311,12 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
             new URL(href).searchParams.get("article_id") ===
               new URL(pageUrl).pathname.match(/\/(\d+)\/?$/)?.[1]
           ) &&
-          !/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href)
+          !/\.(?:jpe?g|png|webp|avif)(?:[?#]|$)/i.test(href) &&
+          // WordPress wraps body photos in links to their own attachment page.
+          !(
+            new URL(href).origin === new URL(pageUrl).origin &&
+            /^\d+$/.test(new URL(href).searchParams.get("attachment_id") || "")
+          )
         )
           return;
       }

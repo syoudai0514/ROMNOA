@@ -356,7 +356,7 @@ describe("closed attachment pages", () => {
     const page = "https://mag.example.jp/archives/1730471/dma-s__58015778?postparent_id=1730471";
     expect(attachmentParent(page)).toBe("https://mag.example.jp/archives/1730471");
     expect(attachmentParent("https://mag.example.jp/archives/1730471/x?postparent_id=999")).toBeNull();
-    const article = `<html><body><article><div class="entry-content">${[1, 2, 3].map((n) => `<figure><img src="https://img.example.jp/p${n}.jpg"></figure>`).join("")}</div></article></body></html>`;
+    const article = `<html><body><article><div class="entry-content">${[1, 2, 3].map((n) => `<p><a href="https://mag.example.jp/?attachment_id=${n}&postparent_id=1730471"><img src="https://img.example.jp/p${n}.jpg"></a></p>`).join("")}<p><a href="https://mag.example.jp/archives/99"><img src="https://img.example.jp/other.jpg"></a></p></div></article></body></html>`;
     const load = async (u: RequestInfo | URL) =>
       String(u) === page
         ? new Response("closed", { status: 403, headers: { "content-type": "text/html" } })
