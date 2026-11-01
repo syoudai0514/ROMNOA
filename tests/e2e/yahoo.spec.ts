@@ -191,7 +191,7 @@ test("Yahoo search separates titles from feed leads, has no date restriction, an
   await expect(page.getByTestId("yahoo-row")).toHaveCount(0);
   await search.getByRole("radio", { name: "タイトル・検索の抜粋" }).check();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
-  await expect(search).toContainText("期間指定なし");
+  await expect(search).toContainText("未指定は全期間");
   await expect(
     search.getByRole("link", { name: /続きもYahoo/ }),
   ).toHaveAttribute(

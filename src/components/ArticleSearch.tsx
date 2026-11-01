@@ -10,6 +10,7 @@ export function ArticleSearch({
   onSubmit,
   onClear,
   onLocal,
+  extra,
 }: {
   query: string;
   active: string;
@@ -19,6 +20,8 @@ export function ArticleSearch({
   onSubmit: () => void;
   onClear: () => void;
   onLocal: () => void;
+  /** Rendered at the end of the scope row (e.g. the マイ検索 toggle). */
+  extra?: React.ReactNode;
 }) {
   return (
     <section className="article-search" aria-label="記事を探す">
@@ -75,6 +78,7 @@ export function ArticleSearch({
           />
           本文を含む
         </label>
+        {extra}
         <p>
           おすすめ・関連記事リンクは対象外。本文を含む検索は確認に時間がかかります。
         </p>
@@ -89,14 +93,16 @@ export function ArticleSearch({
           </>
         ) : (
           <>
-            <span>入力中はこの一覧のタイトルを絞り込みます</span>
             {validSearch(query) ? (
-              <button className="text-button" onClick={onSubmit}>
-                過去の記事も検索
-                <ArrowUpRight size={13} />
-              </button>
+              <>
+                <span>入力中はこの一覧のタイトルを絞り込みます</span>
+                <button className="text-button" onClick={onSubmit}>
+                  過去の記事も検索
+                  <ArrowUpRight size={13} />
+                </button>
+              </>
             ) : (
-              <span>「検索」で過去記事も探せます</span>
+              <span>入力中は一覧を絞り込み、「検索」で過去記事も探せます</span>
             )}
           </>
         )}

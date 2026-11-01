@@ -12,7 +12,6 @@ import {
   Grid2X2,
   Home,
   Leaf,
-  Moon,
   Plus,
   RefreshCw,
   Search,
@@ -137,6 +136,8 @@ export default function App() {
   const yahooActive =
     channel === "yahoo" && ["home", "search", "saved"].includes(tab);
   const searchActive = tab === "search" && !yahooActive && !!searchTerm;
+  const [yahooRefresh, setYahooRefresh] = useState(0);
+  const [yahooBusy, setYahooBusy] = useState(false);
   const pastSearch = useSearch(searchActive ? searchTerm : "", searchScope);
   const discoveryMode =
     tab === "home" && !yahooActive && !searchActive
@@ -170,6 +171,7 @@ export default function App() {
   const storageError = discoveryMode
     ? discovery.storageError
     : feedStorageError;
+  const headerBusy = yahooActive ? yahooBusy : loading;
   const refresh = searchActive
     ? pastSearch.refresh
     : discoveryMode
@@ -560,21 +562,20 @@ export default function App() {
             <div className="topbar-tools">
               {channelSwitch}
               <button
-                className="icon-button"
-                aria-label={
-                  dark ? "ライトモードに切り替え" : "ダークモードに切り替え"
-                }
+                className={`icon-button topbar-refresh ${headerBusy ? "refreshing" : ""}`}
+                aria-label={yahooActive ? "Yahooニュースを更新" : "記事を更新"}
+                disabled={headerBusy}
                 onClick={() =>
-                  update((p) => ({ ...p, theme: dark ? "light" : "dark" }))
+                  yahooActive ? setYahooRefresh((n) => n + 1) : void refresh()
                 }
               >
-                {dark ? <Sun size={19} /> : <Moon size={19} />}
+                <RefreshCw size={19} />
               </button>
             </div>
           </header>
           <main
             id="main"
-            className={tab === "home" ? "main-content is-home" : tab === "search" && yahooActive ? "main-content is-news-search" : "main-content"}
+            className={tab === "home" ? "main-content is-home" : "main-content"}
           >
             <div
               className={`page-heading ${tab === "home" ? "home-heading" : ""}`}
@@ -619,14 +620,6 @@ export default function App() {
                       人気
                     </button>
                   </div>
-                  <button
-                    className={`icon-button refresh-button ${loading ? "refreshing" : ""}`}
-                    onClick={() => void refresh()}
-                    disabled={loading}
-                    aria-label="記事を更新"
-                  >
-                    <RefreshCw size={18} />
-                  </button>
                 </div>
               )}
             </div>
@@ -699,6 +692,8 @@ export default function App() {
               ngWords={prefs.ngWords}
               category={yahooCategory}
               onCategory={setYahooCategory}
+              refreshSignal={yahooRefresh}
+              onBusyChange={setYahooBusy}
             />
             {showList && !yahooActive && (
               <div className="reading-layout">
@@ -757,14 +752,17 @@ export default function App() {
                           setQuery("");
                           setSearchTerm("");
                         }}
+                        extra={
+                          <button
+                            type="button"
+                            className="text-button my-search-toggle"
+                            aria-expanded={mySearchOpen}
+                            onClick={() => setMySearchOpen(!mySearchOpen)}
+                          >
+                            マイ検索
+                          </button>
+                        }
                       />
-                      <button
-                        className="text-button my-search-toggle"
-                        aria-expanded={mySearchOpen}
-                        onClick={() => setMySearchOpen(!mySearchOpen)}
-                      >
-                        マイ検索
-                      </button>
                       {mySearchOpen && (
                         <MySearch
                           onSearch={(term) => startSearch(term)}
@@ -809,7 +807,21 @@ export default function App() {
                   )}
                   {searchActive && (
                     <div className="search-results-note" role="status">
-                      <p>検索期間：全期間（日付の制限なし）</p>
+                      {pastSearch.searching && (
+                        <p>
+                          過去の記事も確認中です。見つかり次第、この一覧に追加します。
+                        </p>
+                      )}
+                      {!pastSearch.searching &&
+                        pastSearch.data &&
+                        !searchArticles.length &&
+                        !!pastSearch.data.nextSources.length && (
+                          <p>
+                            ここまで一致する記事はありません。「さらに過去の記事」で検索を続けられます。
+                          </p>
+                        )}
+                      <details>
+                        <summary>検索期間：全期間（日付の制限なし）</summary>
                       <p>
                         表示件数は見つかった記事の累計です。全期間の総ヒット数ではありません。
                       </p>
@@ -820,11 +832,6 @@ export default function App() {
                             pastSearch.data.searchedRange.from,
                           )} 〜 {searchDay(pastSearch.data.searchedRange.to)}
                           （配信元の検索結果 {pastSearch.page}ページ分）
-                        </p>
-                      )}
-                      {pastSearch.searching && (
-                        <p>
-                          過去の記事も確認中です。見つかり次第、この一覧に追加します。
                         </p>
                       )}
                       {!pastSearch.searching &&
@@ -860,14 +867,6 @@ export default function App() {
                           件は表示していません。時間をおいて更新すると再確認できます。
                         </p>
                       )}
-                      {!pastSearch.searching &&
-                        pastSearch.data &&
-                        !searchArticles.length &&
-                        !!pastSearch.data.nextSources.length && (
-                          <p>
-                            ここまで一致する記事はありません。「さらに過去の記事」で検索を続けられます。
-                          </p>
-                        )}
                       <p>
                         人気順は、ここまで取得した記事のはてなブックマーク数順です。端末の保存・履歴だけにある記事は人気データがないため末尾に表示します。
                       </p>
@@ -876,6 +875,7 @@ export default function App() {
                           人気データを取得できませんでした。新着順で表示しています。
                         </p>
                       )}
+                      </details>
                     </div>
                   )}
                   {discoveryMode && (

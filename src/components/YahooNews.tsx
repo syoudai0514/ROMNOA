@@ -8,7 +8,6 @@ import {
   Bookmark,
   Check,
   ExternalLink,
-  RefreshCw,
   Search,
   X,
 } from "lucide-react";
@@ -104,6 +103,8 @@ export function YahooNews({
   ngWords,
   category,
   onCategory,
+  refreshSignal = 0,
+  onBusyChange,
 }: {
   active: boolean;
   mode: "home" | "search" | "saved";
@@ -113,6 +114,9 @@ export function YahooNews({
   ngWords: string[];
   category: string;
   onCategory: (category: string) => void;
+  /** Incremented by the header refresh button. */
+  refreshSignal?: number;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [initial] = useState(readLibrary);
   const [library, setLibrary] = useState(initial.value);
@@ -158,6 +162,19 @@ export function YahooNews({
     setDateTo(to);
   }
   const remote = useYahooSearch(searchActive ? term : "", scope, resultLimit);
+  const busy = searchActive ? remote.searching : loading;
+  const retrySearch = remote.retry;
+  const lastRefreshSignal = useRef(refreshSignal);
+  useEffect(() => {
+    if (lastRefreshSignal.current === refreshSignal) return;
+    lastRefreshSignal.current = refreshSignal;
+    if (!active) return;
+    if (searchActive) retrySearch();
+    else setRefresh((r) => r + 1);
+  }, [refreshSignal, active, searchActive, retrySearch]);
+  useEffect(() => {
+    onBusyChange?.(active && busy);
+  }, [active, busy, onBusyChange]);
   const [selection, setSelection] = useState<{
     article: YahooArticle;
     sequence: YahooArticle[];
@@ -363,27 +380,15 @@ export function YahooNews({
   if (!active) return null;
   return (
     <section className="yahoo-panel" aria-label="Yahooニュース">
-      {mode !== "search" && <div className="yahoo-controls">
-        <span>
-          {mode === "saved" ? "保存したニュース" : "新着ニュース"}
-        </span>
-        <div>
+      {mode === "saved" && (
+        <div className="yahoo-controls">
+          <span>保存したニュース</span>
           <button className="text-button" onClick={onSearch}>
             <Search size={16} />
             ニュースを検索
           </button>
-          <button
-            className={`icon-button ${(searchActive ? remote.searching : loading) ? "refreshing" : ""}`}
-            aria-label="Yahooニュースを更新"
-            disabled={searchActive ? remote.searching : loading}
-            onClick={() =>
-              searchActive ? remote.retry() : setRefresh((r) => r + 1)
-            }
-          >
-            <RefreshCw size={18} />
-          </button>
         </div>
-      </div>}
+      )}
       {mode === "search" && (
         <form
           className="yahoo-search"
@@ -398,7 +403,6 @@ export function YahooNews({
             remote.retry();
           }}
         >
-          <div className="yahoo-search-input-row">
           <div className="search-box">
             <Search size={18} />
             <input
@@ -415,8 +419,6 @@ export function YahooNews({
             <button type="submit" className="button primary">
               検索
             </button>
-          </div>
-          <button type="button" className={`icon-button ${remote.searching ? "refreshing" : ""}`} aria-label="Yahooニュースを更新" disabled={remote.searching} onClick={() => searchActive ? remote.retry() : setRefresh((r) => r + 1)}><RefreshCw size={18} /></button>
           </div>
           <fieldset className="yahoo-search-scope">
             <legend>検索対象</legend>

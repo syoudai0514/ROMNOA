@@ -2615,20 +2615,42 @@ button {
 .yahoo-search .yahoo-period { gap: 4px 12px; margin: 12px 0; }
 .yahoo-period input[type="date"] { min-height: 42px; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: var(--surface); color: var(--ink); font: inherit; }
 
-/* Keep the news search controls visible without crowding the results. */
-.is-news-search .page-heading { margin-bottom: 6px; }
-.is-news-search .page-heading h1 { margin: 0; }
-.yahoo-search-input-row { display: flex; align-items: center; gap: 4px; }
-.yahoo-search-input-row .search-box { flex: 1; min-width: 0; }
-.yahoo-search-input-row > .icon-button { flex: 0 0 44px; min-width: 44px; min-height: 44px; }
-.yahoo-search .yahoo-search-scope { margin: 0; gap: 0 14px; }
-.yahoo-search-scope legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.yahoo-search .yahoo-period { margin: 0; gap: 0 10px; }
-.yahoo-search-options { display: flex; flex-wrap: wrap; align-items: center; column-gap: 16px; }
-.yahoo-search .yahoo-note { margin: 2px 0 6px; }
-.is-news-search .yahoo-result-heading { margin-top: 6px; }
-@media (max-width: 760px) { .main-content.is-news-search { padding-top: 10px; } .is-news-search .page-heading h1 { font-size: 20px; } }
-.yahoo-search .yahoo-period { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; }
+/* Search controls: compact and consistent between ニュース and まとめ. */
+.sr-only-legend, .search-target legend, .yahoo-search-scope legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.search-target { padding-top: 2px; column-gap: 14px; }
+.search-target .my-search-toggle { margin: 0 0 0 auto; min-height: 44px; }
+.search-target p { margin: -4px 0 2px; }
+.article-search { margin-bottom: 4px; }
+.search-scope { margin: 0 2px; }
+.search-scope .text-button { min-height: 32px; }
+.yahoo-search .yahoo-search-scope { margin: 2px 0 0; gap: 0 14px; }
+.yahoo-search .yahoo-period { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; margin: 0; }
+.yahoo-period legend { font-size: 11px; padding: 0; margin-bottom: 2px; }
 .yahoo-period label { min-width: 0; gap: 4px; white-space: nowrap; font-size: 11px; }
-.yahoo-period input[type="date"] { flex: 1 1 0; width: 100%; min-width: 0; font-size: 12px; }
+/* 16px keeps iOS Safari from zooming the page when the field is focused. */
+.yahoo-period input[type="date"] { flex: 1 1 0; width: 100%; min-width: 0; min-height: 40px; font-size: 16px; padding: 4px 6px; -webkit-appearance: none; appearance: none; }
 .yahoo-period > button { justify-self: start; }
+.yahoo-search-options { display: flex; flex-wrap: wrap; align-items: center; column-gap: 16px; font-size: 12px; }
+.yahoo-search-options select { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-height: 36px; padding: 2px 6px; }
+.yahoo-search > a.text-button { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; font-size: 12px; }
+.yahoo-search-options select { font-size: 16px; }
+.yahoo-search .yahoo-note { margin: 0 0 4px; }
+.search-results-note { padding: 8px 12px; margin: 4px 0 8px; }
+.search-results-note > p { margin: 0 0 4px; color: var(--ink); }
+.search-results-note summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; gap: 6px; }
+.search-results-note details[open] summary { margin-bottom: 4px; }
+/* The search fields that render their own clear button should not show the native one too. */
+.search-form input::-webkit-search-cancel-button,
+.feed-column > .search-box input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+@media (max-width: 760px) {
+  .main-content { padding-top: 12px; }
+  .page-heading { margin-bottom: 10px; }
+  .home-heading { min-height: 44px; }
+  .page-heading h1 { font-size: 21px; margin: 0; line-height: 1.4; }
+  .is-home .page-heading { margin-bottom: 6px; }
+  .category-chips { padding-top: 6px; padding-bottom: 6px; }
+  .yahoo-search { margin-bottom: 6px; }
+  .yahoo-controls { margin-bottom: 4px; }
+  .yahoo-result-heading { margin-top: 4px; }
+  .shelf-tabs { margin-bottom: 8px; }
+}

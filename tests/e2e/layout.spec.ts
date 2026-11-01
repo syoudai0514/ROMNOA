@@ -59,6 +59,10 @@ test("home immediately shows dense articles and new/popular controls; search has
   expect(measurements.popularHeight).toBeGreaterThanOrEqual(44);
   expect(measurements.overflow).toBe(false);
   await expect(nav(page).getByRole("button")).toHaveCount(5);
+  // Refresh sits in the header (top right); the theme lives in 設定.
+  const header = page.locator("header.topbar");
+  await expect(header.getByRole("button", { name: "記事を更新" })).toBeVisible();
+  await expect(header.getByRole("button", { name: /モードに切り替え/ })).toHaveCount(0);
   await nav(page).getByRole("button", { name: "検索", exact: true }).click();
   await expect(
     page.getByRole("searchbox", { name: "記事を検索" }),
