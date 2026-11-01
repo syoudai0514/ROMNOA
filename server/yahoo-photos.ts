@@ -10,6 +10,7 @@ import { entameGallery, entamePhotoKey } from "./entame-gallery.js";
 import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
+import { siblingGallery } from "./sibling-gallery.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
 import { getCache } from "@vercel/functions";
 import { Parser } from "htmlparser2";
@@ -397,6 +398,7 @@ export async function resolvePhotoPage(
     ["entame", () => entameGallery(html, url)],
     ["mdpr", () => mdprGallery(html, url)],
     ["arena", () => bunshunGallery(html, url)],
+    ["sibling", () => siblingGallery(html, url)],
     ["generic", () => collectLinkedPhotos(html, url, load)],
   ] as const;
   for (const [strategy, parse] of adapters) {
