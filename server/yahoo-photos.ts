@@ -1,3 +1,4 @@
+import { realSoundGallery, realSoundImageKey } from "./realsound-gallery.js";
 import { crankSocial } from "./crank-social.js";
 import { voisGallery } from "./vois-gallery.js";
 import { dailyGallery } from "./daily-gallery.js";
@@ -386,6 +387,7 @@ export async function resolvePhotoPage(
     ],
     ["crank-social", () => crankSocial(html, url)],
     ["vois", () => voisGallery(html, url)],
+    ["realsound", () => realSoundGallery(html, url)],
     ["declared", () => declaredGallery(html, url)],
     ["nikkansports", () => nikkansportsGallery(html, url)],
     ["daily", () => dailyGallery(html, url)],
@@ -438,7 +440,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v23" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v24" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
@@ -626,6 +628,12 @@ export class YahooPhotoService {
     if (/^(?:www\.)?voisjp\.me$/.test(new URL(feature).hostname)) {
       const thumb = gallery.thumbnails.find((t) => t.pageUrl === selected);
       if (!thumb || gallery.pages.join("\n") !== photo.pages.join("\n"))
+        throw Error("gallery_structure_changed");
+    }
+
+    if (new URL(feature).hostname === "realsound.jp" && /\/photo\//.test(new URL(feature).pathname)) {
+      const thumb = gallery.thumbnails.find((t) => t.pageUrl === selected);
+      if (!thumb || gallery.pages.join("\n") !== photo.pages.join("\n") || realSoundImageKey(thumb.url, feature) !== realSoundImageKey(photo.picture.url, feature))
         throw Error("gallery_structure_changed");
     }
 
