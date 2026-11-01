@@ -81,3 +81,25 @@ it("reads a declared JSON roster only when the rendered current photo agrees", (
     ),
   ).toThrow("gallery_structure_changed");
 });
+it("reads long NEWS DIG galleries from the rendered counter and keeps 80 around the shown photo", () => {
+  const page = (count: number, shownIndex: number) => {
+    const photos = Array.from({ length: count }, (_, i) => ({
+      src: `/mwimgs/-/img_${i}.jpg`,
+      caption: `写真${i + 1}`,
+      imgx1: `https://cdn.example.jp/680w/img_${i}.jpg`,
+      imgx2: `https://cdn.example.jp/1360w/img_${i}.jpg`,
+    }));
+    return `<title>写真</title><script>window.GALLERY.photos = ${JSON.stringify(photos)};</script>
+      <div class="js-gallery-body"><figure><div class="article-gallery__img-count">${shownIndex + 1} / ${count}</div>
+      <img class="js-gallery" data-gallery-src="https://cdn.example.jp/1360w/img_${shownIndex}.jpg"></figure></div>`;
+  };
+  const url = "https://newsdig.example.jp/articles/gallery/1?image=1";
+  const g60 = declaredGallery(page(60, 0), url)!;
+  expect(g60.pages).toHaveLength(60);
+  expect("truncated" in g60 && g60.truncated).toBeFalsy();
+  const g90 = declaredGallery(page(90, 85), url)!;
+  expect(g90.pages).toHaveLength(80);
+  expect(g90.picture.url).toBe("https://cdn.example.jp/1360w/img_85.jpg");
+  expect("truncated" in g90 && g90.truncated).toBe(true);
+  expect(g90.pages).toContain("https://newsdig.example.jp/articles/gallery/1?image=1#romnoa-photo-80");
+});

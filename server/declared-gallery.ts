@@ -16,9 +16,18 @@ export function declaredGallery(html: string, pageUrl: string) {
       (n) => (n.attribs.class || "").split(/\s+/).includes("js-gallery-more"),
       doc.children,
     );
+    // The rendered counter ("1 / 60") states the total when neither is set.
+    const counter = DomUtils.findOne(
+      (n) => /img-count/.test(n.attribs.class || ""),
+      doc.children,
+    );
     const total = Number(
       html.match(/window\.GALLERY\.total\s*=\s*(\d+)/)?.[1] ||
-        more?.attribs["data-max"],
+        more?.attribs["data-max"] ||
+        (counter &&
+          DomUtils.textContent(counter)
+            .normalize("NFKC")
+            .match(/\d+\s*\/\s*(\d+)/)?.[1]),
     );
     const selected =
       Number(
@@ -30,7 +39,7 @@ export function declaredGallery(html: string, pageUrl: string) {
     if (
       !Array.isArray(data) ||
       total < 1 ||
-      total > 40 ||
+      total > 300 ||
       data.length !== total ||
       !Number.isInteger(selected) ||
       selected < 0 ||
@@ -80,6 +89,15 @@ export function declaredGallery(html: string, pageUrl: string) {
       (html.match(/window\.GALLERY\.page\s*=/) && shown !== selected)
     )
       throw Error("gallery_structure_changed");
+    // Very long galleries keep 80 photos around the shown one and are
+    // reported as incomplete (the source page has the rest).
+    if (pictures.length > 80) {
+      const start = Math.max(0, Math.min(shown - 40, pictures.length - 80));
+      return {
+        ...result(pictures.slice(start, start + 80), shown - start),
+        truncated: true,
+      };
+    }
     return result(pictures, shown);
   }
   // A gallery may render the selected figure first and the remaining numbered

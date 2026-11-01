@@ -65,7 +65,7 @@ const galleryDataSchema = z.object({
   complete: z.boolean().optional(),
   posts: z.array(embeddedPostSchema).max(12).optional(),
   picture: yahooPictureSchema,
-  pictures: z.array(yahooPictureSchema).max(40).optional(),
+  pictures: z.array(yahooPictureSchema).max(80).optional(),
   pages: z.array(photoFeatureSchema.shape.url).min(1).max(80),
   thumbnails: z.array(photoThumbnailSchema).max(80).default([]),
   title: z.string().max(500),
@@ -523,7 +523,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v26" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v27" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

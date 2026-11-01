@@ -50,7 +50,7 @@ export function linkedPhotoTarget(raw: string, base?: string) {
   if (
     /(^|\.)mantan-web\.jp$/.test(u.hostname) ||
     u.hostname === "news.yahoo.co.jp" ||
-    (u.hash && !/^#romnoa-photo-(?:[2-9]|[1-3][0-9]|40)$/.test(u.hash))
+    (u.hash && !/^#romnoa-photo-(?:[2-9]|[1-7][0-9]|80)$/.test(u.hash))
   )
     return null;
   for (const key of [...u.searchParams.keys()])
