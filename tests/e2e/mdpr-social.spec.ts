@@ -1,0 +1,31 @@
+import { test, expect } from "@playwright/test";
+import { feed } from "../fixtures";
+const id = "https://news.yahoo.co.jp/articles/eda34b5f450869510cb1a7d96f75ca6117813a39";
+const feature = "https://mdpr.jp/photo/embed/4868239";
+const post = "https://www.instagram.com/p/DfE9frOE_Xq/";
+test("Modelpress Instagram feature displays all of the post's photos", async ({ page }) => {
+  const article = { id, url: id, title: "テスト記事", summary: "本文", image: null, category: "entertainment", publishedAt: null };
+  await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
+  await page.route("**/api/yahoo", (r) => r.fulfill({ json: { articles: [article], sources: [], generatedAt: new Date().toISOString() } }));
+  await page.route("**/api/yahoo-topics", (r) => r.fulfill({ json: { articles: [] } }));
+  await page.route("**/api/yahoo-body?**", (r) => r.fulfill({ status: 502, json: {} }));
+  await page.route("**/api/yahoo-photos?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    const common = { articleId: id, fetchedAt: new Date().toISOString(), status: "ok" };
+    return r.fulfill({ json: p.has("feature") ? { ...common, kind: "social", featureUrl: feature, pageUrl: feature, title: "投稿", posts: [{ provider: "Instagram", url: post }] } : { ...common, kind: "article", pictures: [], features: [{ title: "【写真】投稿", url: feature }] } });
+  });
+  await page.route("**/api/social?**", (r) => r.fulfill({ json: { provider: "Instagram", url: post, author: "テスト", handle: "test", text: "投稿の本文", media: Array.from({ length: 10 }, (_, i) => ({ type: "photo", url: `https://scontent.cdninstagram.com/photo${i}.jpg` })) } }));
+  await page.route("https://scontent.cdninstagram.com/**", (r) => r.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" />' }));
+  await page.goto("/");
+  await page.getByRole("group", { name: "配信チャンネル" }).getByRole("button", { name: "ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "ニュースを開く: テスト記事" }).click();
+  const social = page.getByRole("region", { name: "リンク先の投稿" });
+  await expect(social.getByText("投稿の本文")).toBeVisible();
+  await expect(social.getByRole("button", { name: /投稿の写真\d+を拡大/ })).toHaveCount(10);
+  await social.getByRole("button", { name: "投稿の写真1を拡大" }).click();
+  const viewer = page.getByRole("dialog", { name: "記事画像の拡大表示" });
+  await expect(viewer).toBeVisible();
+  await viewer.getByRole("button", { name: "次の画像" }).click();
+  await expect(viewer.getByRole("img", { name: "Instagramの投稿の写真2" })).toBeVisible();
+});
