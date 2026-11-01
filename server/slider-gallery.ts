@@ -98,9 +98,18 @@ export function sliderGallery(html: string, pageUrl: string) {
         return true;
       },
     );
-    // A slide that links to another document is a story card.
+    // A slide whose photo links to another document is a story card.
+    // (Caption credit links such as "Wikimedia Commons" are not.)
     const linksOut = slides.some((s) =>
-      DomUtils.findAll((n) => n.name === "a", s.children).some((a) => {
+      DomUtils.findAll(
+        (n) =>
+          n.name === "a" &&
+          !!DomUtils.findOne(
+            (m) => m.name === "img" || !!m.attribs["data-desktop"],
+            n.children,
+          ),
+        s.children,
+      ).some((a) => {
         const href = publicPhotoUrl(a.attribs.href || "", pageUrl);
         return (
           !!href &&

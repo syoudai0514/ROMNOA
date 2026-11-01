@@ -31,7 +31,8 @@ export async function verticalGallery(
   const shown =
     img &&
     publicPhotoUrl(
-      [...(img.attribs["data-srcset"] || "").matchAll(/(\S+)\s+\d+(?:\.\d+)?[wx]/g)].pop()?.[1] ||
+      [...(img.attribs["data-srcset"] || "").matchAll(/(\S+?)\s+(\d+(?:\.\d+)?)[wx](?:,|$)/g)]
+        .sort((a, b) => Number(b[2]) - Number(a[2]))[0]?.[1] ||
         img.attribs["data-src"] ||
         img.attribs.src ||
         "",
