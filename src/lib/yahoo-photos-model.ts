@@ -33,6 +33,13 @@ export function linkedPhotoTarget(raw: string, base?: string) {
   const url = publicPhotoUrl(raw, base);
   if (!url) return null;
   const u = new URL(url);
+  // Some publisher links start the query with "&" instead of "?"
+  // (/articles/gallery/123&ex_id=123&image=2). Read them as a query.
+  const glued = u.pathname.match(/^(.*\/[\w.-]*\d)&([\w.-]+=.*)$/);
+  if (glued && !u.search) {
+    u.pathname = glued[1];
+    u.search = `?${decodeURIComponent(glued[2])}`;
+  }
   // Yahoo embeds tracking in fragments on some publisher links.
   if (u.hash && /^#utm_[a-z_]+=[^#]*$/i.test(u.hash)) u.hash = "";
   // Publisher links often point to numbered sections within the same document.

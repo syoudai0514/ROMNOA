@@ -106,3 +106,14 @@ describe("gallery root followed by numbered photo pages", () => {
     expect(resolved.data.kind === "gallery" && resolved.data.complete).toBe(true);
   });
 });
+
+import { linkedPhotoTarget } from "../src/lib/yahoo-photos-model";
+describe("publisher link normalisation", () => {
+  it("reads a query glued to the path with & as a query", () => {
+    expect(
+      linkedPhotoTarget(
+        "https://newsdig.tbs.co.jp/articles/gallery/3042884&ex_position=photo&image=2&utm_source=y",
+      )?.url,
+    ).toBe("https://newsdig.tbs.co.jp/articles/gallery/3042884?ex_position=photo&image=2");
+  });
+});
