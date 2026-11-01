@@ -74,7 +74,8 @@ export async function verticalGallery(
   } catch {
     return single;
   }
-  const at = photos.findIndex((p) => photoStem(p.url) === photoStem(shown));
+  const stem = photoStem(shown);
+  const at = stem ? photos.findIndex((p) => photoStem(p.url) === stem) : -1;
   if (at < 0) return single;
   const list = photos.slice(at - (index - 1), at - (index - 1) + total);
   if (at - (index - 1) < 0 || list.length < 2) return single;
