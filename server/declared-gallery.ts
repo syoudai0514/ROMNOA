@@ -68,13 +68,19 @@ export function declaredGallery(html: string, pageUrl: string) {
         (n) => n.name === "img" && !!n.attribs["data-gallery-src"],
         body.children,
       );
+    // The rendered photo is the publisher's own statement of the position;
+    // newer pages render it without declaring the page number.
+    const shown = img
+      ? pictures.findIndex(
+          (p) => p.url === publicPhotoUrl(img.attribs["data-gallery-src"], pageUrl),
+        )
+      : -1;
     if (
-      !img ||
-      publicPhotoUrl(img.attribs["data-gallery-src"], pageUrl) !==
-        pictures[selected].url
+      shown < 0 ||
+      (html.match(/window\.GALLERY\.page\s*=/) && shown !== selected)
     )
       throw Error("gallery_structure_changed");
-    return result(pictures, selected);
+    return result(pictures, shown);
   }
   // A gallery may render the selected figure first and the remaining numbered
   // figures below it. Reconstruct the declared sequence, never DOM order.
