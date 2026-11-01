@@ -128,7 +128,13 @@ const inside = (node: AnyNode, ancestor: AnyNode): boolean => {
   return false;
 };
 
-export function siblingGallery(html: string, pageUrl: string) {
+// Optional trace of why a page was not recognised (used by audit scripts).
+export type SiblingTrace = (reason: string, detail?: unknown) => void;
+export function siblingGallery(
+  html: string,
+  pageUrl: string,
+  trace: SiblingTrace = () => undefined,
+) {
   if (Buffer.byteLength(html) > 2_000_000) throw Error("page_too_large");
   const base = new URL(pageUrl);
   const doc = parseDocument(html, { decodeEntities: true });
@@ -181,13 +187,27 @@ export function siblingGallery(html: string, pageUrl: string) {
       const size = new Set(g.items.map((e) => e.id)).size;
       if (!best || size > best.size) best = { key: g.key, size, box, list: g.items };
     }
+  trace(
+    "groups",
+    [...groups].flatMap(([box, byKey]) =>
+      byKey.map((g) => [
+        g.key,
+        "attribs" in box ? `${box.name}.${box.attribs.class || ""}#${box.attribs.id || ""}` : "doc",
+        g.items.length,
+        g.items.slice(0, 2).map((e) => e.thumb),
+      ]),
+    ),
+  );
   if (!best) return null;
   const list = best.list;
   const container = best.box;
   const containerLabel = [container, container.parent]
     .map((n) => (n && "attribs" in n ? `${n.attribs.id || ""} ${n.attribs.class || ""}` : ""))
     .join(" ");
-  if (!evidence.test(best.key) && !evidence.test(containerLabel)) return null;
+  if (!evidence.test(best.key) && !evidence.test(containerLabel)) {
+    trace("no_evidence", containerLabel);
+    return null;
+  }
   const selfId = currentId(base, best.key);
   if (!selfId) return null;
   // Roster in document order; the current page may be an unlinked thumbnail.
@@ -225,8 +245,10 @@ export function siblingGallery(html: string, pageUrl: string) {
   for (const child of "children" in container ? container.children : [])
     walk(child);
   const current = entries.find((e) => e.id === selfId);
-  if (!current || entries.length < 2 || entries.length > MAX_PAGES)
+  if (!current || entries.length < 2 || entries.length > MAX_PAGES) {
+    trace("roster", { current: !!current, entries: entries.length, selfId });
     return null;
+  }
   // The large photo: an image outside the roster (or og:image) whose file
   // matches the current thumbnail.
   const stem = photoStem(current.thumb);
@@ -252,7 +274,10 @@ export function siblingGallery(html: string, pageUrl: string) {
     const url = og && publicPhotoUrl(og.attribs.content || "", pageUrl);
     if (url && photoStem(url) === stem) picture = { url, alt: "", width: 0 };
   }
-  if (!picture) return null;
+  if (!picture) {
+    trace("no_picture", { stem, thumb: current.thumb });
+    return null;
+  }
   const titleNode = DomUtils.findOne((n) => n.name === "title", doc.children);
   const pages = entries.map((e) => (e.id === selfId ? pageUrl : e.url));
   if (new Set(pages).size !== pages.length) return null;
