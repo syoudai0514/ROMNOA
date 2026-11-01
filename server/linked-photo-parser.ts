@@ -61,24 +61,42 @@ function priority(node: Element) {
   if (node.name === "article") return 2;
   return node.name === "main" ? 1 : 0;
 }
+// Numbered photo pages of one gallery: /gallery/1/2, /gallery/1/3, or a
+// gallery root /gallery/E1 followed by /gallery/E1/002.jpg.html (CinemaToday).
+const numberedName = /^\d+(?:\.[a-z]{2,4}){0,2}$/i;
 function numberedPage(raw: string, base: string) {
   const url = publicPhotoUrl(raw, base);
   if (!url) return null;
   const a = new URL(base),
     b = new URL(url);
-  const pattern = /^(.*\/)\d+$/;
+  const split = (p: string) => p.match(/^(.*\/)([^/]+)$/);
+  const pa = split(a.pathname),
+    pb = split(b.pathname);
   if (
-    !pattern.test(a.pathname) ||
+    !pa ||
+    !pb ||
     a.origin !== b.origin ||
     a.search !== b.search ||
-    b.hash ||
-    a.pathname.replace(pattern, "$1") !== b.pathname.replace(pattern, "$1") ||
-    !pattern.test(b.pathname)
+    b.hash
+  )
+    return null;
+  // A numbered page links back to its gallery root.
+  if (numberedName.test(pa[2]) && /\d/.test(pb[2]) && b.pathname === pa[1].slice(0, -1))
+    return b.href;
+  if (
+    !numberedName.test(pb[2]) ||
+    !(
+      (numberedName.test(pa[2]) && pa[1] === pb[1]) ||
+      pb[1] === `${a.pathname}/`
+    )
   )
     return null;
   return b.href;
 }
-
+export function pageNumber(url: string) {
+  const name = new URL(url).pathname.split("/").pop() || "";
+  return numberedName.test(name) ? Number.parseInt(name, 10) : 1;
+}
 // Pick a single primary content region. Broad main/article ancestry is not
 // evidence that every descendant image belongs to the gallery.
 export function parseLinkedPhotos(html: string, pageUrl: string) {
@@ -613,9 +631,7 @@ export async function collectLinkedPhotos(
       ...new Set([...queue, ...loaded.flatMap((p) => p.data.linkedPages)]),
     ].filter((p) => !found.has(p));
   }
-  const pages = [...found.keys()].sort(
-    (a, b) => Number(a.split("/").pop()) - Number(b.split("/").pop()),
-  );
+  const pages = [...found.keys()].sort((a, b) => pageNumber(a) - pageNumber(b));
   const pictures = pages.map((p) => found.get(p)!.picture);
   return {
     ...first,

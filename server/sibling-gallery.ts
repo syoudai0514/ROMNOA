@@ -94,23 +94,39 @@ function meaningfulQuery(u: URL, skip?: string) {
 type Key = string;
 // Returns the roster key of `link` relative to `base`, or null when the link
 // is not a sibling photo page of the current page.
+// Media-type folders: a gallery may hold photos at /gallery/1/2 and videos at
+// /gallery/1/media/3 (Natalie and similar CMSs).
+const mediaFolder = /^(?:media|movie|movies|video|videos|photo|photos|image|images)$/i;
+function galleryDirs(prefix: string) {
+  const parts = prefix.split("/").filter(Boolean);
+  const dirs = [prefix];
+  if (parts.length > 1 && mediaFolder.test(parts[parts.length - 1]))
+    dirs.push(`/${parts.slice(0, -1).join("/")}/`);
+  return dirs;
+}
 function siblingKey(base: URL, link: URL): { key: Key; id: string } | null {
   if (link.origin !== base.origin || link.hash) return null;
   const a = lastSegment(base),
     b = lastSegment(link);
+  const ext = (id: string) => id.replace(/^.*?((?:\.[a-z]+)*)$/i, "$1");
   if (
     a &&
     b &&
-    a.prefix === b.prefix &&
     a.slash === b.slash &&
     /\d/.test(b.id) &&
     /^[\w.%-]{1,120}$/.test(b.id) &&
-    a.id.replace(/^.*?(\.[a-z]+)?$/i, "$1") ===
-      b.id.replace(/^.*?(\.[a-z]+)?$/i, "$1") &&
-    a.prefix.split("/").filter(Boolean).length >= 1 &&
+    ext(a.id) === ext(b.id) &&
     meaningfulQuery(base) === meaningfulQuery(link)
-  )
-    return { key: `path:${a.prefix}`, id: b.id };
+  ) {
+    const shared = galleryDirs(a.prefix).find((d) =>
+      galleryDirs(b.prefix).includes(d),
+    );
+    if (shared && shared.split("/").filter(Boolean).length >= 1)
+      return {
+        key: `path:${shared}`,
+        id: link.pathname.slice(shared.length).replace(/\/$/, ""),
+      };
+  }
   if (link.pathname !== base.pathname) return null;
   for (const [k, v] of link.searchParams) {
     if (tracking.test(k) || !/\d/.test(v) || v.length > 120) continue;
@@ -120,7 +136,12 @@ function siblingKey(base: URL, link: URL): { key: Key; id: string } | null {
   return null;
 }
 function currentId(base: URL, key: Key) {
-  if (key.startsWith("path:")) return lastSegment(base)?.id ?? null;
+  if (key.startsWith("path:")) {
+    const dir = key.slice(5);
+    return base.pathname.startsWith(dir)
+      ? base.pathname.slice(dir.length).replace(/\/$/, "")
+      : null;
+  }
   return base.searchParams.get(key.slice(6));
 }
 const inside = (node: AnyNode, ancestor: AnyNode): boolean => {
