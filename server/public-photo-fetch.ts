@@ -51,7 +51,8 @@ export const fetchPublicPhoto: typeof fetch = async (input, init) => {
   }
   return (await request(url, {
     ...init,
-    redirect: "error",
+    // Callers may inspect a redirect themselves; it is never followed here.
+    redirect: init?.redirect === "manual" ? "manual" : "error",
     dispatcher: proxyDispatcher || dispatcher,
   } as Parameters<typeof request>[1])) as unknown as Response;
 };
