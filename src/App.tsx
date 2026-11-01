@@ -117,6 +117,7 @@ export default function App() {
   const [searchScope, setSearchScope] = useState<SearchScope>("title");
   const [mySearchOpen, setMySearchOpen] = useState(false);
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
+  const [searchUnreadOnly, setSearchUnreadOnly] = useState(false);
   const [ngInput, setNgInput] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
   const [selection, setSelection] = useState<ReaderSelection | null>(null);
@@ -322,7 +323,10 @@ export default function App() {
           ? discovery.data?.bookmarks || undefined
           : undefined,
     });
-    const visible = filtered;
+    const visible =
+      tab === "search" && searchUnreadOnly
+        ? filtered.filter((a) => !prefs.read[a.id])
+        : filtered;
     if (tab === "saved" && savedView === "saved" && shelfOrder === "saved") {
       const positions = new Map(prefs.saved.map((a, i) => [a.id, i]));
       return visible.sort(
@@ -350,6 +354,7 @@ export default function App() {
     fullPopularity,
     discovery.data,
     pastSearch.data,
+    searchUnreadOnly,
   ]);
   const savedTopics = useSavedTopics(listedArticles, tab === "saved" && savedView === "saved");
   const articles = savedTopics.articles;
@@ -1000,6 +1005,16 @@ export default function App() {
                           <option value="saved">保存した順</option>
                           <option value="date">記事の日付順</option>
                         </select>
+                      </label>
+                    )}
+                    {tab === "search" && (
+                      <label className="unread-only">
+                        <input
+                          type="checkbox"
+                          checked={searchUnreadOnly}
+                          onChange={(e) => setSearchUnreadOnly(e.target.checked)}
+                        />
+                        未読のみ
                       </label>
                     )}
                     {tab !== "home" && tab !== "saved" && (

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { articleSchema } from "./model";
-import { yahooArticleSchema } from "./yahoo-model";
+import { yahooArticleSchema, yahooHistorySchema } from "./yahoo-model";
 import { STORAGE_KEY, loadPreferences } from "./storage";
 
 const YAHOO_KEY = "romnoa:yahoo-library:v1";
@@ -9,6 +9,8 @@ const yahooLibrarySchema = z.object({
   read: z
     .record(z.string().max(200), z.number().finite())
     .refine((r) => Object.keys(r).length <= 1000),
+  // Kept so importing favorites does not drop the news history.
+  history: yahooHistorySchema.optional(),
 });
 const transferSchema = z.object({
   format: z.literal("romnoa-bookmarks"),

@@ -81,4 +81,15 @@ describe("bookmark transfer", () => {
     ).toThrow(/上限/);
     expect(data).toEqual(before);
   });
+  it("keeps the news browsing history when importing favorites", () => {
+    data.set(STORAGE_KEY, JSON.stringify(defaults));
+    const history = [{ article: news("c"), at: 5 }];
+    data.set(key, JSON.stringify({ saved: [], read: {}, history }));
+    importBookmarks(
+      JSON.stringify({ format: "romnoa-bookmarks", version: 1, roundup: [], news: [news("d")] }),
+    );
+    const stored = JSON.parse(data.get(key)!);
+    expect(stored.history).toEqual(history);
+    expect(stored.saved).toHaveLength(1);
+  });
 });

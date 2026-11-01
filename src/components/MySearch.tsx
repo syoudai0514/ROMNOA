@@ -48,7 +48,7 @@ export function MySearch({
           <X size={19} />
         </button>
       </header>
-      <p>女優名や気になる言葉を登録して、過去の記事から探せます。</p>
+      <p>女優名や気になる言葉を登録して、過去の記事から探せます。登録語はニュースとまとめで共通です。</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -94,7 +94,7 @@ export function MySearch({
         ))}
       </div>
       <small>
-        登録語はこの端末に保存。開いた記事は通常の閲覧履歴に残ります。
+        登録語はこの端末に保存。開いた記事は閲覧履歴に残ります。
       </small>
       {warning && <p role="status">{warning}</p>}
     </section>

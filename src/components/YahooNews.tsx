@@ -1,5 +1,6 @@
 import { yahooSearchDay, inYahooSearchPeriod } from "../lib/yahoo-search-date";
 import { SavedTopicFilters } from "./SavedTopicFilters";
+import { MySearch } from "./MySearch";
 import { useSavedTopics } from "../lib/use-saved-topics";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -7,6 +8,7 @@ import {
   ArrowRight,
   Bookmark,
   Check,
+  Clock3,
   ExternalLink,
   Search,
   X,
@@ -19,6 +21,8 @@ import {
   yahooArticleSchema,
   yahooImageUrl,
   yahooResponseSchema,
+  yahooHistorySchema,
+  YAHOO_HISTORY_LIMIT,
   type YahooArticle,
   type YahooResponse,
 } from "../lib/yahoo-model";
@@ -40,6 +44,7 @@ const librarySchema = z.object({
   read: z
     .record(z.string().max(200), z.number().finite())
     .refine((r) => Object.keys(r).length <= 1000),
+  history: yahooHistorySchema.default([]),
 });
 type Library = z.infer<typeof librarySchema>;
 function readLibrary(): { value: Library; warning: string } {
@@ -48,12 +53,12 @@ function readLibrary(): { value: Library; warning: string } {
     return {
       value: raw
         ? librarySchema.parse(JSON.parse(raw))
-        : { saved: [], read: {} },
+        : { saved: [], read: {}, history: [] },
       warning: "",
     };
   } catch {
     return {
-      value: { saved: [], read: {} },
+      value: { saved: [], read: {}, history: [] },
       warning: "Yahooニュースの保存データを読み込めませんでした。",
     };
   }
@@ -133,6 +138,8 @@ export function YahooNews({
   const [topics, setTopics] = useState<YahooArticle[] | null>(null);
   const [topicsError, setTopicsError] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [mySearchOpen, setMySearchOpen] = useState(false);
+  const [searchSort, setSearchSort] = useState<"provider" | "newest" | "unread">("provider");
   useEffect(() => {
     if (category !== "all" && mode === "home") setHomeView("latest");
   }, [category, mode]);
@@ -144,10 +151,12 @@ export function YahooNews({
   const invalidPeriod = !!(dateFrom && dateTo && dateFrom > dateTo);
   const [searchPage, setSearchPage] = useState(1);
   const [savedOrder, setSavedOrder] = useState<"saved" | "date">("saved");
+  const [savedView, setSavedView] = useState<"saved" | "history">("saved");
+  const historyView = mode === "saved" && savedView === "history";
   const [scope, setScope] = useState<"title" | "summary">("title");
   useEffect(() => {
     setSearchPage(1);
-  }, [term, scope, resultLimit, category, unreadOnly, dateFrom, dateTo]);
+  }, [term, scope, resultLimit, category, unreadOnly, searchSort, dateFrom, dateTo]);
 
   const searchActive = active && mode === "search" && !!term;
   function changePeriod(from: string, to: string) {
@@ -202,7 +211,7 @@ export function YahooNews({
   useEffect(() => {
     // History deletion in Settings also applies to this separate RSS library.
     const clear = () => {
-      const next = { ...libraryRef.current, read: {} };
+      const next = { ...libraryRef.current, read: {}, history: [] };
       libraryRef.current = next;
       setLibrary(next);
       try {
@@ -298,7 +307,18 @@ export function YahooNews({
     })
       .sort((a, b) => b[1] - a[1])
       .slice(0, 1000);
-    update({ ...libraryRef.current, read: Object.fromEntries(entries) });
+    const history = [
+      { article, at: Date.now() },
+      ...libraryRef.current.history.filter((h) => h.article.id !== article.id),
+    ].slice(0, YAHOO_HISTORY_LIMIT);
+    update({ ...libraryRef.current, read: Object.fromEntries(entries), history });
+  }
+  function toggleRead(article: YahooArticle) {
+    const old = libraryRef.current;
+    if (!old.read[article.id]) return mark(article);
+    const read = { ...old.read };
+    delete read[article.id];
+    update({ ...old, read });
   }
   function save(article: YahooArticle) {
     const old = libraryRef.current;
@@ -321,7 +341,9 @@ export function YahooNews({
   const listedArticles = useMemo(
     () =>
       filterYahoo(
-        mode === "saved"
+        historyView
+          ? library.history.map((h) => h.article)
+          : mode === "saved"
           ? library.saved
           : searchActive
             ? remote.data?.articles || []
@@ -333,15 +355,26 @@ export function YahooNews({
         mode === "home" && homeView === "topics" ? "all" : category,
         searchActive ||
           (mode === "home" && homeView === "topics") ||
+          historyView ||
           (mode === "saved" && savedOrder === "saved"),
       )
         .filter(allowed)
-        .filter((a) => !searchActive || !unreadOnly || !library.read[a.id]),
+        .filter((a) => !searchActive || !unreadOnly || !library.read[a.id])
+        .sort((a, b) => {
+          if (!searchActive || searchSort === "provider") return 0;
+          if (searchSort === "unread") {
+            return Number(!!library.read[a.id]) - Number(!!library.read[b.id]);
+          }
+          return (Date.parse(b.publishedAt || "") || 0) - (Date.parse(a.publishedAt || "") || 0);
+        }),
     [
       data,
       library.saved,
+      library.history,
+      historyView,
       library.read,
       unreadOnly,
+      searchSort,
       topics,
       homeView,
       savedOrder,
@@ -360,7 +393,7 @@ export function YahooNews({
   const datedArticles = searchActive && periodActive
     ? listedArticles.filter((article) => !invalidPeriod && inYahooSearchPeriod(yahooSearchDay(article), dateFrom, dateTo))
     : listedArticles;
-  const savedTopics = useSavedTopics(datedArticles, mode === "saved");
+  const savedTopics = useSavedTopics(datedArticles, mode === "saved" && !historyView);
   const articles = savedTopics.articles;
   const pageCount = Math.max(1, Math.ceil(articles.length / 100));
   const currentPage = Math.min(searchPage, pageCount);
@@ -381,11 +414,22 @@ export function YahooNews({
   return (
     <section className="yahoo-panel" aria-label="Yahooニュース">
       {mode === "saved" && (
-        <div className="yahoo-controls">
-          <span>保存したニュース</span>
-          <button className="text-button" onClick={onSearch}>
-            <Search size={16} />
-            ニュースを検索
+        <div className="segmented shelf-tabs">
+          <button
+            className={savedView === "saved" ? "selected" : ""}
+            aria-pressed={savedView === "saved"}
+            onClick={() => setSavedView("saved")}
+          >
+            <Bookmark size={16} />
+            保存したニュース<span>{library.saved.length}</span>
+          </button>
+          <button
+            className={savedView === "history" ? "selected" : ""}
+            aria-pressed={savedView === "history"}
+            onClick={() => setSavedView("history")}
+          >
+            <Clock3 size={16} />
+            閲覧履歴
           </button>
         </div>
       )}
@@ -440,6 +484,14 @@ export function YahooNews({
               />
               タイトル・検索の抜粋
             </label>
+            <button
+              type="button"
+              className="text-button my-search-toggle"
+              aria-expanded={mySearchOpen}
+              onClick={() => setMySearchOpen(!mySearchOpen)}
+            >
+              マイ検索
+            </button>
           </fieldset>
           <fieldset className="yahoo-period">
             <legend>期間（未指定は全期間）</legend>
@@ -488,6 +540,19 @@ export function YahooNews({
           )}
         </form>
       )}
+      {mode === "search" && mySearchOpen && (
+        <MySearch
+          onSearch={(word) => {
+            const q = normalizeSearch(word);
+            if (!validSearch(q)) return;
+            setQuery(q);
+            setTerm(q);
+            onCategory("all");
+            remote.retry();
+          }}
+          onClose={() => setMySearchOpen(false)}
+        />
+      )}
       {mode === "home" && (
         <div
           className="category-chips"
@@ -515,7 +580,7 @@ export function YahooNews({
           トピックスを取得できませんでした。更新をお試しください。
         </p>
       )}
-      {mode === "saved" && (
+      {mode === "saved" && !historyView && (
         <label>
           並び順{" "}
           <select
@@ -528,7 +593,7 @@ export function YahooNews({
           </select>
         </label>
       )}
-      {mode === "saved" && <SavedTopicFilters topics={savedTopics.topics} selected={savedTopics.selected} onSelect={savedTopics.select} query={savedTopics.query} onQuery={savedTopics.setQuery} />}
+      {mode === "saved" && !historyView && <SavedTopicFilters topics={savedTopics.topics} selected={savedTopics.selected} onSelect={savedTopics.select} query={savedTopics.query} onQuery={savedTopics.setQuery} />}
       {(mode !== "home" || homeView !== "topics") && (
         <div
           className="category-chips yahoo-categories"
@@ -624,7 +689,9 @@ export function YahooNews({
         <strong>
           {term && mode === "search"
             ? `「${term}」の検索結果`
-            : mode === "saved"
+            : historyView
+              ? "最近読んだニュース"
+              : mode === "saved"
               ? "保存したニュース"
               : mode === "home" && homeView === "topics"
                 ? "トピックス"
@@ -633,6 +700,20 @@ export function YahooNews({
         </strong>
         {(searchActive ? remote.searching : loading) && (
           <span>{searchActive ? "Yahooを検索中…" : "更新中…"}</span>
+        )}
+        {searchActive && (
+          <label className="sort-control">
+            並び順{" "}
+            <select
+              aria-label="ニュース検索結果の並び順"
+              value={searchSort}
+              onChange={(e) => setSearchSort(e.target.value as "provider" | "newest" | "unread")}
+            >
+              <option value="provider">検索順</option>
+              <option value="newest">新着順</option>
+              <option value="unread">未読優先</option>
+            </select>
+          </label>
         )}
       </div>
       <div className="article-list yahoo-list">
@@ -733,6 +814,8 @@ export function YahooNews({
           bottomNav={bottomNav}
           channelSwitch={channelSwitch}
           saved={saved.has(selection.article.id)}
+          read={!!library.read[selection.article.id]}
+          onRead={() => toggleRead(selection.article)}
           related={[
             ...new Map(
               [
@@ -796,6 +879,8 @@ function YahooReader({
   bottomNav,
   channelSwitch,
   saved,
+  read,
+  onRead,
   related,
   index,
   total,
@@ -809,6 +894,8 @@ function YahooReader({
   bottomNav?: React.ReactNode;
   channelSwitch?: React.ReactNode;
   saved: boolean;
+  read: boolean;
+  onRead: () => void;
   related: YahooArticle[];
   index: number;
   total: number;
@@ -1127,6 +1214,14 @@ function YahooReader({
               >
                 <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
                 {saved ? "保存済み" : "あとで読む"}
+              </button>
+              <button
+                className="button quiet"
+                aria-pressed={read}
+                onClick={onRead}
+              >
+                <Check size={16} />
+                {read ? "未読に戻す" : "既読にする"}
               </button>
             </div>
             <div ref={photos} className="yahoo-photo-section">

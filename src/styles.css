@@ -2654,3 +2654,10 @@ button {
   .yahoo-result-heading { margin-top: 4px; }
   .shelf-tabs { margin-bottom: 8px; }
 }
+/* Shared controls added to both channels. */
+.yahoo-search-scope .my-search-toggle { margin-left: auto; min-height: 44px; }
+.unread-only { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; font-size: 12px; color: var(--muted); white-space: nowrap; margin-left: auto; }
+.unread-only input { accent-color: var(--accent); width: 16px; height: 16px; }
+.yahoo-result-heading .sort-control { margin-left: auto; font-size: 12px; color: var(--muted); }
+.yahoo-result-heading .sort-control select { font-size: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-height: 36px; padding: 2px 6px; }
+.yahoo-panel .shelf-tabs { margin-bottom: 8px; }

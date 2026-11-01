@@ -98,6 +98,12 @@ export const yahooSearchResponseSchema = z.object({
   fetchedAt: z.iso.datetime(),
 });
 export type YahooSearchResponse = z.infer<typeof yahooSearchResponseSchema>;
+/** Recently opened news, newest first. Older stored libraries have no history. */
+export const yahooHistorySchema = z
+  .array(z.object({ article: yahooArticleSchema, at: z.number().finite() }))
+  .max(200);
+export const YAHOO_HISTORY_LIMIT = 200;
+
 export function filterYahoo(
   articles: YahooArticle[],
   query: string,
