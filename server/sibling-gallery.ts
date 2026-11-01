@@ -118,9 +118,10 @@ function siblingKey(base: URL, link: URL): { key: Key; id: string } | null {
     ext(a.id) === ext(b.id) &&
     meaningfulQuery(base) === meaningfulQuery(link)
   ) {
-    const shared = galleryDirs(a.prefix).find((d) =>
-      galleryDirs(b.prefix).includes(d),
-    );
+    // The shortest shared folder keys every link of one gallery identically.
+    const shared = galleryDirs(a.prefix)
+      .filter((d) => galleryDirs(b.prefix).includes(d))
+      .sort((x, y) => x.length - y.length)[0];
     if (shared && shared.split("/").filter(Boolean).length >= 1)
       return {
         key: `path:${shared}`,

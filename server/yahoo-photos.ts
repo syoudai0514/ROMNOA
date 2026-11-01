@@ -413,6 +413,7 @@ export async function resolvePhotoPage(
           complete:
             strategy !== "generic" ||
             (data.pages.length > 1 &&
+              !("truncated" in data && data.truncated) &&
               (("linkedPages" in data && data.linkedPages.length > 0) ||
                 ("pictures" in data && data.pictures?.length === 0))),
         }),

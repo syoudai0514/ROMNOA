@@ -612,10 +612,15 @@ export async function collectLinkedPhotos(
   const found = new Map([[pageUrl, first]]);
   let queue = first.linkedPages.filter((p) => p !== pageUrl);
   const started = Date.now();
+  let truncated = false;
   while (queue.length) {
-    if (found.size + queue.length > 40 || Date.now() - started > 16000)
-      throw Error("gallery_too_large");
-    const batch = queue.splice(0, 3);
+    // Long galleries keep the photos fetched so far and are reported as
+    // incomplete, with the source page as the way to the rest.
+    if (found.size >= 40 || Date.now() - started > 16000) {
+      truncated = true;
+      break;
+    }
+    const batch = queue.splice(0, Math.min(3, 40 - found.size));
     const loaded = await Promise.all(
       batch.map(async (url) => ({
         url,
@@ -637,6 +642,7 @@ export async function collectLinkedPhotos(
     ...first,
     pages,
     pictures,
+    truncated,
     thumbnails: pages.map((pageUrl, i) => ({ pageUrl, url: pictures[i].url })),
   };
 }
