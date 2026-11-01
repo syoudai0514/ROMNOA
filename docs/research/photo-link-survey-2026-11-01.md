@@ -35,7 +35,10 @@ Vercel Sandbox（東京 hnd1）で `scripts/survey-yahoo-links.ts` を実行。Y
 - 配信元が403を返す: WWD JAPAN、webike、CanCam（ブラウザを装う回避はしない）
 - リンク切れ: Forbes JAPAN（404へ転送）、eiga.com（404）
 - 外部オリジンへの転送: abema.go.link
-- NEWS DIG の一部（宣言枚数と写真JSONの不一致）
 - 記事2ページ目等へのリンクで実際に写真が1枚のもの（ENCOUNT、東スポ、full-count など）は正しい結果
 
 調査・確認用ツール: `scripts/survey-yahoo-links.ts`（全件）、`scripts/check-photo-pages.ts`（URL指定・各写真ページの照合）、`scripts/trace-sibling.ts`（兄弟ページ判定の理由）。
+
+## TBS NEWS DIG 追加修正
+
+残っていた失敗は、写真が45〜87枚あり40枚の上限を超えていたことが原因だった（宣言枚数と写真データ自体は一致）。上限を80枚に上げ、総数の宣言が `data-max` にない場合は表示中の「1 / 60」から読む。80枚を超える場合は表示中の写真の前後80枚を表示し「取得済み」とする。現行RSS記事のNEWS DIG写真リンク18件すべてで取得を確認（3〜60枚、87枚のギャラリーは80枚＋取得済み表示）。
