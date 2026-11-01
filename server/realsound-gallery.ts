@@ -35,7 +35,7 @@ export function realSoundGallery(html: string, pageUrl: string) {
   const countNode = DomUtils.findOne((n) => hasClass(n.attribs.class || "", "attachment-caption-number"), main.children);
   const count = countNode && DomUtils.textContent(countNode).normalize("NFKC").match(/画像\s*(\d+)\s*\/\s*(\d+)/);
   const index = entries.findIndex((entry) => entry.pageUrl === pageUrl);
-  if (!count || entries.length < 2 || entries.length > 80 || entries.length !== Number(count[2]) || index !== Number(count[1]) - 1 || new Set(entries.map((entry) => entry.pageUrl)).size !== entries.length || new Set(entries.map((entry) => realSoundImageKey(entry.url, pageUrl))).size !== entries.length) throw Error("gallery_structure_changed");
+  if (!count || entries.length < 1 || entries.length > 80 || entries.length !== Number(count[2]) || index !== Number(count[1]) - 1 || new Set(entries.map((entry) => entry.pageUrl)).size !== entries.length || new Set(entries.map((entry) => realSoundImageKey(entry.url, pageUrl))).size !== entries.length) throw Error("gallery_structure_changed");
   const captionNode = DomUtils.findOne((n) => hasClass(n.attribs.class || "", "attachment-caption"), main.children);
   const caption = captionNode ? DomUtils.textContent(captionNode).replace(/\s+/g, " ").trim().slice(0, 500) : "";
   const alt = (fullNode?.attribs.alt || "").trim().slice(0, 500);
