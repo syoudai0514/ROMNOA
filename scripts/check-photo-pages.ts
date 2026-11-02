@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { fetchPhotoHtml, resolvePhotoPage } from "../server/yahoo-photos.js";
 import { linkedPhotoTarget } from "../src/lib/yahoo-photos-model.js";
-import { photoStem } from "../server/sibling-gallery.js";
+import { photoIdentity as photoStem } from "../server/photo-source.js";
 
 const args = process.argv.slice(2);
 const urls = (args[0] === "-" ? readFileSync(0, "utf8").split(/\s+/) : args).filter(Boolean);
