@@ -77,3 +77,14 @@ describe("re-review regressions (ismcdn renditions, spacer GIFs, page-level clas
     expect(sliderGallery(`<body><main>${strip.replace("brand-strip", "article-gallery")}</main></body>`, "https://publisher.example.jp/articles/-/9")?.pictures).toHaveLength(3);
   });
 });
+
+describe("thumbnail strips", () => {
+  it("never treats a carousel of navigation thumbnails as the gallery", () => {
+    const strip = `<div id="photo-thumbnail"><ul class="swiper-wrapper">${[1, 2, 3].map(n => `<li class="swiper-slide"><img src="https://cdn.example.jp/mwimgs/a/b/64h/img_${n}.jpg"></li>`).join("")}</ul></div>`;
+    expect(sliderGallery(`<main><div class="photo-gallery">${strip}</div></main>`, "https://publisher.example.jp/articles/photo/1?pn=2")).toBeNull();
+  });
+  it("uses the photo itself when a slide has no separate thumbnail", () => {
+    const g = sliderGallery(`<div class="article-gallery"><div class="swiper-wrapper">${[1, 2].map(n => `<div class="swiper-slide"><img src="${image(n)}"></div>`).join("")}</div></div>`, base)!;
+    expect(g.thumbnails.map(t => t.url)).toEqual([image(1), image(2)]);
+  });
+});

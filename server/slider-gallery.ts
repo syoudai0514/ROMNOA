@@ -43,6 +43,15 @@ function blocked(node: AnyNode) {
   return false;
 }
 const source = photoSource;
+// A strip of small thumbnails that navigates a gallery is not the gallery:
+// its images are 64px previews (ARENA #photo-thumbnail, *-thumbs).
+function thumbStrip(node: AnyNode) {
+  let depth = 0;
+  for (let n: AnyNode | null = node; n && depth < 5; n = n.parent, depth++)
+    if ("attribs" in n && /(?:^|[-_\s])thumb(?:nail)?s?(?:$|[-_\s])/i.test(`${n.attribs.id || ""} ${n.attribs.class || ""}`))
+      return true;
+  return false;
+}
 function slidePhoto(node: Element, base: string): YahooPicture | null {
   // Smart Slider 3 keeps the full photo on a background element.
   const bg = DomUtils.findOne(
@@ -79,7 +88,7 @@ export function sliderGallery(html: string, pageUrl: string) {
   let best: { pictures: YahooPicture[]; thumbs: string[]; score: number } | null = null;
   const containers = DomUtils.findAll(
     (n) => track.test(n.attribs.class || ""), doc.children,
-  ).filter(n => !blocked(n) && !!DomUtils.findOne(m => slide.test(m.attribs.class || ""), n.children))
+  ).filter(n => !blocked(n) && !thumbStrip(n) && !!DomUtils.findOne(m => slide.test(m.attribs.class || ""), n.children))
     // Smart Slider nests several wrapper tracks around one actual slide list.
     // Count the innermost list, not every wrapper, as a separate carousel.
     .filter(n => !DomUtils.findOne(m => track.test(m.attribs.class || "") &&
@@ -169,7 +178,7 @@ export function sliderGallery(html: string, pageUrl: string) {
     pages,
     thumbnails: best.pictures.map((p, i) => ({
       pageUrl: pages[i],
-      url: publicPhotoUrl(best!.thumbs[i] || "", pageUrl) || p.url,
+      url: (best!.thumbs[i] && publicPhotoUrl(best!.thumbs[i], pageUrl)) || p.url,
     })),
     title: titleNode ? DomUtils.textContent(titleNode).trim().slice(0, 500) : "",
   };

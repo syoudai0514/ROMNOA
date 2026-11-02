@@ -13,9 +13,9 @@ export function photoIdentity(raw: string): string | null {
       .replace(/\/(?:w=\d+,[^/]+)\//g, "/")
       .replace(/\.(?:jpe?g|png|webp|avif|gif)$/i, "");
     // ismcdn (mwimgs) puts the rendition in a folder: 870m, 1420wm, 680w,
-    // 1360w, or "-" for the original. All name the same photograph.
+    // 1360w, 64h, or "-" for the original. All name the same photograph.
     if (path.includes("/mwimgs/"))
-      path = path.replace(/\/(?:\d{2,4}(?:wm|w|m)|-)\//g, "/");
+      path = path.replace(/\/(?:\d{2,4}(?:wm|hm|w|h|m)|-)\//g, "/");
     for (let i = 0; i < 3; i++)
       path = path.replace(/(?:[-_.@](?:\d{2,4}x\d{2,4}|\d{2,4}x|w\d{2,4}|h\d{2,4}|\d{2,4}px|thumb|thumbnail|thumbs|small|medium|large|sq|square|crop|x2|2x|[sml]|o|org|orig))+$/i, "");
     const query = [...u.searchParams]

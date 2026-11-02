@@ -53,3 +53,21 @@ describe("publisher full-resolution photo data", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("when the publisher photo API refuses requests", () => {
+  const refused: typeof fetch = async () =>
+    new Response('{"status":"406"}', { status: 406, headers: { "content-type": "application/json" } });
+  const withOg = (id: string, host = "https://bunshun.jp") =>
+    `<meta property="og:image" content="${host}/mwimgs/c/e/1200wm/img_${id}.jpg">${html}`;
+  it("uses the large rendition the page declares for the shown photo", async () => {
+    const g = await bunshunGallery(withOg(names[0]), url, refused);
+    expect(g?.pictures).toHaveLength(4);
+    expect(g?.pictures.every((p) => p.url.includes("/1200wm/"))).toBe(true);
+    expect(g?.pictures[2].url).toContain(names[2]);
+    expect(g?.thumbnails[0].url).toContain("64h");
+  });
+  it("keeps failing when og:image is a different photograph", async () => {
+    await expect(bunshunGallery(withOg(names[1]), url, refused)).rejects.toThrow("photo_source_unavailable");
+    await expect(bunshunGallery(html, url, refused)).rejects.toThrow("photo_source_unavailable");
+  });
+});
