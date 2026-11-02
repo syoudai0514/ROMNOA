@@ -35,8 +35,15 @@ describe("article evidence before gallery size", () => {
     const html = `<main><img data-src="${image(1)}?w=120" srcset="${image(9)}?w=1600 1600w">${roster([1,2,3])}</main>`;
     expect(siblingGallery(html,base)?.picture.url).toBe(`${image(1)}?w=120`);
   });
+  it("recognises nested Smart Slider wrappers as one gallery", () => {
+    const html = `<div class="n2-ss-slider"><div class="n2-ss-slider-1"><div class="n2-ss-slider-2"><div class="n2-ss-slider-3"><div class="n2-ss-slide-backgrounds"></div>${[1,2,3].map(n=>`<div class="n2-ss-slide"><div data-desktop="${image(n)}"></div></div>`).join("")}</div></div></div></div>`;
+    expect(sliderGallery(html, "https://publisher.example.jp/images/123")?.pictures).toHaveLength(3);
+  });
+  it("normalises Natalie resize queries without dropping content identifiers", () => {
+    expect(photoIdentity("https://ogre.natalie.mu/media/news/photo.jpg?imwidth=1460&imdensity=1&impolicy=hq")).toBe(photoIdentity("https://ogre.natalie.mu/media/news/photo.jpg?impolicy=thumb_fit&imwidth=180"));
+  });
   it("retains known resizing identities and meaningful query identifiers", () => {
-    expect(photoIdentity("https://cdn.example.jp/mwimgs/870m/abc_s.jpg?w=120")).toBe(photoIdentity("https://cdn.example.jp/mwimgs/1740m/abc_l.webp?w=1600"));
+    expect(photoIdentity("https://cdn.example.jp/mwimgs/870m/abc_s.jpg?w=120")).toBe(photoIdentity("https://cdn.example.jp/mwimgs/1740wm/abc_l.webp?w=1600"));
     expect(photoIdentity("https://www.inside-games.jp/imgs/p/token/123.jpg")).toBe(photoIdentity("https://www.inside-games.jp/imgs/zoom/123.jpg"));
     expect(photoIdentity("https://cdn.example.jp/image?id=1")).not.toBe(photoIdentity("https://cdn.example.jp/image?id=2"));
   });

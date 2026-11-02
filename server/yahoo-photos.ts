@@ -543,7 +543,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v28" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v29" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

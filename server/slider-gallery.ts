@@ -79,7 +79,11 @@ export function sliderGallery(html: string, pageUrl: string) {
   let best: { pictures: YahooPicture[]; thumbs: string[]; score: number } | null = null;
   const containers = DomUtils.findAll(
     (n) => track.test(n.attribs.class || ""), doc.children,
-  ).filter(n => !blocked(n));
+  ).filter(n => !blocked(n) && !!DomUtils.findOne(m => slide.test(m.attribs.class || ""), n.children))
+    // Smart Slider nests several wrapper tracks around one actual slide list.
+    // Count the innermost list, not every wrapper, as a separate carousel.
+    .filter(n => !DomUtils.findOne(m => track.test(m.attribs.class || "") &&
+      !!DomUtils.findOne(s => slide.test(s.attribs.class || ""), m.children), n.children));
   for (const container of containers) {
     if (blocked(container)) continue;
     const slides = DomUtils.findAll(

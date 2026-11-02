@@ -12,11 +12,11 @@ export function photoIdentity(raw: string): string | null {
       .replace(/^\/imgs\/p\/[^/]+\/(\d+)\./, "/imgs/zoom/$1.")
       .replace(/\/(?:w=\d+,[^/]+)\//g, "/")
       .replace(/\.(?:jpe?g|png|webp|avif|gif)$/i, "");
-    if (path.includes("/mwimgs/")) path = path.replace(/\/\d{2,4}m\//g, "/");
+    if (path.includes("/mwimgs/")) path = path.replace(/\/\d{2,4}w?m\//g, "/");
     for (let i = 0; i < 3; i++)
       path = path.replace(/(?:[-_.@](?:\d{2,4}x\d{2,4}|\d{2,4}x|w\d{2,4}|h\d{2,4}|\d{2,4}px|thumb|thumbnail|thumbs|small|medium|large|sq|square|crop|x2|2x|[sml]|o|org|orig))+$/i, "");
     const query = [...u.searchParams]
-      .filter(([k]) => !/^(?:w|h|width|height|fit|crop|quality|q|format|fm|auto|dpr|impolicy|resize)$/i.test(k))
+      .filter(([k]) => !/^(?:w|h|width|height|fit|crop|quality|q|format|fm|auto|dpr|imwidth|imheight|imdensity|impolicy|resize)$/i.test(k))
       .sort(([a], [b]) => a.localeCompare(b));
     return `${u.origin}${path}?${new URLSearchParams(query)}`;
   } catch { return null; }
@@ -40,9 +40,9 @@ export function photoSource(img: Element, base: string): string | null {
   const identity = photoIdentity(anchor);
   const size = (url: string) => {
     const u = new URL(url);
-    return Number(u.searchParams.get("w") || u.searchParams.get("width")) ||
+    return Number(u.searchParams.get("w") || u.searchParams.get("width") || u.searchParams.get("imwidth")) ||
       Number(u.pathname.match(/[-_](\d{2,4})x\d{2,4}\./)?.[1]) ||
-      Number(u.pathname.match(/\/(\d{2,4})m\//)?.[1]) || 0;
+      Number(u.pathname.match(/\/(\d{2,4})w?m\//)?.[1]) || 0;
   };
   const src = valid(a.src);
   return [{ url: anchor, size: size(anchor) }, ...sets,
