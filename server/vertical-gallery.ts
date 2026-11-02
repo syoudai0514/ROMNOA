@@ -8,7 +8,7 @@ import { parseDocument, DomUtils } from "htmlparser2";
 import { publicPhotoUrl } from "../src/lib/public-photo-url.js";
 import { linkedPhotoTarget } from "../src/lib/yahoo-photos-model.js";
 import { parseLinkedPhotos } from "./linked-photo-parser.js";
-import { photoStem } from "./sibling-gallery.js";
+import { photoIdentity as photoStem } from "./photo-source.js";
 
 const has = (n: { attribs: Record<string, string> }, c: string) =>
   (n.attribs.class || "").split(/\s+/).includes(c);

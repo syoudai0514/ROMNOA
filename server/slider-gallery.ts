@@ -14,6 +14,8 @@ import type { AnyNode, Element } from "domhandler";
 import { publicPhotoUrl } from "../src/lib/public-photo-url.js";
 import type { YahooPicture } from "../src/lib/yahoo-photos-model.js";
 
+import { photoIdentity, photoSource } from "./photo-source.js";
+
 // Ad / recommendation regions. Ad markers are matched per class token so a
 // page-level modifier such as "--ad-gate" does not hide the whole page.
 const adToken =
@@ -40,26 +42,7 @@ function blocked(node: AnyNode) {
       return true;
   return false;
 }
-function source(img: Element, base: string) {
-  const a = img.attribs;
-  const srcset = [
-    ...(a["data-srcset"] || a.srcset || "").matchAll(
-      /(\S+)\s+(\d+(?:\.\d+)?)[wx](?:,|$)/g,
-    ),
-  ].sort((x, y) => Number(y[2]) - Number(x[2]));
-  for (const raw of [
-    srcset[0]?.[1],
-    a["data-src"],
-    a["data-lazy-src"],
-    a["data-original"],
-    a.src,
-  ]) {
-    if (!raw || raw.startsWith("data:")) continue;
-    const url = publicPhotoUrl(raw.trim(), base);
-    if (url && !/\.(?:svg|ico|gif)(?:[?#]|$)/i.test(url)) return url;
-  }
-  return null;
-}
+const source = photoSource;
 function slidePhoto(node: Element, base: string): YahooPicture | null {
   // Smart Slider 3 keeps the full photo on a background element.
   const bg = DomUtils.findOne(
@@ -87,11 +70,17 @@ export function sliderGallery(html: string, pageUrl: string) {
     return null;
   const doc = parseDocument(html, { decodeEntities: true });
   const base = new URL(pageUrl);
-  let best: { pictures: YahooPicture[]; thumbs: string[] } | null = null;
-  for (const container of DomUtils.findAll(
-    (n) => track.test(n.attribs.class || ""),
-    doc.children,
-  )) {
+  // Prefer the track containing the page's declared main photograph, then
+  // a track explicitly identified as this article's photo gallery.
+  const mainImages = DomUtils.findAll(n => n.name === "meta" &&
+    ["og:image", "twitter:image"].includes(n.attribs.property || n.attribs.name || ""), doc.children)
+    .map(n => publicPhotoUrl(n.attribs.content || "", pageUrl)).filter(Boolean)
+    .map(u => photoIdentity(u!));
+  let best: { pictures: YahooPicture[]; thumbs: string[]; score: number } | null = null;
+  const containers = DomUtils.findAll(
+    (n) => track.test(n.attribs.class || ""), doc.children,
+  ).filter(n => !blocked(n));
+  for (const container of containers) {
     if (blocked(container)) continue;
     const slides = DomUtils.findAll(
       (n) =>
@@ -138,8 +127,17 @@ export function sliderGallery(html: string, pageUrl: string) {
         );
       }
     }
-    if (pictures.length >= 2 && (!best || pictures.length > best.pictures.length))
-      best = { pictures, thumbs };
+    let galleryEvidence = false;
+    for (let n: AnyNode | null = container; n; n = n.parent)
+      if ("attribs" in n && /(?:photo|gallery|photolibrary|article[-_]images)/i.test(`${n.attribs.class || ""} ${n.attribs.id || ""}`)) galleryEvidence = true;
+    const matchesMain = pictures.some(p => mainImages.includes(photoIdentity(p.url)));
+    // A single carousel on an explicitly named photo endpoint is also
+    // evidence. Do not use that shortcut to arbitrate multiple tracks.
+    const photoEndpoint = /\/(?:photos?|images?|gallery|galleries)(?:\/|$)/i.test(base.pathname);
+    const score = (matchesMain ? 4 : 0) + (galleryEvidence ? 2 : 0) +
+      (containers.length === 1 && photoEndpoint ? 1 : 0);
+    if (pictures.length >= 2 && score > 0 && (!best || score > best.score))
+      best = { pictures, thumbs, score };
   }
   if (!best || best.pictures.length > 40) return null;
   const position = Number(
