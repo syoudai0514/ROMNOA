@@ -131,9 +131,14 @@ export function sliderGallery(html: string, pageUrl: string) {
         );
       }
     }
+    // Evidence must name this carousel, not the page: look at the track and
+    // its nearest wrappers only, never at <body>/<html> template classes.
     let galleryEvidence = false;
-    for (let n: AnyNode | null = container; n; n = n.parent)
-      if ("attribs" in n && /(?:photo|gallery|photolibrary|article[-_]images)/i.test(`${n.attribs.class || ""} ${n.attribs.id || ""}`)) galleryEvidence = true;
+    let depth = 0;
+    for (let n: AnyNode | null = container; n && depth < 5; n = n.parent, depth++) {
+      if (!("attribs" in n) || ["body", "html", "main"].includes(n.name)) break;
+      if (/(?:photo|gallery|photolibrary|article[-_]images)/i.test(`${n.attribs.class || ""} ${n.attribs.id || ""}`)) galleryEvidence = true;
+    }
     const matchesMain = pictures.some(p => mainImages.includes(photoIdentity(p.url)));
     // A single carousel on an explicitly named photo endpoint is also
     // evidence. Do not use that shortcut to arbitrate multiple tracks.
