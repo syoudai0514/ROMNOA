@@ -15,6 +15,7 @@ import {
   MemoryPhotoCache,
   YahooPhotoService,
 } from "../server/yahoo-photos.js";
+import { fetchImageSize, SMALL_PHOTO_PX } from "./image-size.js";
 
 const out = process.argv.slice(2).find((a) => !a.startsWith("--")) || "survey";
 const saveHtml = process.argv.includes("--save-html");
@@ -29,7 +30,9 @@ type Row = {
   kind: string;
   score: number;
   feature: boolean;
-  result?: { pages: number; title: string } | { error: string };
+  result?:
+    | { pages: number; title: string; width?: number; height?: number; small?: boolean }
+    | { error: string };
 };
 
 function links(html: string) {
@@ -165,10 +168,17 @@ await Promise.all(
         if (row.feature) {
           try {
             const g = await service.get(article, target);
-            row.result =
-              g.kind === "gallery"
-                ? { pages: g.pages.length, title: g.title }
-                : { error: "not_gallery" };
+            if (g.kind === "gallery") {
+              // Count a gallery as good only if its photo is a photograph.
+              const size = await fetchImageSize(g.picture.url, target);
+              row.result = {
+                pages: g.pages.length,
+                title: g.title,
+                width: size?.width,
+                height: size?.height,
+                small: !!size && Math.max(size.width, size.height) < SMALL_PHOTO_PX,
+              };
+            } else row.result = { error: "not_gallery" };
           } catch (e) {
             row.result = { error: e instanceof Error ? e.message : String(e) };
             if (saveHtml)
@@ -201,8 +211,10 @@ const lines = [
   "",
   `articles ${articles.size} / links ${rows.length} / features ${rows.filter((r) => r.feature).length}`,
   "",
-  "| URL shape | links | kind | features | resolved | photos (max) | errors | example label |",
-  "|---|---|---|---|---|---|---|---|",
+  `small photos (< ${SMALL_PHOTO_PX}px): ${rows.filter((r) => r.result && "small" in r.result && r.result.small).length}`,
+  "",
+  "| URL shape | links | kind | features | resolved | small | photos (max) | errors | example label |",
+  "|---|---|---|---|---|---|---|---|---|",
 ];
 for (const [k, list] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
   const tried = list.filter((r) => r.result);
@@ -220,7 +232,7 @@ for (const [k, list] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
     ...ok.map((r) => (r.result && "pages" in r.result ? r.result.pages : 0)),
   );
   lines.push(
-    `| ${k} | ${list.length} | ${kinds} | ${list.filter((r) => r.feature).length} | ${ok.length}/${tried.length} | ${max} | ${errors.join(" ")} | ${list[0].label.slice(0, 40).replace(/\|/g, "/")} |`,
+    `| ${k} | ${list.length} | ${kinds} | ${list.filter((r) => r.feature).length} | ${ok.length}/${tried.length} | ${ok.filter((r) => r.result && "small" in r.result && r.result.small).length} | ${max} | ${errors.join(" ")} | ${list[0].label.slice(0, 40).replace(/\|/g, "/")} |`,
   );
 }
 writeFileSync(join(out, "summary.md"), lines.join("\n") + "\n");

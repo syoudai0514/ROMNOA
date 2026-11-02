@@ -11,6 +11,7 @@ import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
 import { siblingGallery } from "./sibling-gallery.js";
+import { looksLikeThumbnail } from "./photo-source.js";
 import { sliderGallery } from "./slider-gallery.js";
 import { verticalGallery } from "./vertical-gallery.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
@@ -502,6 +503,15 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
     }
     if (data?.kind === "social")
       return { strategy, data: socialDataSchema.parse(data) };
+    // Never present navigation thumbnails as the gallery's photographs: an
+    // adapter whose photos all declare a tiny rendition is treated as failed.
+    if (data) {
+      const shown = [data.picture, ...("pictures" in data && data.pictures ? data.pictures : [])];
+      if (shown.every((p) => looksLikeThumbnail(p.url))) {
+        failure ??= Error("thumbnail_only_gallery");
+        continue;
+      }
+    }
     if (data)
       return {
         strategy,
@@ -543,7 +553,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v31" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v32" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

@@ -61,3 +61,29 @@ export function photoSource(img: Element, base: string): string | null {
     .filter((c): c is { url: string; size: number } => !!c.url && photoIdentity(c.url) === identity)
     .sort((x, y) => y.size - x.size)[0].url;
 }
+
+// The longest side a URL declares for its rendition, or 0 when it does not
+// say: ?w=/width=/imwidth=, WordPress -300x200, ismcdn 64h / 870m / 1200wm.
+export function declaredSize(raw: string): number {
+  try {
+    const u = new URL(raw);
+    const q = Math.max(
+      ...["w", "width", "imwidth", "h", "height", "imheight"].map((k) =>
+        Number(u.searchParams.get(k)) || 0,
+      ),
+    );
+    if (q) return q;
+    const wp = u.pathname.match(/[-_](\d{2,4})x(\d{2,4})\.(?:jpe?g|png|webp|avif|gif)$/i);
+    if (wp) return Math.max(Number(wp[1]), Number(wp[2]));
+    const mw = u.pathname.includes("/mwimgs/") && u.pathname.match(/\/(\d{2,4})(?:wm|hm|w|h|m)\//);
+    return mw ? Number(mw[1]) : 0;
+  } catch {
+    return 0;
+  }
+}
+// A photograph declared smaller than this is a navigation thumbnail.
+export const MIN_PHOTO_SIZE = 240;
+export function looksLikeThumbnail(raw: string) {
+  const size = declaredSize(raw);
+  return size > 0 && size < MIN_PHOTO_SIZE;
+}

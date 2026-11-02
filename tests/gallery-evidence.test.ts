@@ -88,3 +88,23 @@ describe("thumbnail strips", () => {
     expect(g.thumbnails.map(t => t.url)).toEqual([image(1), image(2)]);
   });
 });
+
+import { declaredSize, looksLikeThumbnail } from "../server/photo-source";
+describe("photo size sanity", () => {
+  it("reads the rendition size a URL declares", () => {
+    expect(declaredSize("https://x.jp/mwimgs/7/8/64h/img_1.jpg")).toBe(64);
+    expect(declaredSize("https://x.jp/mwimgs/7/8/1200wm/img_1.jpg")).toBe(1200);
+    expect(declaredSize("https://x.jp/wp-content/uploads/a-150x150.jpg")).toBe(150);
+    expect(declaredSize("https://x.jp/p.jpg?w=120")).toBe(120);
+    expect(declaredSize("https://x.jp/p.jpg")).toBe(0);
+    expect(looksLikeThumbnail("https://x.jp/p.jpg")).toBe(false);
+  });
+  it("rejects a gallery whose photos are all navigation thumbnails", async () => {
+    const tiny = (n: number) => `https://cdn.example.jp/mwimgs/a/b/64h/img_${n}.jpg`;
+    const html = `<main><div class="article-gallery"><div class="swiper-wrapper">${[1, 2, 3].map(n => `<div class="swiper-slide"><img src="${tiny(n)}"></div>`).join("")}</div></div></main>`;
+    const r = await resolvePhotoPage(html, base).catch((e: Error) => e.message);
+    expect(typeof r === "string" || r.strategy !== "slider").toBe(true);
+    if (typeof r !== "string" && r.data.kind === "gallery")
+      expect(r.data.picture.url).not.toContain("/64h/");
+  });
+});
