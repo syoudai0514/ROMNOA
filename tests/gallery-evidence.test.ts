@@ -108,3 +108,21 @@ describe("photo size sanity", () => {
       expect(r.data.picture.url).not.toContain("/64h/");
   });
 });
+
+import { parseLinkedPhotos } from "../server/linked-photo-parser";
+describe("generic gallery: controls, WordPress originals, position", () => {
+  const up = "https://www.example-shincho.com/wp-content/uploads/2026/10";
+  const page = (ids: number[]) => `<head><meta property="og:image" content="${up}/1509246_1.jpg"></head><body><article><div class="p-gallery">
+    <img class="p-gallery__image" src="/common/img/icon_arrow_white.png" alt="前へ"><img class="p-gallery__image" src="/common/img/icon_arrow_white.png" alt="次へ">
+    ${ids.map(n => `<img class="p-gallery__image" src="${up}/1509246_${n}-345x230.jpg" alt="写真${n}">`).join("")}</div></article></body>`;
+  it("skips arrow controls, uses the WordPress originals and selects ?photo=N", () => {
+    const g = parseLinkedPhotos(page([1, 2, 3]), "https://www.example-shincho.jp/article/2026/1/?photo=2");
+    expect(g.pictures.map(p => p.url)).toEqual([1, 2, 3].map(n => `${up}/1509246_${n}.jpg`));
+    expect(g.picture.url).toBe(`${up}/1509246_2.jpg`);
+    expect(g.pages[1]).toBe("https://www.example-shincho.jp/article/2026/1/?photo=2");
+  });
+  it("keeps the renditions when og:image is not one of their originals", () => {
+    const g = parseLinkedPhotos(page([2, 3]).replace("1509246_1.jpg", "other.jpg"), "https://www.example-shincho.jp/article/2026/1/");
+    expect(g.pictures[0].url).toContain("-345x230.jpg");
+  });
+});

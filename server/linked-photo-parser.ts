@@ -36,6 +36,11 @@ function imageOverlay(node: Element, url: string) {
     ) ||
     /^(?:img|image|photo)[-_]protect\.|^(?:placeholder|spacer|transparent|loading)\.(?:png|gif|webp|avif)$/i.test(
       filename,
+    ) ||
+    // Navigation controls drawn as images (Daily Shincho's gallery arrows).
+    /(?:^|[-_])(?:icon|arrow|btn|button|sprite|nav)(?:[-_.]|$)/i.test(filename) ||
+    /^(?:前へ|次へ|前の写真|次の写真|閉じる|prev|next|previous|close)$/i.test(
+      (node.attribs.alt || "").trim(),
     )
   );
 }
@@ -363,6 +368,21 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
   }
   if (!pictures.length) pictures = fallback.slice(0, 1);
   if (!pictures.length) throw Error("gallery_structure_changed");
+  // WordPress renditions (-345x230.jpg). When the page's og:image is the
+  // original of one of them, the originals of the others exist beside it.
+  const wpOriginal = (u: string) =>
+    u.replace(/-\d{2,4}x\d{2,4}(\.(?:jpe?g|png|webp))$/i, "$1");
+  const og = fallback[0]?.url;
+  if (
+    og &&
+    pictures.some((p) => p.url !== og && wpOriginal(p.url) === og) &&
+    /\/wp-content\/uploads\//.test(og)
+  ) {
+    const folder = new URL(og).origin + "/wp-content/uploads/";
+    pictures = pictures.map((p) =>
+      p.url.startsWith(folder) ? { ...p, url: wpOriginal(p.url) } : p,
+    );
+  }
   const linkedPages = new Set<string>();
   if (selected && pictures.length === 1) {
     for (const page of headPages) linkedPages.add(page);
@@ -589,12 +609,24 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
         )
         .slice(0, 12)
     : [];
+  // A position query on the photo page (?photo=3) names the shown photo.
+  const position = Number(
+    ["photo", "photoid", "pn", "image"]
+      .map((k) => new URL(pageUrl).searchParams.get(k))
+      .find((v) => v && /^\d{1,2}$/.test(v)) || 1,
+  );
+  const at =
+    pictures.length > 1 && position >= 1 && position <= pictures.length
+      ? position - 1
+      : 0;
   const pages = pictures.map((_, i) =>
-    i ? `${pageUrl}#romnoa-photo-${i + 1}` : pageUrl,
+    i === at
+      ? pageUrl
+      : `${pageUrl}#romnoa-photo-${i < at ? i + 2 : i + 1}`,
   );
   return {
     kind: "gallery" as const,
-    picture: pictures[0],
+    picture: pictures[at],
     pictures,
     pages,
     thumbnails: pictures.map((p, i) => ({ pageUrl: pages[i], url: p.url })),
