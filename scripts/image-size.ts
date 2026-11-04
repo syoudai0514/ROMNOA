@@ -17,6 +17,13 @@ export function imageDimensions(b: Uint8Array): { width: number; height: number 
     }
     if (kind === "VP8X") return { width: 1 + (b[24] | (b[25] << 8) | (b[26] << 16)), height: 1 + (b[27] | (b[28] << 8) | (b[29] << 16)) };
   }
+  // AVIF / HEIF: the "ispe" property box holds the image's width and height.
+  if (b.length > 12 && String.fromCharCode(b[4], b[5], b[6], b[7]) === "ftyp") {
+    for (let i = 8; i + 16 < b.length; i++)
+      if (b[i] === 0x69 && b[i + 1] === 0x73 && b[i + 2] === 0x70 && b[i + 3] === 0x65)
+        return { width: v.getUint32(i + 8), height: v.getUint32(i + 12) };
+    return null;
+  }
   if (b[0] === 0xff && b[1] === 0xd8) {
     for (let i = 2; i + 9 < b.length; ) {
       if (b[i] !== 0xff) return null;
@@ -47,3 +54,25 @@ export async function fetchImageSize(url: string, referer: string) {
 }
 // The audits call a photo "small" below this many pixels on its longer side.
 export const SMALL_PHOTO_PX = 400;
+// How many of a gallery's photos the audits measure.
+export const MEASURED_PHOTOS = 12;
+
+export type PhotoSizes = { measured: number; small: number; unknown: number; current: string };
+// Measure the shown photo and up to MEASURED_PHOTOS of the gallery's photos.
+// A photo that cannot be measured is "unknown", never "not small".
+export async function measurePhotos(
+  current: string,
+  pictures: { url: string }[],
+  referer: string,
+): Promise<PhotoSizes> {
+  const urls = [current, ...pictures.map((p) => p.url).filter((u) => u !== current)].slice(0, MEASURED_PHOTOS);
+  const sizes = await Promise.all(urls.map((u) => fetchImageSize(u, referer)));
+  const label = (s: (typeof sizes)[number]) =>
+    s ? `${s.width}x${s.height}${Math.max(s.width, s.height) < SMALL_PHOTO_PX ? " SMALL" : ""}` : "?px";
+  return {
+    measured: sizes.filter(Boolean).length,
+    small: sizes.filter((s) => s && Math.max(s.width, s.height) < SMALL_PHOTO_PX).length,
+    unknown: sizes.filter((s) => !s).length,
+    current: label(sizes[0]),
+  };
+}

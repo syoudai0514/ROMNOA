@@ -496,7 +496,9 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
     } catch (e) {
       if (
         e instanceof Error &&
-        ["page_too_large", "target_not_allowed"].includes(e.message)
+        // A publisher API that names a different photo than its roster is
+        // a wrong answer, not a missing one: never fall back past it.
+        ["page_too_large", "target_not_allowed", "photo_mismatch"].includes(e.message)
       )
         throw e;
       failure ??= e;

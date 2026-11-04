@@ -130,8 +130,11 @@ function renditionRank(raw: string, peers: string[]): number {
   // An unsized name beside sized renditions of the same photo is the
   // original upload (WordPress foo.jpg beside foo-345x230.jpg; ismcdn "-").
   if (d.heightOnly) return d.size;
-  if (peers.some((p) => p !== raw && declared(p).size > 0 && !declared(p).heightOnly) ||
-      /\/mwimgs\/[^/]+\/[^/]+\/-\//.test(path))
+  // A query-sized CDN URL without its size parameter is not known to be larger.
+  if (
+    peers.some((p) => p !== raw && /[-_]\d{2,4}x\d{2,4}\.(?:jpe?g|png|webp|avif|gif)$/i.test(new URL(p).pathname)) ||
+    /\/mwimgs\/[^/]+\/[^/]+\/-\//.test(path)
+  )
     return 4000;
   return 4;
 }

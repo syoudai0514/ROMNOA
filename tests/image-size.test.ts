@@ -10,4 +10,12 @@ describe("audit image size reader", () => {
     expect(imageDimensions(jpg)).toEqual({ width: 1200, height: 800 });
     expect(imageDimensions(new Uint8Array([1, 2, 3]))).toBeNull();
   });
+  it("reads AVIF dimensions from the ispe box", () => {
+    const b = new Uint8Array(64);
+    b.set([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66]);
+    b.set([0x69, 0x73, 0x70, 0x65], 30);
+    const v = new DataView(b.buffer);
+    v.setUint32(38, 1600); v.setUint32(42, 900);
+    expect(imageDimensions(b)).toEqual({ width: 1600, height: 900 });
+  });
 });

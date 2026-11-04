@@ -15,7 +15,7 @@ import {
   MemoryPhotoCache,
   YahooPhotoService,
 } from "../server/yahoo-photos.js";
-import { fetchImageSize, SMALL_PHOTO_PX } from "./image-size.js";
+import { measurePhotos, SMALL_PHOTO_PX, MEASURED_PHOTOS, type PhotoSizes } from "./image-size.js";
 
 const out = process.argv.slice(2).find((a) => !a.startsWith("--")) || "survey";
 const saveHtml = process.argv.includes("--save-html");
@@ -31,9 +31,17 @@ type Row = {
   score: number;
   feature: boolean;
   result?:
-    | { pages: number; title: string; width?: number; height?: number; small?: boolean }
+    | {
+        pages: number;
+        title: string;
+        // The shown photo is below SMALL_PHOTO_PX; null when it could not be measured.
+        small: boolean | null;
+        sizes: PhotoSizes;
+      }
     | { error: string };
 };
+
+const measured = new Map<string, Promise<PhotoSizes>>();
 
 function links(html: string) {
   const m = html.match(
@@ -169,14 +177,15 @@ await Promise.all(
           try {
             const g = await service.get(article, target);
             if (g.kind === "gallery") {
-              // Count a gallery as good only if its photo is a photograph.
-              const size = await fetchImageSize(g.picture.url, target);
+              // Count a gallery as good only if its photos are photographs.
+              // Each target URL is measured once, however many links name it.
+              const sizes = await (measured.get(target) ??
+                measured.set(target, measurePhotos(g.picture.url, (g as { pictures?: { url: string }[] }).pictures ?? [], target)).get(target)!);
               row.result = {
                 pages: g.pages.length,
                 title: g.title,
-                width: size?.width,
-                height: size?.height,
-                small: !!size && Math.max(size.width, size.height) < SMALL_PHOTO_PX,
+                small: sizes.current === "?px" ? null : sizes.current.endsWith("SMALL"),
+                sizes,
               };
             } else row.result = { error: "not_gallery" };
           } catch (e) {
@@ -211,7 +220,16 @@ const lines = [
   "",
   `articles ${articles.size} / links ${rows.length} / features ${rows.filter((r) => r.feature).length}`,
   "",
-  `small photos (< ${SMALL_PHOTO_PX}px): ${rows.filter((r) => r.result && "small" in r.result && r.result.small).length}`,
+  ...(() => {
+    // Counted per target URL, so a page linked from several articles counts once.
+    const byUrl = new Map<string, NonNullable<Row["result"]>>();
+    for (const r of rows) if (r.result && "pages" in r.result) byUrl.set(linkedPhotoTarget(r.url)?.url || r.url, r.result);
+    const res = [...byUrl.values()].flatMap((r) => ("pages" in r ? [r] : []));
+    return [
+      `photo pages ${res.length}: shown photo small (< ${SMALL_PHOTO_PX}px) ${res.filter((r) => r.small === true).length}, unmeasured ${res.filter((r) => r.small === null).length}`,
+      `pages with any small photo among up to ${MEASURED_PHOTOS} measured: ${res.filter((r) => r.sizes.small > 0).length}; photos measured ${res.reduce((n, r) => n + r.sizes.measured, 0)}, small ${res.reduce((n, r) => n + r.sizes.small, 0)}, unknown ${res.reduce((n, r) => n + r.sizes.unknown, 0)}`,
+    ];
+  })(),
   "",
   "| URL shape | links | kind | features | resolved | small | photos (max) | errors | example label |",
   "|---|---|---|---|---|---|---|---|---|",
@@ -232,7 +250,7 @@ for (const [k, list] of [...groups].sort((a, b) => b[1].length - a[1].length)) {
     ...ok.map((r) => (r.result && "pages" in r.result ? r.result.pages : 0)),
   );
   lines.push(
-    `| ${k} | ${list.length} | ${kinds} | ${list.filter((r) => r.feature).length} | ${ok.length}/${tried.length} | ${ok.filter((r) => r.result && "small" in r.result && r.result.small).length} | ${max} | ${errors.join(" ")} | ${list[0].label.slice(0, 40).replace(/\|/g, "/")} |`,
+    `| ${k} | ${list.length} | ${kinds} | ${list.filter((r) => r.feature).length} | ${ok.length}/${tried.length} | ${ok.filter((r) => r.result && "pages" in r.result && r.result.small === true).length} | ${max} | ${errors.join(" ")} | ${list[0].label.slice(0, 40).replace(/\|/g, "/")} |`,
   );
 }
 writeFileSync(join(out, "summary.md"), lines.join("\n") + "\n");

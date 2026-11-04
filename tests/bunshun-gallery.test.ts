@@ -70,4 +70,18 @@ describe("when the publisher photo API refuses requests", () => {
     await expect(bunshunGallery(withOg(names[1]), url, refused)).rejects.toThrow("photo_source_unavailable");
     await expect(bunshunGallery(html, url, refused)).rejects.toThrow("photo_source_unavailable");
   });
+  it("reports a mismatching photo even when another request was refused first", async () => {
+    const mixed: typeof fetch = async (input) => {
+      const n = Number(new URL(String(input)).searchParams.get("pn"));
+      if (n === 1) return refused(input);
+      await new Promise((r) => setTimeout(r, 5));
+      return Response.json({ src: "https://bunshun.ismcdn.jp/mwimgs/c/e/1500wm/img_other.jpg" });
+    };
+    await expect(bunshunGallery(withOg(names[0]), url, mixed)).rejects.toThrow("photo_mismatch");
+  });
+  it("does not trust og:image from an unrelated host", async () => {
+    await expect(
+      bunshunGallery(withOg(names[0], "https://cdn.unrelated.example"), url, refused),
+    ).rejects.toThrow("photo_source_unavailable");
+  });
 });

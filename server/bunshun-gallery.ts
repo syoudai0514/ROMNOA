@@ -48,8 +48,9 @@ export async function bunshunGallery(
   if (thumbs.length !== count || thumbs.some((x) => !x))
     throw Error("gallery_structure_changed");
   let pictures: { url: string; alt: string; caption: string }[];
-  try {
-    pictures = await Promise.all(
+  // Wait for every answer, then classify: one mismatching photo is an error
+  // even if another request was refused first.
+  const settled = await Promise.allSettled(
     thumbs.map(async (thumb, i) => {
       const endpoint = `${u.origin}/articles/api-photo/${match[1]}?pn=${i + 1}`;
       const response = await fetcher(endpoint, {
@@ -99,18 +100,32 @@ export async function bunshunGallery(
           : "";
       return { url: src, alt: caption, caption };
     }),
-    );
-  } catch (e) {
+  );
+  const failures = settled.flatMap((r) => (r.status === "rejected" ? [r.reason] : []));
+  if (!failures.length)
+    pictures = settled.map((r) => (r as PromiseFulfilledResult<(typeof pictures)[number]>).value);
+  else {
+    const e =
+      failures.find((f) => !(f instanceof Error && f.message === "photo_source_unavailable")) ??
+      failures[0];
     // The photo API may refuse requests (406). The page itself declares the
-    // shown photo's large rendition as og:image. When that image is the same
-    // photograph as the current thumbnail (same mwimgs path; the og host may
-    // be the site itself rather than its CDN), use the
-    // same rendition folder for every thumbnail of this gallery.
+    // shown photo's large rendition as og:image. Only when every failure is
+    // that refusal, and og:image is the current thumbnail's photograph on a
+    // confirmed host pair, is its rendition folder used for each thumbnail.
     const og = DomUtils.findOne(
       (n) => n.name === "meta" && (n.attribs.property || n.attribs.name) === "og:image",
       doc.children,
     );
     const ogUrl = og && publicPhotoUrl(og.attribs.content || "", pageUrl);
+    // The og host is the thumbnail's own CDN, or the page's site whose CDN
+    // is that thumbnail host (bunshun.jp -> bunshun.ismcdn.jp).
+    const ogHost = ogUrl && new URL(ogUrl).hostname;
+    const thumbHost = new URL(thumbs[current - 1]!).hostname;
+    const confirmedHost =
+      !!ogHost &&
+      (ogHost === thumbHost ||
+        (ogHost === u.hostname &&
+          thumbHost === `${u.hostname.replace(/^www\./, "").split(".")[0]}.ismcdn.jp`));
     const current_thumb = thumbs[current - 1]!;
     const folder = ogUrl?.match(/\/mwimgs\/[^/]+\/[^/]+\/(\d{2,4}(?:wm|hm|w|h|m))\//)?.[1];
     const rendition = (thumb: string) => {
@@ -123,6 +138,7 @@ export async function bunshunGallery(
     if (
       !(e instanceof Error && e.message === "photo_source_unavailable") ||
       !ogUrl ||
+      !confirmedHost ||
       !folder ||
       photoIdentity(ogUrl)?.replace(/^https:\/\/[^/]+/, "") !==
         photoIdentity(current_thumb)?.replace(/^https:\/\/[^/]+/, "") ||

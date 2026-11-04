@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { fetchPhotoHtml, resolvePhotoPage } from "../server/yahoo-photos.js";
 import { linkedPhotoTarget } from "../src/lib/yahoo-photos-model.js";
 import { photoIdentity as photoStem } from "../server/photo-source.js";
-import { fetchImageSize, SMALL_PHOTO_PX } from "./image-size.js";
+import { measurePhotos } from "./image-size.js";
 
 const args = process.argv.slice(2);
 const urls = (args[0] === "-" ? readFileSync(0, "utf8").split(/\s+/) : args).filter(Boolean);
@@ -35,11 +35,10 @@ for (const raw of urls) {
           bad++;
         }
       }
-    // Measure the photo actually shown, not only how many were found.
-    const size = await fetchImageSize(data.picture.url, url);
-    const px = size ? `${size.width}x${size.height}` : "?px";
-    const small = size && Math.max(size.width, size.height) < SMALL_PHOTO_PX ? " SMALL" : "";
-    console.log(`${strategy} ${data.pages.length}${data.complete === false ? "?" : ""} bad=${bad} ${px}${small} ${url.slice(0, 110)} -> ${data.picture.url.slice(0, 90)}`);
+    // Measure the shown photo and the gallery's other photos, not only how
+    // many were found. Unmeasurable photos are counted, not assumed fine.
+    const m = await measurePhotos(data.picture.url, data.pictures ?? [], url);
+    console.log(`${strategy} ${data.pages.length}${data.complete === false ? "?" : ""} bad=${bad} ${m.current} small=${m.small}/${m.measured + m.unknown} unknown=${m.unknown} ${url.slice(0, 110)} -> ${data.picture.url.slice(0, 90)}`);
   } catch (e) {
     console.log(`ERR ${e instanceof Error ? e.message : e} ${url.slice(0, 110)}`);
   }

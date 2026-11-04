@@ -89,7 +89,7 @@ describe("thumbnail strips", () => {
   });
 });
 
-import { declaredSize, looksLikeThumbnail } from "../server/photo-source";
+import { declaredSize, looksLikeThumbnail, thumbnailGallery, thumbnailEvidence, pageImageUrls, largestOnPage } from "../server/photo-source";
 describe("photo size sanity", () => {
   it("reads the rendition size a URL declares", () => {
     expect(declaredSize("https://x.jp/mwimgs/7/8/64h/img_1.jpg")).toBe(64);
@@ -112,17 +112,76 @@ describe("photo size sanity", () => {
 import { parseLinkedPhotos } from "../server/linked-photo-parser";
 describe("generic gallery: controls, WordPress originals, position", () => {
   const up = "https://www.example-shincho.com/wp-content/uploads/2026/10";
-  const page = (ids: number[]) => `<head><meta property="og:image" content="${up}/1509246_1.jpg"></head><body><article><div class="p-gallery">
-    <img class="p-gallery__image" src="/common/img/icon_arrow_white.png" alt="前へ"><img class="p-gallery__image" src="/common/img/icon_arrow_white.png" alt="次へ">
-    ${ids.map(n => `<img class="p-gallery__image" src="${up}/1509246_${n}-345x230.jpg" alt="写真${n}">`).join("")}</div></article></body>`;
-  it("skips arrow controls, uses the WordPress originals and selects ?photo=N", () => {
-    const g = parseLinkedPhotos(page([1, 2, 3]), "https://www.example-shincho.jp/article/2026/1/?photo=2");
-    expect(g.pictures.map(p => p.url)).toEqual([1, 2, 3].map(n => `${up}/1509246_${n}.jpg`));
-    expect(g.picture.url).toBe(`${up}/1509246_2.jpg`);
-    expect(g.pages[1]).toBe("https://www.example-shincho.jp/article/2026/1/?photo=2");
+  const page = (ids: number[], extra = "") => `<head><meta property="og:image" content="${up}/1509246_1.jpg"></head><body><article><div class="p-gallery">
+    <div class="p-gallery__nav-left"><img src="/common/img/icon_arrow_white.png" alt="前へ"></div><div class="p-gallery__nav-right"><img src="/common/img/icon_arrow_white.png" alt="次へ"></div>
+    ${ids.map(n => `<div class="p-gallery__thumbnail"><img class="p-gallery__image" src="${up}/1509246_${n}-345x230.jpg" alt="写真${n}"></div>`).join("")}${extra}</div></article></body>`;
+  it("skips arrow controls, keeps the thumbnail roster and selects ?photo=N", async () => {
+    const r = await resolvePhotoPage(page([1, 2, 3]), "https://www.example-shincho.jp/article/2026/1/?photo=2");
+    if (r.data.kind !== "gallery") throw Error("not a gallery");
+    expect(r.data.pictures?.map(p => p.url.split("/").pop())).toEqual(["1509246_1.jpg", "1509246_2-345x230.jpg", "1509246_3-345x230.jpg"]);
+    expect(r.data.picture.url).toBe(`${up}/1509246_2-345x230.jpg`);
+    expect(r.data.pages[1]).toBe("https://www.example-shincho.jp/article/2026/1/?photo=2");
   });
-  it("keeps the renditions when og:image is not one of their originals", () => {
-    const g = parseLinkedPhotos(page([2, 3]).replace("1509246_1.jpg", "other.jpg"), "https://www.example-shincho.jp/article/2026/1/");
-    expect(g.pictures[0].url).toContain("-345x230.jpg");
+  it("upgrades a photo only to a rendition the page itself names", async () => {
+    const r = await resolvePhotoPage(page([1, 2], `<img hidden src="${up}/1509246_2-714x476.jpg">`), "https://www.example-shincho.jp/article/2026/1/?photo=2");
+    if (r.data.kind !== "gallery") throw Error("not a gallery");
+    expect(r.data.picture.url).toBe(`${up}/1509246_2-714x476.jpg`);
+  });
+  it("never rewrites another folder's renditions from one confirmed original", async () => {
+    const html = `<head><meta property="og:image" content="${up}/a.jpg"></head><body><article><div class="entry-content">
+      <img src="${up}/a-345x230.jpg"><img src="https://www.example-shincho.com/wp-content/uploads/2019/01/b-345x230.jpg"></div></article></body>`;
+    const g = parseLinkedPhotos(html, "https://www.example-shincho.jp/article/2026/9/");
+    expect(g.pictures.map(p => p.url)).toEqual([`${up}/a-345x230.jpg`, "https://www.example-shincho.com/wp-content/uploads/2019/01/b-345x230.jpg"]);
+  });
+  it("keeps body photos whose names merely contain control words", () => {
+    const html = `<body><article><div class="entry-content">${["button-design", "arrow-car", "nav-system", "icon-artist"].map(n => `<figure><img src="https://www.example.jp/wp-content/uploads/2026/10/${n}.jpg" width="800" height="600"></figure>`).join("")}</div></article></body>`;
+    const g = parseLinkedPhotos(html, "https://www.example.jp/article/1/");
+    expect(g.pictures).toHaveLength(4);
+  });
+  it("drops control images that are small, UI assets or inside controls", () => {
+    const html = `<body><article><div class="entry-content">
+      <img src="https://www.example.jp/wp-content/uploads/2026/10/photo.jpg">
+      <img src="https://www.example.jp/wp-content/uploads/2026/10/arrow-left.png" width="32" height="32">
+      <img src="https://www.example.jp/assets/btn_close.png">
+      <span class="slide-next"><img src="https://www.example.jp/wp-content/uploads/2026/10/arrow.png"></span>
+    </div></article></body>`;
+    const g = parseLinkedPhotos(html, "https://www.example.jp/article/1/");
+    expect(g.pictures.map(p => p.url.split("/").pop())).toEqual(["photo.jpg"]);
+  });
+});
+
+describe("second re-review: requested photo, page renditions, size evidence", () => {
+  it("shows the photo-page image wrapped in a link to the next photo page (Impress Watch)", async () => {
+    const page = "https://akiba-pc.watch.impress.co.jp/img/ah/docs/2152/816/html/s2.jpg.html";
+    const html = `<head><meta property="og:image" content="https://akiba-pc.watch.impress.co.jp/img/ah/list/2152/816/s1.jpg"></head><body>
+      <article role="main"><div id="main-image-wrap" class="resource-main" org_url="/img/ah/docs/2152/816/s2.jpg">
+      <p class="image"><a href="/img/ah/docs/2152/816/html/s3.jpg.html"><img id="main-image" src="https://asset.watch.impress.co.jp/img/ah/docs/2152/816/s2.jpg"></a></p></div>
+      <ul class="pager"><li class="next"><a href="/img/ah/docs/2152/816/html/s3.jpg.html">次の画像</a></li></ul></article></body>`;
+    const r = await resolvePhotoPage(html, page);
+    expect(r.data.kind === "gallery" && r.data.picture.url).toBe("https://asset.watch.impress.co.jp/img/ah/docs/2152/816/s2.jpg");
+  });
+  it("uses <picture> large renditions and opens a photo page on its og:image (西日本新聞)", async () => {
+    const page = "https://www.nishinippon.co.jp/image/1095258/";
+    const slide = (id: number) => `<div class="swiper-slide"><figure><picture><source media="(min-width: 768px)" srcSet="/uploads/image/${id}/large_P${id}.jpg" width="670" height="648"/><img src="/uploads/image/${id}/middle_P${id}.jpg" width="670" height="648"/></picture></figure></div>`;
+    const html = `<head><meta property="og:image" content="https://www.nishinippon.co.jp/uploads/image/1951360/sns_P1951360.jpg"></head><body><main><div class="photo-gallery"><div class="swiper-wrapper">${[1951838, 1951837, 1951360].map(slide).join("")}</div></div></main></body>`;
+    const r = await resolvePhotoPage(html, page);
+    if (r.data.kind !== "gallery") throw Error("not a gallery");
+    expect(r.data.picture.url).toBe("https://www.nishinippon.co.jp/uploads/image/1951360/large_P1951360.jpg");
+    expect(r.data.pages[2]).toBe(page);
+  });
+  it("prefers the big rendition the page links for a numbered photo (みんなの経済新聞)", () => {
+    const urls = pageImageUrls(`<meta property="og:image" content="https://images.keizai.biz/k/photonews/1793707097_b.jpg"><img src="https://images.keizai.biz/k/photonews/1793707097.jpg">`, "https://k.keizai.biz/photoflash/1/");
+    expect(largestOnPage("https://images.keizai.biz/k/photonews/1793707097.jpg", urls)).toBe("https://images.keizai.biz/k/photonews/1793707097_b.jpg");
+    // A different photo with the same stem in another media folder is not used.
+    expect(photoIdentity("https://x.jp/uploads/image/1951360/large_a.jpg")).not.toBe(photoIdentity("https://x.jp/uploads/image/1951361/large_a.jpg"));
+  });
+  it("counts unknown sizes as unknown, not as photographs", () => {
+    const tiny = (n: number) => `https://cdn.example.jp/mwimgs/a/b/64h/img_${n}.jpg`;
+    expect(thumbnailGallery(tiny(1), [tiny(1), tiny(2), "https://cdn.example.jp/unknown.jpg"])).toBe(true);
+    expect(thumbnailGallery("https://cdn.example.jp/big.jpg?w=1200", ["https://cdn.example.jp/big.jpg?w=1200", "https://cdn.example.jp/a.jpg"])).toBe(false);
+    // A height alone is not the long side: 400hm is not a thumbnail.
+    expect(thumbnailEvidence("https://x.jp/mwimgs/7/8/400hm/img_1.jpg")).toBeNull();
+    expect(thumbnailEvidence("https://x.jp/mwimgs/7/8/64h/img_1.jpg")).toBe(true);
+    expect(thumbnailEvidence("https://x.jp/p.jpg?h=200")).toBeNull();
   });
 });
