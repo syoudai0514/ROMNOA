@@ -76,12 +76,12 @@ function control(node: Element, url: string) {
       return true;
   return false;
 }
-// A strip of small previews that navigates a gallery is not its photos.
+// ARENA's navigation strip (#photo-thumbnail, 64px previews) is not the
+// gallery. Other "thumbnail" containers can hold the only roster of a
+// gallery (Daily Shincho p-gallery__thumbnail); tiny ones are caught by the
+// size check on the result instead.
 function thumbStrip(node: Element) {
-  return (
-    node.attribs.id === "photo-thumbnail" ||
-    /(?:^|[-_\s])thumb(?:nail)?s?(?:$|[-_\s])/i.test(`${node.attribs.id || ""} ${node.attribs.class || ""}`)
-  );
+  return node.attribs.id === "photo-thumbnail";
 }
 function priority(node: Element) {
   const a = node.attribs,
