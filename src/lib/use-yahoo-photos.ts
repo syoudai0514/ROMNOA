@@ -11,6 +11,29 @@ import {
 type Resource = YahooPhotoMetadata | YahooPhotoGallery | YahooSocialGallery;
 const memory = new Map<string, Resource>();
 const prefetching = new Map<string, Promise<void>>();
+// The gallery data already loaded for a page, if any (no request is made).
+export function cachedYahooPhoto(articleId: string, feature: string, page: string) {
+  const r = memory.get(new URLSearchParams({ article: articleId, feature, page }).toString());
+  return r?.kind === "gallery" ? r : null;
+}
+// Ask the server, in the background, for the confirmed original of a page's
+// photo. Resolves true only when the browser has the confirmed image, so a
+// swap never shows a blank or broken frame. Each image is asked once.
+const originals = new Map<string, Promise<boolean>>();
+export function confirmOriginal(path: string) {
+  const known = originals.get(path);
+  if (known) return known;
+  const work = new Promise<boolean>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image.naturalWidth > 0);
+    image.onerror = () => resolve(false);
+    image.decoding = "async";
+    image.src = path;
+  });
+  originals.set(path, work);
+  if (originals.size > 200) originals.delete(originals.keys().next().value!);
+  return work;
+}
 export function prefetchYahooPhoto(
   articleId: string,
   feature: string,

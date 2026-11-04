@@ -4,8 +4,16 @@ import type {
   PhotoFeature,
   YahooPhotoGallery,
 } from "../lib/yahoo-photos-model";
-import { yahooPhotoImagePath } from "../lib/yahoo-photos-model";
-import { prefetchYahooPhoto, useYahooPhotos } from "../lib/use-yahoo-photos";
+import {
+  originalPhotoCandidate,
+  yahooPhotoImagePath,
+} from "../lib/yahoo-photos-model";
+import {
+  cachedYahooPhoto,
+  confirmOriginal,
+  prefetchYahooPhoto,
+  useYahooPhotos,
+} from "../lib/use-yahoo-photos";
 import { SocialPostCard } from "./SocialPost";
 import { ImageViewer } from "./ArticleImages";
 
@@ -55,6 +63,29 @@ export function YahooPhotoFeature({
       });
     };
   }, [articleId, feature.url, index, pages]);
+  // Pages whose original the server has confirmed and the browser has loaded.
+  const [originals, setOriginals] = useState<Record<string, true>>({});
+  const imagePath = (p: string) =>
+    yahooPhotoImagePath(articleId, feature.url, p, originals[p] ? "original" : "full");
+  // After the shown photo is on screen, check its original, then those of
+  // the neighbouring pages. Never delays the photo already shown.
+  const [shownLoaded, setShownLoaded] = useState("");
+  useEffect(() => {
+    if (shownLoaded !== page || index < 0) return;
+    let active = true;
+    void (async () => {
+      for (const p of [page, pages[index + 1], pages[index - 1]]) {
+        if (!p || !active) continue;
+        const shown = p === page ? gallery?.picture : cachedYahooPhoto(articleId, feature.url, p)?.picture;
+        if (!shown || !originalPhotoCandidate(shown.url)) continue;
+        const ok = await confirmOriginal(yahooPhotoImagePath(articleId, feature.url, p, "original"));
+        if (ok && active) setOriginals((o) => (o[p] ? o : { ...o, [p]: true }));
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [articleId, feature.url, gallery?.picture, index, page, pages, shownLoaded]);
   function choose(next: string) {
     if (!zoom && pages.includes(next)) {
       setPage(next);
@@ -161,7 +192,8 @@ export function YahooPhotoFeature({
             >
               <img
                 key={picture.url}
-                src={yahooPhotoImagePath(articleId, feature.url, page)}
+                src={imagePath(page)}
+                onLoad={() => setShownLoaded(page)}
                 alt={picture.alt || feature.title}
                 loading="eager"
                 decoding="async"
@@ -250,7 +282,7 @@ export function YahooPhotoFeature({
       {zoom && picture && (
         <ImageViewer
           pictures={pages.map((url, i) => ({
-            url: yahooPhotoImagePath(articleId, feature.url, url),
+            url: imagePath(url),
             alt: i === index ? picture.alt : `${feature.title} ${i + 1}枚目`,
           }))}
           initial={Math.max(0, index)}

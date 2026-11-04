@@ -3,7 +3,9 @@ import {
   fetchPhotoImage,
   PhotoImageService,
   handleYahooPhotoImage,
+  OriginalUnavailable,
 } from "../server/yahoo-photo-image";
+import { originalPhotoCandidate } from "../src/lib/yahoo-photos-model";
 import { PhotoAccessError } from "../server/yahoo-photos";
 const family = "20260902dog00m200045000a",
   article = `https://news.yahoo.co.jp/articles/${"a".repeat(40)}`;
@@ -129,7 +131,7 @@ describe("closed same-origin photo delivery", () => {
         article,
         feature: page,
         page,
-        size: "original",
+        size: "huge",
       }).toString(),
     ])
       expect(
@@ -182,3 +184,73 @@ describe("closed same-origin photo delivery", () => {
     );
   });
 });
+
+describe("background confirmation of WordPress originals", () => {
+  const wp = "https://www.dailyshincho.com/wp-content/uploads/2026/10/1516437_2-345x230.jpg";
+  const shincho = "https://www.dailyshincho.jp/article/2026/10301100/?photo=2";
+  const png = (w: number, h: number) => {
+    const b = new Uint8Array(32);
+    b.set([0x89, 0x50, 0x4e, 0x47]);
+    new DataView(b.buffer).setUint32(16, w);
+    new DataView(b.buffer).setUint32(20, h);
+    return { body: b, type: "image/png" };
+  };
+  const service = (original: () => Promise<{ body: Uint8Array; type: string }>) => {
+    const loadOriginal = vi.fn(original);
+    return {
+      loadOriginal,
+      engine: new PhotoImageService(
+        { imageSource: vi.fn(async () => ({ url: wp, referer: shincho })) },
+        vi.fn(async () => png(345, 230)),
+        Date.now,
+        loadOriginal,
+      ),
+    };
+  };
+  it("names only the WordPress original of a sized rendition", () => {
+    expect(originalPhotoCandidate(wp)).toEqual({
+      url: "https://www.dailyshincho.com/wp-content/uploads/2026/10/1516437_2.jpg",
+      width: 345,
+      height: 230,
+    });
+    for (const other of [
+      "https://www.dailyshincho.com/wp-content/uploads/2026/10/1516437_2.jpg",
+      "https://cdn.example.jp/photos/a-345x230.jpg",
+      `${wp}?v=2`,
+    ])
+      expect(originalPhotoCandidate(other)).toBeNull();
+  });
+  it("serves an original that is a larger image of the same shape", async () => {
+    const { engine, loadOriginal } = service(async () => png(1200, 799));
+    const image = await engine.original(article, shincho, shincho);
+    expect(image.body.byteLength).toBe(32);
+    expect(loadOriginal).toHaveBeenCalledWith({
+      url: "https://www.dailyshincho.com/wp-content/uploads/2026/10/1516437_2.jpg",
+      referer: shincho,
+    });
+    await engine.original(article, shincho, shincho);
+    expect(loadOriginal).toHaveBeenCalledTimes(1);
+  });
+  it.each([
+    ["a crop or a different picture", async () => png(1200, 1200)],
+    ["no larger than the rendition", async () => png(360, 240)],
+    ["not an image", async () => ({ body: new Uint8Array([1, 2, 3]), type: "image/jpeg" })],
+    ["a failed request", async () => { throw Error("image_unavailable"); }],
+  ])("keeps the rendition when the original is %s, and does not ask again", async (_, original) => {
+    const { engine, loadOriginal } = service(original);
+    await expect(engine.original(article, shincho, shincho)).rejects.toBeInstanceOf(OriginalUnavailable);
+    await expect(engine.original(article, shincho, shincho)).rejects.toBeInstanceOf(OriginalUnavailable);
+    expect(loadOriginal).toHaveBeenCalledTimes(1);
+  });
+  it("answers 404 so the client keeps the shown photo", async () => {
+    const { engine } = service(async () => png(1200, 1200));
+    const res = await handleYahooPhotoImage(
+      new Request(`https://app/api/yahoo-photo-image?${new URLSearchParams({ article, feature: shincho, page: shincho, size: "original" })}`),
+      engine,
+      true,
+    );
+    expect(res.status).toBe(404);
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+});
+

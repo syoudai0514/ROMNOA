@@ -99,13 +99,32 @@ export const photoFeatureSchema = z.object({
     .refine((s) => linkedPhotoTarget(s)?.url === s),
 });
 export type PhotoFeature = z.infer<typeof photoFeatureSchema>;
+export type PhotoImageSize = "full" | "thumb" | "original";
 export function yahooPhotoImagePath(
   articleId: string,
   feature: string,
   page: string,
-  thumbnail = false,
+  size: boolean | PhotoImageSize = false,
 ) {
-  return `/api/yahoo-photo-image?${new URLSearchParams({ article: articleId, feature, page, size: thumbnail ? "thumb" : "full" })}`;
+  const s = size === true ? "thumb" : size === false ? "full" : size;
+  return `/api/yahoo-photo-image?${new URLSearchParams({ article: articleId, feature, page, size: s })}`;
+}
+// The one larger version a confirmed publisher convention names for a
+// rendition, with the rendition's declared size. WordPress stores each upload
+// once and writes resized copies beside it as name-WIDTHxHEIGHT.ext. The
+// candidate is only a guess until the server has fetched it and confirmed it
+// is a larger image of the same shape.
+export function originalPhotoCandidate(raw: string) {
+  try {
+    const u = new URL(raw);
+    const m = u.pathname.match(
+      /^(\/(?:[\w.-]+\/)*wp-content\/uploads\/\d{4}\/\d{2}\/[^/]+?)-(\d{2,4})x(\d{2,4})(\.(?:jpe?g|png|webp))$/i,
+    );
+    if (!m || u.search || u.hash) return null;
+    return { url: `${u.origin}${m[1]}${m[4]}`, width: Number(m[2]), height: Number(m[3]) };
+  } catch {
+    return null;
+  }
 }
 export const photoThumbnailSchema = z.object({
   pageUrl: photoFeatureSchema.shape.url,
