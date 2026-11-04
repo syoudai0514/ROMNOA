@@ -86,6 +86,17 @@ describe("publisher rankings and date archives", () => {
       expect(
         parseDateArchive(`<title>2026年10月20日</title>`, source, day).articles,
       ).toEqual([]);
+      // Publishers zero-pad single-digit days and months in archive titles.
+      expect(
+        parseDateArchive(`<title>ハムスター速報 : 2026年11月04日</title>`, source, "2026-11-04").articles,
+      ).toEqual([]);
+      expect(
+        parseDateArchive(`<title>2026年01月4日</title>`, source, "2026-01-04").articles,
+      ).toEqual([]);
+      // A padded match never accepts a different day (11日 is not 1日).
+      expect(() =>
+        parseDateArchive(`<title>2026年10月11日</title>`, source, "2026-10-01"),
+      ).toThrow();
     },
   );
   it("decodes a JSON string literal, keeps source rank, rejects rank gaps and never executes scripts", () => {

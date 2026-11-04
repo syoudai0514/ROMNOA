@@ -295,7 +295,8 @@ export function parseDateArchive(
   const [y, m, d] = day.split("-").map(Number);
   if (
     !title ||
-    !text(title).includes(`${y}年${m}月${d}日`) ||
+    // Titles may zero-pad the month and day (2026年11月04日) or not.
+    !new RegExp(`${y}年0?${m}月0?${d}日`).test(text(title)) ||
     parsed.articles.some((a) => japanDay(a.publishedAt!) !== day)
   )
     throw new Error("archive_structure_changed");
