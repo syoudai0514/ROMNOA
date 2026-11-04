@@ -73,6 +73,9 @@ function slidePhoto(node: Element, base: string): YahooPicture | null {
   return { url, alt, caption: alt };
 }
 
+const photoEndpoint = (base: URL) =>
+  /\/(?:photos?|images?|gallery|galleries)(?:\/|$)/i.test(base.pathname);
+
 export function sliderGallery(html: string, pageUrl: string) {
   if (Buffer.byteLength(html) > 2_000_000) throw Error("page_too_large");
   if (!/splide__list|swiper-wrapper|slick-track|glide__slides|n2-ss-slide|keen-slider/.test(html))
@@ -151,9 +154,8 @@ export function sliderGallery(html: string, pageUrl: string) {
     const matchesMain = pictures.some(p => mainImages.includes(photoIdentity(p.url)));
     // A single carousel on an explicitly named photo endpoint is also
     // evidence. Do not use that shortcut to arbitrate multiple tracks.
-    const photoEndpoint = /\/(?:photos?|images?|gallery|galleries)(?:\/|$)/i.test(base.pathname);
     const score = (matchesMain ? 4 : 0) + (galleryEvidence ? 2 : 0) +
-      (containers.length === 1 && photoEndpoint ? 1 : 0);
+      (containers.length === 1 && photoEndpoint(base) ? 1 : 0);
     if (pictures.length >= 2 && score > 0 && (!best || score > best.score))
       best = { pictures, thumbs, score };
   }
@@ -163,8 +165,18 @@ export function sliderGallery(html: string, pageUrl: string) {
       .map((k) => base.searchParams.get(k))
       .find((v) => v && /^\d{1,3}$/.test(v)) || 1,
   );
+  // Without a position in the address, a photo page names its photo in
+  // og:image (西日本新聞 /image/N/ opens on the third slide).
+  const declared = best.pictures.findIndex((p) => mainImages.includes(photoIdentity(p.url)));
+  const hasPosition = ["pn", "photo", "photoid", "image", "img", "p"].some(
+    (k) => /^\d{1,3}$/.test(base.searchParams.get(k) || ""),
+  );
   const current =
-    position >= 1 && position <= best.pictures.length ? position - 1 : 0;
+    hasPosition && position >= 1 && position <= best.pictures.length
+      ? position - 1
+      : !hasPosition && declared >= 0 && photoEndpoint(base)
+        ? declared
+        : 0;
   const pages = best.pictures.map((_, i) =>
     i === current
       ? pageUrl

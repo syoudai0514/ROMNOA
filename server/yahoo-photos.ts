@@ -11,7 +11,7 @@ import { mdprGallery } from "./mdpr-gallery.js";
 import { bunshunGallery } from "./bunshun-gallery.js";
 import { collectLinkedPhotos } from "./linked-photo-parser.js";
 import { siblingGallery } from "./sibling-gallery.js";
-import { looksLikeThumbnail } from "./photo-source.js";
+import { largestOnPage, pageImageUrls, thumbnailGallery } from "./photo-source.js";
 import { sliderGallery } from "./slider-gallery.js";
 import { verticalGallery } from "./vertical-gallery.js";
 import { fetchPublicPhoto } from "./public-photo-fetch.js";
@@ -488,6 +488,7 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
   // unexpected roster no longer hides the page: later structural adapters
   // still try, and only if none succeeds is the first error reported.
   let failure: unknown = null;
+  let imageUrls: ReturnType<typeof pageImageUrls> | undefined;
   for (const [strategy, parse] of adapters) {
     let data: Awaited<ReturnType<typeof parse>>;
     try {
@@ -506,8 +507,17 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
     // Never present navigation thumbnails as the gallery's photographs: an
     // adapter whose photos all declare a tiny rendition is treated as failed.
     if (data) {
+      // Use the largest rendition of each photo that this page itself links
+      // (<picture><source>, og:image, a link to the original), never a guess.
+      const urls = (imageUrls ??= pageImageUrls(html, url));
+      const up = <T extends { url: string }>(p: T): T => ({ ...p, url: largestOnPage(p.url, urls) });
+      data = {
+        ...data,
+        picture: up(data.picture),
+        ...("pictures" in data && data.pictures ? { pictures: data.pictures.map(up) } : {}),
+      } as typeof data;
       const shown = [data.picture, ...("pictures" in data && data.pictures ? data.pictures : [])];
-      if (shown.every((p) => looksLikeThumbnail(p.url))) {
+      if (thumbnailGallery(data.picture.url, shown.map((p) => p.url))) {
         failure ??= Error("thumbnail_only_gallery");
         continue;
       }
@@ -553,7 +563,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v33" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v34" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));

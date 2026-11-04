@@ -37,11 +37,50 @@ function imageOverlay(node: Element, url: string) {
     /^(?:img|image|photo)[-_]protect\.|^(?:placeholder|spacer|transparent|loading)\.(?:png|gif|webp|avif)$/i.test(
       filename,
     ) ||
-    // Navigation controls drawn as images (Daily Shincho's gallery arrows).
-    /(?:^|[-_])(?:icon|arrow|btn|button|sprite|nav)(?:[-_.]|$)/i.test(filename) ||
-    /^(?:前へ|次へ|前の写真|次の写真|閉じる|prev|next|previous|close)$/i.test(
+    control(node, url)
+  );
+}
+// Navigation controls drawn as images (Daily Shincho's gallery arrows). A
+// control label alone is enough; a file name such as arrow-car.jpg or
+// button-design.jpg is not, unless the image is also a UI asset: small,
+// in a site-asset folder, or inside a button / navigation / prev-next control.
+function control(node: Element, url: string) {
+  if (
+    /^(?:前へ|次へ|前の写真|次の写真|前の画像|次の画像|閉じる|prev|next|previous|close)$/i.test(
       (node.attribs.alt || "").trim(),
     )
+  )
+    return true;
+  const u = new URL(url);
+  const filename = u.pathname.split("/").pop() || "";
+  if (!/(?:^|[-_])(?:icon|arrow|btn|button|sprite|nav)(?:[-_.]|$)/i.test(filename))
+    return false;
+  const dims = [node.attribs.width, node.attribs.height]
+    .map((v) => Number.parseInt(v || ""))
+    .filter((v) => Number.isFinite(v));
+  if (dims.length && Math.max(...dims) < 100) return true;
+  if (
+    /\/(?:common|shared|assets?|static|parts|ui|themes?|icons?)\//i.test(u.pathname) &&
+    !/\/(?:uploads?|photos?|articles?|news|docs|media)\//i.test(u.pathname)
+  )
+    return true;
+  for (let n: AnyNode | null = node.parent, depth = 0; n && depth < 4; n = n.parent, depth++)
+    if (
+      "attribs" in n &&
+      (n.name === "button" ||
+        n.attribs.role === "button" ||
+        /(?:^|[-_\s])(?:prev|next|arrow|nav|btn|button|control|controls)(?:$|[-_\s])/i.test(
+          `${n.attribs.id || ""} ${n.attribs.class || ""}`,
+        ))
+    )
+      return true;
+  return false;
+}
+// A strip of small previews that navigates a gallery is not its photos.
+function thumbStrip(node: Element) {
+  return (
+    node.attribs.id === "photo-thumbnail" ||
+    /(?:^|[-_\s])thumb(?:nail)?s?(?:$|[-_\s])/i.test(`${node.attribs.id || ""} ${node.attribs.class || ""}`)
   );
 }
 function priority(node: Element) {
@@ -295,6 +334,7 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
     function visit(node: AnyNode) {
       if (!("attribs" in node) || blocked(node)) return;
       if (node !== root && node.name === "article") return;
+      if (node !== root && thumbStrip(node)) return;
       const a = node.attribs;
       // Linked cards for other documents are not article photos.
       if (node.name === "a" && a.href) {
@@ -321,6 +361,16 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
           !(
             new URL(href).origin === new URL(pageUrl).origin &&
             /^\d+$/.test(new URL(href).searchParams.get("attachment_id") || "")
+          ) &&
+          // Photo-page galleries (Impress Watch .../html/s2.jpg.html) wrap
+          // the shown photo in a link to the next photo page of the same
+          // gallery folder.
+          !(
+            new URL(href).origin === new URL(pageUrl).origin &&
+            /\.(?:jpe?g|png|gif|webp)\.html$/i.test(new URL(href).pathname) &&
+            /\.(?:jpe?g|png|gif|webp)\.html$/i.test(new URL(pageUrl).pathname) &&
+            new URL(href).pathname.replace(/[^/]+$/, "") ===
+              new URL(pageUrl).pathname.replace(/[^/]+$/, "")
           )
         )
           return;
@@ -368,21 +418,8 @@ export function parseLinkedPhotos(html: string, pageUrl: string) {
   }
   if (!pictures.length) pictures = fallback.slice(0, 1);
   if (!pictures.length) throw Error("gallery_structure_changed");
-  // WordPress renditions (-345x230.jpg). When the page's og:image is the
-  // original of one of them, the originals of the others exist beside it.
-  const wpOriginal = (u: string) =>
-    u.replace(/-\d{2,4}x\d{2,4}(\.(?:jpe?g|png|webp))$/i, "$1");
-  const og = fallback[0]?.url;
-  if (
-    og &&
-    pictures.some((p) => p.url !== og && wpOriginal(p.url) === og) &&
-    /\/wp-content\/uploads\//.test(og)
-  ) {
-    const folder = new URL(og).origin + "/wp-content/uploads/";
-    pictures = pictures.map((p) =>
-      p.url.startsWith(folder) ? { ...p, url: wpOriginal(p.url) } : p,
-    );
-  }
+  // Larger renditions are chosen later, only from URLs this page names
+  // (srcset, og:image, links to the original); folders are not generalised.
   const linkedPages = new Set<string>();
   if (selected && pictures.length === 1) {
     for (const page of headPages) linkedPages.add(page);
