@@ -181,6 +181,9 @@ test("partial source failure remains usable and sends no requests to external ho
   page,
 }) => {
   const outside: string[] = [];
+  // The app opens on the news channel; live Yahoo thumbnails are not part
+  // of this roundup check.
+  await page.route(/\/api\/yahoo(?:-topics)?(?:\?|$)/, (r) => r.abort());
   page.on("request", (req) => {
     if (!new URL(req.url()).hostname.match(/^(127\.0\.0\.1|localhost)$/))
       outside.push(req.url());

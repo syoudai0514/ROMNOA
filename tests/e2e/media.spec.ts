@@ -2,6 +2,11 @@ import { test, expect, type Route } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { feed, readerFixture } from "../fixtures";
 
+// The app opens on the news channel; keep live Yahoo data (and its
+// thumbnails) out of these roundup media tests. A test's own routes win.
+test.beforeEach(async ({ page }) => {
+  await page.route(/\/api\/yahoo(?:-topics)?(?:\?|$)/, (r) => r.abort());
+});
 const mp4 =
   "https://video.twimg.com/amplify_video/2032037106206588929/vid/avc1/720x1002/CZFfVK_dQmbjSAyr.mp4";
 test("MP4 actually plays inline and GIF changes frames without external navigation", async ({
