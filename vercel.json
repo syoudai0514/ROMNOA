@@ -3,7 +3,9 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "regions": ["hnd1"],
+  "regions": [
+    "hnd1"
+  ],
   "functions": {
     "api/articles.ts": {
       "maxDuration": 15
@@ -17,8 +19,12 @@
     "api/search.ts": {
       "maxDuration": 40
     },
-    "api/yahoo-body.ts": { "maxDuration": 25 },
-    "api/yahoo-comments.ts": { "maxDuration": 15 },
+    "api/yahoo-body.ts": {
+      "maxDuration": 25
+    },
+    "api/yahoo-comments.ts": {
+      "maxDuration": 15
+    },
     "api/yahoo.ts": {
       "maxDuration": 30
     },
@@ -33,6 +39,9 @@
     },
     "api/social.ts": {
       "maxDuration": 15
+    },
+    "api/yahoo-record.ts": {
+      "maxDuration": 30
     }
   },
   "headers": [

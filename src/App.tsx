@@ -114,9 +114,10 @@ export default function App() {
         ? setShelfSort(value)
         : setHomeSort(value);
   const [date, setDate] = useState("");
-  // News home: the day's topics (by day, for the last week) or current news.
+  // News home: the day's topics or 新着. One date is shared by every home
+  // view (news トピックス・新着, roundup 新着・人気); "" means today, live.
   const [yahooView, setYahooView] = useState<"topics" | "latest">("topics");
-  const [yahooDate, setYahooDate] = useState(() => japanDay());
+  const [newsFirstDay, setNewsFirstDay] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchScope, setSearchScope] = useState<SearchScope>("title");
   const [mySearchOpen, setMySearchOpen] = useState(false);
@@ -620,7 +621,7 @@ export default function App() {
               <h1 ref={headingRef}>
                 {tab === "home"
                   ? yahooActive
-                    ? `${yahooView === "topics" ? dayName(yahooDate) : "今日"}のニュース`
+                    ? `${dayName(date || japanDay())}のニュース`
                     : `${date ? dayName(date) : "今日"}の記事`
                   : tab === "search"
                     ? "記事を探す"
@@ -665,10 +666,7 @@ export default function App() {
                     <button
                       className={sort === "newest" ? "selected" : ""}
                       aria-pressed={sort === "newest"}
-                      onClick={() => {
-                        setHomeSort("newest");
-                        setDate("");
-                      }}
+                      onClick={() => setHomeSort("newest")}
                     >
                       新着
                     </button>
@@ -677,7 +675,7 @@ export default function App() {
                       aria-pressed={sort === "popular"}
                       onClick={() => {
                         setHomeSort("popular");
-                        setDate(japanDay());
+                        if (!date) setDate(japanDay());
                       }}
                     >
                       人気
@@ -744,18 +742,38 @@ export default function App() {
                 </div>
               )}
 
-            {yahooActive && tab === "home" && yahooView === "topics" && (
-              <DayStepper
-                date={yahooDate}
-                onChange={setYahooDate}
-                min={shiftDay(japanDay(), -6)}
-              />
+            {yahooActive && tab === "home" && (
+              <>
+                <DayStepper
+                  date={date || japanDay()}
+                  onChange={setDate}
+                  min={
+                    yahooView === "topics"
+                      ? shiftDay(japanDay(), -6)
+                      : newsFirstDay && newsFirstDay < japanDay()
+                        ? newsFirstDay
+                        : japanDay()
+                  }
+                />
+                {yahooView === "topics" && date && date < shiftDay(japanDay(), -6) && (
+                  <p className="yahoo-note" role="status">
+                    トピックスは過去7日分まで表示できます。
+                  </p>
+                )}
+                {yahooView === "latest" && date && date < (newsFirstDay || japanDay()) && (
+                  <p className="yahoo-note" role="status">
+                    新着はROMNOAが記録を始めた日（{dayLabel(newsFirstDay || japanDay())}）から表示できます。
+                  </p>
+                )}
+              </>
             )}
             <YahooNews
               active={yahooActive}
               homeView={yahooView}
               onHomeView={setYahooView}
-              topicDate={yahooDate}
+              topicDate={date || japanDay()}
+              newsDate={date || undefined}
+              onFirstDay={setNewsFirstDay}
               mode={
                 tab === "search" ? "search" : tab === "saved" ? "saved" : "home"
               }
@@ -908,8 +926,8 @@ export default function App() {
                       )}
                     </div>
                   ) : null}
-                  {tab === "home" && date && (
-                    <DayStepper date={date} onChange={setDate} />
+                  {tab === "home" && (
+                    <DayStepper date={date || japanDay()} onChange={setDate} />
                   )}
                   {tab === "home" ? (
                     <HomeFilters

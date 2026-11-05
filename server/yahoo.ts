@@ -1,4 +1,6 @@
-import { getCache } from "@vercel/functions";
+import { getCache, waitUntil } from "@vercel/functions";
+import { newsArchive, archiveConfigured, KEEP_DAYS, type NewsArchive } from "./news-archive.js";
+import { japanDay, shiftDay, validDay } from "../src/lib/discovery-model.js";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { Parser } from "htmlparser2";
 import { z } from "zod";
@@ -159,6 +161,8 @@ export class YahooService {
     private cache: YahooCache,
     private load = fetchYahooFeed,
     private now = Date.now,
+    // Called with each freshly fetched category, for the day record.
+    private onFresh?: (articles: YahooArticle[]) => void,
   ) {}
   private async source(id: YahooCategory): Promise<{
     articles: YahooArticle[];
@@ -183,6 +187,7 @@ export class YahooService {
           checkedAt: now,
           failed: false,
         };
+        this.onFresh?.(entry.articles);
       } catch {
         entry = {
           articles: usable && old ? old.articles : [],
@@ -249,8 +254,70 @@ export class YahooService {
     };
   }
 }
-export const yahooService = new YahooService(cacheAdapter());
-export async function handleYahoo(request: Request, service = yahooService) {
+export const yahooService = new YahooService(
+  cacheAdapter(),
+  fetchYahooFeed,
+  Date.now,
+  (articles) => {
+    if (!archiveConfigured()) return;
+    waitUntil(
+      newsArchive.record(articles).catch(() => {
+        console.error("ROMNOA news_record_failed");
+      }),
+    );
+  },
+);
+const newest = (a: YahooArticle, b: YahooArticle) =>
+  (Date.parse(b.publishedAt || "") || 0) - (Date.parse(a.publishedAt || "") || 0);
+// 新着 of one Japan-time day: ROMNOA's record of that day, plus (for today)
+// the live feed, so nothing current is missing while the record catches up.
+async function dayResponse(
+  day: string,
+  service: Pick<YahooService, "get">,
+  archive: Pick<NewsArchive, "day" | "firstDay"> | null,
+  headers: Record<string, string>,
+) {
+  const today = japanDay();
+  try {
+    const [live, recorded, firstDay] = await Promise.all([
+      day === today ? service.get() : Promise.resolve(null),
+      archive ? archive.day(day).catch(() => null) : Promise.resolve([]),
+      archive ? archive.firstDay().catch(() => null) : Promise.resolve(null),
+    ]);
+    if (recorded === null && !live)
+      return Response.json(
+        { error: "この日のニュースを取得できませんでした。" },
+        { status: 503, headers },
+      );
+    const articles = [
+      ...new Map(
+        [...(live?.articles.filter((a) => japanDay(a.publishedAt || "") === day) ?? []), ...(recorded ?? [])].map(
+          (a) => [a.id, a],
+        ),
+      ).values(),
+    ].sort(newest);
+    return Response.json(
+      {
+        articles,
+        sources: live?.sources ?? yahooCategories.map((c) => ({ id: c.id, status: "ok" as const, fetchedAt: null })),
+        generatedAt: new Date().toISOString(),
+        date: day,
+        firstDay: firstDay ?? (day === today ? today : null),
+      },
+      { headers },
+    );
+  } catch {
+    return Response.json(
+      { error: "この日のニュースを取得できませんでした。" },
+      { status: 503, headers },
+    );
+  }
+}
+export async function handleYahoo(
+  request: Request,
+  service: Pick<YahooService, "get"> = yahooService,
+  archive: Pick<NewsArchive, "day" | "firstDay"> | null = archiveConfigured() ? newsArchive : null,
+) {
   const headers = {
     "Cache-Control": "private, no-store",
     "X-Content-Type-Options": "nosniff",
@@ -260,11 +327,18 @@ export async function handleYahoo(request: Request, service = yahooService) {
       { error: "GETを使用してください。" },
       { status: 405, headers: { ...headers, Allow: "GET" } },
     );
-  if (new URL(request.url).search)
+  const params = new URL(request.url).searchParams;
+  const day = params.get("date");
+  if (
+    [...params.keys()].some((k) => k !== "date") ||
+    params.getAll("date").length > 1 ||
+    (day !== null && (!validDay(day) || day < shiftDay(japanDay(), -(KEEP_DAYS - 1))))
+  )
     return Response.json(
       { error: "指定できないパラメータです。" },
       { status: 400, headers },
     );
+  if (day !== null) return dayResponse(day, service, archive, headers);
   try {
     const result = await service.get();
     if (result.sources.every((s) => s.status === "error"))
@@ -278,5 +352,23 @@ export async function handleYahoo(request: Request, service = yahooService) {
       { error: "ニュースを取得できませんでした。" },
       { status: 503, headers },
     );
+  }
+}
+
+// Called on a schedule so the record keeps up even when nobody opens the
+// app: it only refreshes the RSS feeds (each category at most every 10
+// minutes); fresh items are recorded through the service hook.
+export async function handleYahooRecord(request: Request, service: Pick<YahooService, "get"> = yahooService) {
+  const headers = { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
+  if (request.method !== "GET")
+    return Response.json({ error: "GETを使用してください。" }, { status: 405, headers });
+  try {
+    const result = await service.get();
+    return Response.json(
+      { ok: true, recording: archiveConfigured(), sources: result.sources.map((s) => s.status) },
+      { headers },
+    );
+  } catch {
+    return Response.json({ ok: false }, { status: 503, headers });
   }
 }

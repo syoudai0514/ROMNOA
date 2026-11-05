@@ -115,6 +115,8 @@ export function YahooNews({
   homeView = "topics",
   onHomeView,
   topicDate,
+  newsDate,
+  onFirstDay,
 }: {
   active: boolean;
   mode: "home" | "search" | "saved";
@@ -132,6 +134,10 @@ export function YahooNews({
   onHomeView?: (view: "topics" | "latest") => void;
   /** The Japan-time day whose topics are shown; today when omitted. */
   topicDate?: string;
+  /** The Japan-time day whose 新着 is shown from ROMNOA's record; the live feed when omitted. */
+  newsDate?: string;
+  /** Reports the first day ROMNOA's record covers. */
+  onFirstDay?: (day: string | null) => void;
 }) {
   const [initial] = useState(readLibrary);
   const [library, setLibrary] = useState(initial.value);
@@ -145,6 +151,9 @@ export function YahooNews({
   const [query, setQuery] = useState("");
   const [term, setTerm] = useState("");
   const [topics, setTopics] = useState<YahooArticle[] | null>(null);
+  // 新着 of a chosen day, from ROMNOA's own record.
+  const [dayNews, setDayNews] = useState<{ date: string; articles: YahooArticle[] } | null>(null);
+  const [dayNewsError, setDayNewsError] = useState(false);
   const [topicsError, setTopicsError] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
   // The home list's own "未読のみ", separate from the search option.
@@ -310,6 +319,24 @@ export function YahooNews({
       });
     return () => controller.abort();
   }, [active, mode, refresh, topicDate]);
+  useEffect(() => {
+    if (!active || mode !== "home" || homeView !== "latest" || !newsDate) return;
+    const controller = new AbortController();
+    setDayNewsError(false);
+    void fetch(`/api/yahoo?date=${newsDate}`, { signal: controller.signal })
+      .then(async (r) => {
+        if (!r.ok) throw Error("unavailable");
+        const value = yahooResponseSchema.parse(await r.json());
+        if (value.date !== newsDate) throw Error("day_mismatch");
+        setDayNews({ date: newsDate, articles: value.articles });
+        onFirstDay?.(value.firstDay ?? null);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setDayNewsError(true);
+      });
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, mode, homeView, newsDate, refresh]);
   function update(next: Library) {
     libraryRef.current = next;
     setLibrary(next);
@@ -370,7 +397,11 @@ export function YahooNews({
             ? remote.data?.articles || []
             : mode === "home" && homeView === "topics"
               ? topics || []
-              : data?.articles || [],
+              : mode === "home" && newsDate
+                ? dayNews?.date === newsDate
+                  ? dayNews.articles
+                  : []
+                : data?.articles || [],
         "",
         scope,
         mode === "home" && homeView === "topics" ? "all" : category,
@@ -402,6 +433,8 @@ export function YahooNews({
       homeUnreadOnly,
       searchSort,
       topics,
+      dayNews,
+      newsDate,
       homeView,
       savedOrder,
       mode,
@@ -578,6 +611,11 @@ export function YahooNews({
           }}
           onClose={() => setMySearchOpen(false)}
         />
+      )}
+      {mode === "home" && homeView === "latest" && newsDate && dayNewsError && (
+        <p className="status-banner warning" role="status">
+          この日のニュースを取得できませんでした。更新をお試しください。
+        </p>
       )}
       {mode === "home" && homeView === "topics" && topicsError && (
         <p className="status-banner warning" role="status">

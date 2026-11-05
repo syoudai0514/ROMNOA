@@ -73,7 +73,8 @@ export const yahooArticleSchema = z
   .refine((a) => a.id === a.url && yahooArticleUrl(a.url) === a.url);
 export type YahooArticle = z.infer<typeof yahooArticleSchema>;
 export const yahooResponseSchema = z.object({
-  articles: z.array(yahooArticleSchema).max(450),
+  // A day's record can hold every item ROMNOA saw that day.
+  articles: z.array(yahooArticleSchema).max(5000),
   sources: z
     .array(
       z.object({
@@ -84,6 +85,10 @@ export const yahooResponseSchema = z.object({
     )
     .max(9),
   generatedAt: z.iso.datetime(),
+  // Set when a Japan-time day was asked for.
+  date: z.string().max(10).optional(),
+  // The first day ROMNOA's record covers; earlier days have no 新着.
+  firstDay: z.string().max(10).nullable().optional(),
 });
 export type YahooResponse = z.infer<typeof yahooResponseSchema>;
 export const yahooSearchResponseSchema = z.object({

@@ -1,0 +1,16 @@
+# Keeps ROMNOA's day-by-day record of Yahoo! News 新着 up to date. The
+# endpoint only refreshes the public RSS feeds (each at most every 10
+# minutes); it needs no credentials.
+name: Record news
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Refresh feeds
+        run: curl -fsS --max-time 60 https://romnoa.vercel.app/api/yahoo-record
