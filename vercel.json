@@ -39,9 +39,6 @@
     },
     "api/social.ts": {
       "maxDuration": 15
-    },
-    "api/yahoo-record.ts": {
-      "maxDuration": 30
     }
   },
   "headers": [

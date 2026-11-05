@@ -328,6 +328,10 @@ export async function handleYahoo(
       { status: 405, headers: { ...headers, Allow: "GET" } },
     );
   const params = new URL(request.url).searchParams;
+  // ?record=1: the scheduled refresh (Hobby allows 12 functions, so it
+  // shares this one).
+  if (params.get("record") === "1" && [...params.keys()].length === 1)
+    return handleYahooRecord(request, service);
   const day = params.get("date");
   if (
     [...params.keys()].some((k) => k !== "date") ||

@@ -13,4 +13,4 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: Refresh feeds
-        run: curl -fsS --max-time 60 https://romnoa.vercel.app/api/yahoo-record
+        run: curl -fsS --max-time 60 "https://romnoa.vercel.app/api/yahoo?record=1"

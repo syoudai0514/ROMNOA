@@ -56,3 +56,14 @@ describe("ROMNOA's day record of Yahoo! News", () => {
     expect((await handleYahoo(new Request("https://app/api/yahoo?x=1"), live, archive)).status).toBe(400);
   });
 });
+
+describe("the scheduled refresh", () => {
+  it("shares /api/yahoo as ?record=1 and only refreshes the feeds", async () => {
+    let calls = 0;
+    const live = { get: async () => { calls++; return { articles: [], sources: yahooCategories.map((c) => ({ id: c.id, status: "ok" as const, fetchedAt: null })), generatedAt: new Date().toISOString() }; } };
+    const res = await handleYahoo(new Request("https://app/api/yahoo?record=1"), live, null);
+    expect(res.status).toBe(200);
+    expect(calls).toBe(1);
+    expect((await handleYahoo(new Request("https://app/api/yahoo?record=1&date=x"), live, null)).status).toBe(400);
+  });
+});
