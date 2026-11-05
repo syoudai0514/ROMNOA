@@ -29,7 +29,7 @@ import { Reader } from "./components/Reader";
 import { YahooNews } from "./components/YahooNews";
 import { yahooCategories } from "./lib/yahoo-model";
 import { HomeFilters, CategoryChips } from "./components/HomeFilters";
-import { DayStepper, dayLabel } from "./components/DateFilter";
+import { DayStepper, dayLabel, dayName } from "./components/DateFilter";
 import { SortControl } from "./components/SortControl";
 import { ArticleSearch } from "./components/ArticleSearch";
 import { MySearch } from "./components/MySearch";
@@ -600,9 +600,7 @@ export default function App() {
                 {tab === "home"
                   ? yahooActive
                     ? "Yahoo!ニュース"
-                    : date && date !== japanDay()
-                      ? `${dayLabel(date)}の記事`
-                      : "今日の記事"
+                    : `${date ? dayName(date) : "今日"}の記事`
                   : tab === "search"
                     ? "記事を探す"
                     : tab === "categories"
@@ -992,9 +990,9 @@ export default function App() {
                           : tab === "search"
                             ? "検索結果"
                             : sort === "popular"
-                              ? `人気記事（${date ? dayLabel(date) : "今日"}）`
+                              ? "人気記事"
                               : date
-                                ? `${dayLabel(date)}の記事`
+                                ? "この日の記事"
                                 : query
                                   ? "検索結果"
                                   : category === "すべて"

@@ -243,10 +243,18 @@ export function DateFilter({
 
 // "11月5日（今日）": the day a list shows, in the reader's words.
 export function dayLabel(day: string, today = japanDay()) {
-  const [, m, d] = day.split("-").map(Number);
+  const [y, m, d] = day.split("-").map(Number);
   const relative =
     day === today ? "（今日）" : day === shiftDay(today, -1) ? "（昨日）" : "";
-  return `${m}月${d}日${relative}`;
+  const year = day.slice(0, 4) === today.slice(0, 4) ? "" : `${y}年`;
+  return `${year}${m}月${d}日${relative}`;
+}
+
+// "今日" / "昨日" / "10月19日" / "2019年3月10日": a day as a page title names it.
+export function dayName(day: string, today = japanDay()) {
+  if (day === today) return "今日";
+  if (day === shiftDay(today, -1)) return "昨日";
+  return dayLabel(day, today);
 }
 
 // The selected day, always visible above the list, with one-tap moves to

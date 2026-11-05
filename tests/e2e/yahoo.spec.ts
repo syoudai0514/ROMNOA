@@ -163,7 +163,7 @@ test("Yahoo opens the body before the image; same-category links, back and next 
   await expect(
     page.getByRole("dialog", { name: "記事画像の拡大表示" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "拡大画像を閉じる" }).click();
+  await page.getByRole("button", { name: "拡大画像を閉じて戻る" }).click();
   await expect(
     reader.getByRole("link", { name: /元記事を開く/ }),
   ).toHaveAttribute("href", articles[0].url);

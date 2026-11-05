@@ -108,7 +108,7 @@ test("calendar chooses an older year; keyword search ignores dates and sorts by 
     .getByRole("button", { name: "2019年3月10日", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: /2019-03-10の記事/ }),
+    page.getByRole("heading", { name: /2019年3月10日の記事/ }),
   ).toBeVisible();
   await submit(page, "図書館");
   await expect(page.getByTestId("article-row")).toHaveCount(2);

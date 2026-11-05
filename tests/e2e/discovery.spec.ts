@@ -52,7 +52,8 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
       json: response(
         q.get("mode") as "popular" | "date",
         q.get("date"),
-        q.has("date") ? [third] : undefined,
+        // Popular starts on today: today's list has all three, the past day one.
+        q.get("date") === past ? [third] : undefined,
       ),
     });
   });
@@ -72,7 +73,7 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
     .getByRole("combobox", { name: "記事の並び順" })
     .selectOption("popular");
   await expect(
-    page.getByRole("heading", { name: /人気記事（今日）/ }),
+    page.getByRole("heading", { name: /人気記事/ }),
   ).toBeVisible();
   await expect(page.getByTestId("article-row")).toHaveCount(3);
   await expect(page.locator(".rank-label strong")).toHaveText([
@@ -92,7 +93,7 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
     .getByRole("button", { name: /^記事を開く/ })
     .click();
   await expect(page.getByRole("dialog")).toContainText("[テスト用本文]");
-  expect(readerQueries).toEqual(["popular"]);
+  expect(readerQueries).toEqual([`date:${japanDay()}`]);
   await page.getByRole("button", { name: "記事を閉じる", exact: true }).click();
   await page.getByLabel("掲載日", { exact: true }).fill(past);
   await page.getByRole("button", { name: "表示", exact: true }).click();
@@ -110,7 +111,7 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
     .getByRole("button", { name: /^記事を開く/ })
     .click();
   await expect(page.getByRole("dialog")).toContainText(third.title);
-  expect(readerQueries).toEqual(["popular", `date:${past}`]);
+  expect(readerQueries).toEqual([`date:${japanDay()}`, `date:${past}`]);
 });
 
 test("date archive finds older stories, keeps favorites/read, changes day and clears back to latest", async ({
