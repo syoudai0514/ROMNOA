@@ -72,7 +72,7 @@ test("source popularity preserves ranks, combines date/search, and opens ranked 
     .getByRole("combobox", { name: "記事の並び順" })
     .selectOption("popular");
   await expect(
-    page.getByRole("heading", { name: /人気記事（サイト別）/ }),
+    page.getByRole("heading", { name: /人気記事（今日）/ }),
   ).toBeVisible();
   await expect(page.getByTestId("article-row")).toHaveCount(3);
   await expect(page.locator(".rank-label strong")).toHaveText([
@@ -154,7 +154,7 @@ test("date archive finds older stories, keeps favorites/read, changes day and cl
   await expect(page.getByTestId("article-row")).toContainText("既読");
   await page.getByRole("button", { name: "前の日", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /2026-10-19の記事/ }),
+    page.getByRole("heading", { name: /10月19日の記事/ }),
   ).toBeVisible();
   await expect(page.getByTestId("article-row")).toHaveCount(0);
   await page.getByRole("button", { name: "次の日", exact: true }).click();

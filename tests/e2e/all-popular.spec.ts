@@ -56,7 +56,7 @@ test("popularity shows all 80 articles including zeros, and saved unread catalog
   );
   await expect(page.locator(".bookmark-metric").first()).toContainText("100件");
   await expect(
-    page.getByRole("heading", { name: /人気記事（全取得記事）/ }),
+    page.getByRole("heading", { name: /人気記事（今日）/ }),
   ).toContainText("80");
   await page
     .getByRole("button", { name: `保存する: ${pool[79].title}`, exact: true })

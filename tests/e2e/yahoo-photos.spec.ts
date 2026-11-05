@@ -290,7 +290,7 @@ test("feature next/previous, thumbnail choice, swipe and zoom work without leavi
     display(5),
   );
   await zoom
-    .getByRole("button", { name: "拡大画像を閉じる", exact: true })
+    .getByRole("button", { name: "拡大画像を閉じて戻る", exact: true })
     .click();
   await page
     .getByRole("region", { name: "この記事の写真特集", exact: true })
@@ -454,7 +454,7 @@ test("enlarged gallery supports buttons and swipe, and restores the selected pho
   });
   await expect(viewer).toContainText("4 / 5");
   await viewer
-    .getByRole("button", { name: "拡大画像を閉じる", exact: true })
+    .getByRole("button", { name: "拡大画像を閉じて戻る", exact: true })
     .click();
   await expect(feature.locator(".photo-feature-stage img")).toHaveAttribute(
     "src",
@@ -486,7 +486,7 @@ test("article pictures navigate horizontally and zoom keeps the chosen image", a
   );
   await gallery.getByRole("button", { name: "二枚目を拡大" }).click();
   await page.getByRole("button", { name: "前の画像" }).click();
-  await page.getByRole("button", { name: "拡大画像を閉じる" }).click();
+  await page.getByRole("button", { name: "拡大画像を閉じて戻る" }).click();
   await expect(gallery.locator(".article-gallery-stage img")).toHaveAttribute(
     "alt",
     "記事の大きい写真",

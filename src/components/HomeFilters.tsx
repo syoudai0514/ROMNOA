@@ -55,7 +55,12 @@ export function HomeFilters({
         )}
       </summary>
       <CategoryChips category={category} onChange={onCategory} />
-      <DateFilter key={date} date={date} onChange={onDate} />
+      <DateFilter
+        key={date}
+        date={date}
+        onChange={onDate}
+        clearable={sort !== "popular"}
+      />
       <SortControl sort={sort} onChange={onSort} popular="bookmarks" />
     </details>
   );

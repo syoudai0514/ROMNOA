@@ -414,7 +414,7 @@ test("image gallery expands, moves between images, and returns focus to the arti
   await expect(viewer.getByRole("button", { name: "前の画像" })).toBeDisabled();
   await viewer.getByRole("button", { name: "次の画像" }).click();
   await expect(viewer.locator("img")).toHaveAttribute("src", pictures[1]);
-  await viewer.getByRole("button", { name: "拡大画像を閉じる" }).click();
+  await viewer.getByRole("button", { name: "拡大画像を閉じて戻る" }).click();
   await expect(viewer).toHaveCount(0);
   await expect(
     page.getByRole("dialog").getByRole("heading", { level: 1 }),
@@ -698,7 +698,7 @@ test("Imgur photos load without a body toggle, and inline image/article clicks s
   await body.getByRole("button", { name: "画像1を拡大", exact: true }).click();
   const viewer = page.getByRole("dialog", { name: "記事画像の拡大表示" });
   await expect(viewer.locator("img")).toHaveAttribute("src", photos[0]);
-  await viewer.getByRole("button", { name: "拡大画像を閉じる" }).click();
+  await viewer.getByRole("button", { name: "拡大画像を閉じて戻る" }).click();
   await body
     .getByRole("button", { name: "次の画像まとめ", exact: true })
     .click();

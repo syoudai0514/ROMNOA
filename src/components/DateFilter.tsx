@@ -149,9 +149,12 @@ function DatePicker({
 export function DateFilter({
   date,
   onChange,
+  clearable = true,
 }: {
   date: string;
   onChange: (day: string) => void;
+  // The popular view always ranks one day, so it offers no "all dates".
+  clearable?: boolean;
 }) {
   const [draft, setDraft] = useState(date);
   const [calendar, setCalendar] = useState(false);
@@ -206,30 +209,15 @@ export function DateFilter({
           </button>
         ))}
       </div>
+      {/* Moving day by day happens in the DayStepper above the list. */}
       {date ? (
-        <div className="date-shortcuts">
-          <button
-            className="button quiet"
-            aria-label="前の日"
-            disabled={date <= "2005-01-01"}
-            onClick={() => onChange(shiftDay(date, -1))}
-          >
-            <ChevronLeft size={16} />
-            前の日
-          </button>
-          <button
-            className="button quiet"
-            aria-label="次の日"
-            disabled={date >= today}
-            onClick={() => onChange(shiftDay(date, 1))}
-          >
-            次の日
-            <ChevronRight size={16} />
-          </button>
-          <button className="text-button" onClick={() => onChange("")}>
-            日付を解除
-          </button>
-        </div>
+        clearable && (
+          <div className="date-shortcuts">
+            <button className="text-button" onClick={() => onChange("")}>
+              日付を解除
+            </button>
+          </div>
+        )
       ) : (
         <p className="date-help">
           <button className="text-button" onClick={() => setCalendar(true)}>
@@ -250,5 +238,61 @@ export function DateFilter({
         />
       )}
     </section>
+  );
+}
+
+// "11月5日（今日）": the day a list shows, in the reader's words.
+export function dayLabel(day: string, today = japanDay()) {
+  const [, m, d] = day.split("-").map(Number);
+  const relative =
+    day === today ? "（今日）" : day === shiftDay(today, -1) ? "（昨日）" : "";
+  return `${m}月${d}日${relative}`;
+}
+
+// The selected day, always visible above the list, with one-tap moves to
+// the previous / next day and back to today.
+export function DayStepper({
+  date,
+  onChange,
+}: {
+  date: string;
+  onChange: (day: string) => void;
+}) {
+  const today = japanDay();
+  return (
+    <nav className="day-stepper" aria-label="表示する日">
+      <button
+        className="button quiet"
+        aria-label="前の日"
+        disabled={date <= "2005-01-01"}
+        onClick={() => onChange(shiftDay(date, -1))}
+      >
+        <ChevronLeft size={16} aria-hidden="true" />
+        前の日
+      </button>
+      <strong aria-live="polite">{dayLabel(date, today)}</strong>
+      {date < today ? (
+        <span className="day-stepper-forward">
+          <button
+            className="button quiet"
+            aria-label="次の日"
+            onClick={() => onChange(shiftDay(date, 1))}
+          >
+            次の日
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+          {date < shiftDay(today, -1) && (
+            <button className="text-button" onClick={() => onChange(today)}>
+              今日
+            </button>
+          )}
+        </span>
+      ) : (
+        <button className="button quiet" aria-label="次の日" disabled>
+          次の日
+          <ChevronRight size={16} aria-hidden="true" />
+        </button>
+      )}
+    </nav>
   );
 }

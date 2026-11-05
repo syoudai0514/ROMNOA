@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Expand, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Expand } from "lucide-react";
 
 export type Picture = { url: string; alt: string; role?: "cover" | "body" };
 
@@ -88,18 +88,21 @@ export function ImageViewer({
           setIndex((i) => Math.min(pictures.length - 1, i + 1));
       }}
     >
+      {/* Back sits top-left like the reader's own 戻る, within thumb reach of
+          the usual way out; a downward swipe also closes. */}
       <header>
-        <span>
-          記事内の画像 {index + 1} / {pictures.length}
-        </span>
         <button
-          className="icon-button"
+          className="button quiet image-viewer-back"
           onClick={() => onClose(index)}
-          aria-label="拡大画像を閉じる"
+          aria-label="拡大画像を閉じて戻る"
           autoFocus
         >
-          <X />
+          <ArrowLeft size={17} aria-hidden="true" />
+          戻る
         </button>
+        <span>
+          {index + 1} / {pictures.length}
+        </span>
       </header>
       <div
         className="image-viewer-canvas"
@@ -114,6 +117,11 @@ export function ImageViewer({
           if (!start || !end) return;
           const x = end.clientX - start.x,
             y = end.clientY - start.y;
+          // Swipe down to close, as photo viewers usually allow.
+          if (y > 90 && y > Math.abs(x) * 1.5) {
+            onClose(index);
+            return;
+          }
           if (Math.abs(x) > 50 && Math.abs(x) > Math.abs(y) * 1.2)
             setIndex((i) =>
               Math.max(0, Math.min(pictures.length - 1, i + (x < 0 ? 1 : -1))),

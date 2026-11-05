@@ -29,6 +29,7 @@ import { Reader } from "./components/Reader";
 import { YahooNews } from "./components/YahooNews";
 import { yahooCategories } from "./lib/yahoo-model";
 import { HomeFilters, CategoryChips } from "./components/HomeFilters";
+import { DayStepper, dayLabel } from "./components/DateFilter";
 import { SortControl } from "./components/SortControl";
 import { ArticleSearch } from "./components/ArticleSearch";
 import { MySearch } from "./components/MySearch";
@@ -148,7 +149,17 @@ export default function App() {
           ? "date"
           : null
       : null;
-  const discovery = useDiscovery(discoveryMode, date);
+  // The popular view ranks one day at a time, starting with today; it never
+  // mixes every fetched day into one ranking.
+  const popularHome =
+    tab === "home" && !yahooActive && !searchActive && sort === "popular";
+  useEffect(() => {
+    if (popularHome && !date) setDate(japanDay());
+  }, [popularHome, date]);
+  const discovery = useDiscovery(
+    discoveryMode,
+    popularHome && !date ? japanDay() : date,
+  );
   const viewFeed = searchActive
     ? pastSearch.data
     : discoveryMode
@@ -589,7 +600,9 @@ export default function App() {
                 {tab === "home"
                   ? yahooActive
                     ? "Yahoo!ニュース"
-                    : "今日の記事"
+                    : date && date !== japanDay()
+                      ? `${dayLabel(date)}の記事`
+                      : "今日の記事"
                   : tab === "search"
                     ? "記事を探す"
                     : tab === "categories"
@@ -619,7 +632,7 @@ export default function App() {
                       aria-pressed={sort === "popular"}
                       onClick={() => {
                         setHomeSort("popular");
-                        setDate("");
+                        setDate(japanDay());
                       }}
                     >
                       人気
@@ -798,6 +811,9 @@ export default function App() {
                       )}
                     </div>
                   ) : null}
+                  {tab === "home" && date && (
+                    <DayStepper date={date} onChange={setDate} />
+                  )}
                   {tab === "home" ? (
                     <HomeFilters
                       category={category}
@@ -900,17 +916,13 @@ export default function App() {
                           fullPopularity ? (
                             <>
                               <p>
-                                新着の全記事と配信元の人気記事を対象に、実際のはてなブックマーク数順で表示しています。
+                                {date
+                                  ? `${dayLabel(date)}に掲載された記事を、実際のはてなブックマーク数順で表示しています。日付は上の「前の日・次の日」で変えられます。`
+                                  : "新着の全記事と配信元の人気記事を対象に、実際のはてなブックマーク数順で表示しています。"}
                               </p>
                               <p>
-                                取得できた記事を全件含めています。配信元サイト独自の閲覧数順位や、全過去記事の順位ではありません。
+                                取得できた記事を全件含めています。配信元サイト独自の閲覧数順位や、過去のその日の順位の再現ではありません。
                               </p>
-                              {date && (
-                                <p>
-                                  {date}{" "}
-                                  掲載の全取得記事が対象です。過去の人気順位の再現ではありません。
-                                </p>
-                              )}
                               {discovery.data?.bookmarks === null && (
                                 <p>
                                   人気データを取得できませんでした。記事を減らさず、新着順で全件表示しています。
@@ -980,11 +992,9 @@ export default function App() {
                           : tab === "search"
                             ? "検索結果"
                             : sort === "popular"
-                              ? fullPopularity
-                                ? "人気記事（全取得記事）"
-                                : "人気記事（サイト別）"
+                              ? `人気記事（${date ? dayLabel(date) : "今日"}）`
                               : date
-                                ? `${date}の記事`
+                                ? `${dayLabel(date)}の記事`
                                 : query
                                   ? "検索結果"
                                   : category === "すべて"
