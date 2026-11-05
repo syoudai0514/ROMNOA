@@ -1,3 +1,4 @@
+import { encountSocial } from "./encount-social.js";
 import { mdprSocial } from "./mdpr-social.js";
 import { realSoundGallery, realSoundImageKey } from "./realsound-gallery.js";
 import { crankSocial } from "./crank-social.js";
@@ -470,6 +471,7 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
     ],
     ["crank-social", () => crankSocial(html, url)],
     ["mdpr-social", () => mdprSocial(html, url)],
+    ["encount-social", () => encountSocial(html, url)],
     ["vois", () => voisGallery(html, url)],
     ["realsound", () => realSoundGallery(html, url)],
     ["declared", () => declaredGallery(html, url)],
@@ -565,7 +567,7 @@ export class MemoryPhotoCache implements PhotoCache {
 }
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
-  const cache = getCache({ namespace: "romnoa-yahoo-photos-v34" });
+  const cache = getCache({ namespace: "romnoa-yahoo-photos-v35" });
   return {
     async get(k) {
       const p = entrySchema.safeParse(await cache.get(k));
