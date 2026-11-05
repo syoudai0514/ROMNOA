@@ -2718,3 +2718,7 @@ button {
 .day-stepper { margin: 0; }
 .day-stepper .button { min-height: 36px; }
 .is-home .home-filters > summary { min-height: 36px; }
+.discovery-note > summary { list-style: none; }
+.discovery-note > summary::-webkit-details-marker { display: none; }
+.discovery-note > summary::before { content: "▸"; font-size: 10px; }
+.discovery-note[open] > summary::before { content: "▾"; }
