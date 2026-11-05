@@ -1,6 +1,6 @@
 import { SlidersHorizontal } from "lucide-react";
 import { categories, type Category, type Sort } from "../lib/model";
-import { DateFilter } from "./DateFilter";
+import { DateFilter, dayLabel } from "./DateFilter";
 import { SortControl } from "./SortControl";
 
 export function CategoryChips({
@@ -48,7 +48,7 @@ export function HomeFilters({
         <span>カテゴリ・日付</span>
         {(category !== "すべて" || date) && (
           <small>
-            {[category !== "すべて" ? category : "", date]
+            {[category !== "すべて" ? category : "", date && dayLabel(date)]
               .filter(Boolean)
               .join(" · ")}
           </small>

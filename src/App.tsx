@@ -942,7 +942,7 @@ export default function App() {
                               </p>
                               {date && (
                                 <p>
-                                  {date}
+                                  {dayLabel(date)}
                                   掲載の記事で絞り込み中。過去の人気順位ではありません。
                                 </p>
                               )}
@@ -950,7 +950,7 @@ export default function App() {
                           )
                         ) : (
                           <p>
-                            {date}
+                            {date && dayLabel(date)}
                             （日本時間）の記事を、配信元の日付別ページから取得しています。
                           </p>
                         )}
