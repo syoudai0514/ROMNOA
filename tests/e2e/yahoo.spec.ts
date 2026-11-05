@@ -47,7 +47,7 @@ const response = {
 };
 async function setup(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
-  await page.route("**/api/yahoo-topics", (r) =>
+  await page.route("**/api/yahoo-topics**", (r) =>
     r.fulfill({ json: { articles } }),
   );
   await page.route("**/api/yahoo", (r) => r.fulfill({ json: response }));
@@ -106,7 +106,7 @@ async function channel(page: Page) {
     .getByRole("group", { name: "配信チャンネル" })
     .getByRole("button", { name: "ニュース", exact: true })
     .click();
-  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "新着", exact: true }).click();
 }
 async function tab(page: Page, name: string) {
   await page
@@ -220,7 +220,7 @@ test("Yahoo search separates titles from feed leads, has no date restriction, an
   await channel(page);
   await tab(page, "保存");
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
-  await page.route("**/api/yahoo-topics", (r) =>
+  await page.route("**/api/yahoo-topics**", (r) =>
     r.fulfill({ json: { articles } }),
   );
   await page.route("**/api/yahoo", (r) =>
@@ -252,7 +252,7 @@ test("Yahoo category failures and invalid updates keep safe cached content witho
   page,
 }) => {
   await setup(page);
-  await page.route("**/api/yahoo-topics", (r) =>
+  await page.route("**/api/yahoo-topics**", (r) =>
     r.fulfill({ json: { articles } }),
   );
   await page.route("**/api/yahoo", (r) =>
@@ -277,7 +277,7 @@ test("Yahoo category failures and invalid updates keep safe cached content witho
     .click();
   await expect(page.getByTestId("yahoo-row")).toHaveCount(1);
   await expect(page.getByTestId("yahoo-row")).toContainText("スポーツ");
-  await page.route("**/api/yahoo-topics", (r) =>
+  await page.route("**/api/yahoo-topics**", (r) =>
     r.fulfill({ json: { articles } }),
   );
   await page.route("**/api/yahoo", (r) =>
@@ -716,7 +716,7 @@ test("switches between roundup and news with one tap across tabs", async ({
   await news.click();
   await expect(news).toHaveAttribute("aria-pressed", "true");
   await expect(
-    page.getByRole("heading", { name: "Yahoo!ニュース", exact: true }),
+    page.getByRole("heading", { name: "今日のニュース", exact: true }),
   ).toBeVisible();
 });
 
@@ -731,7 +731,7 @@ test("topic thumbnails load from the matching article without blocking other top
   }));
   const secondImage =
     "https://newsatcl-pctr.c.yimg.jp/t/amd-img/second-news-view.jpg?w=450";
-  await page.route("**/api/yahoo-topics", (r) =>
+  await page.route("**/api/yahoo-topics**", (r) =>
     r.fulfill({ json: { articles: topicItems } }),
   );
   await page.route("**/api/yahoo-photos?**", (r) => {

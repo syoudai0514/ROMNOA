@@ -262,9 +262,12 @@ export function dayName(day: string, today = japanDay()) {
 export function DayStepper({
   date,
   onChange,
+  min = "2005-01-01",
 }: {
   date: string;
   onChange: (day: string) => void;
+  // The oldest day the source offers.
+  min?: string;
 }) {
   const today = japanDay();
   return (
@@ -272,7 +275,7 @@ export function DayStepper({
       <button
         className="button quiet"
         aria-label="前の日"
-        disabled={date <= "2005-01-01"}
+        disabled={date <= min}
         onClick={() => onChange(shiftDay(date, -1))}
       >
         <ChevronLeft size={16} aria-hidden="true" />

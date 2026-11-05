@@ -41,7 +41,7 @@ import {
   type SearchScope,
 } from "./lib/search-model";
 import { useDiscovery } from "./lib/use-discovery";
-import { japanDay } from "./lib/discovery-model";
+import { japanDay, shiftDay } from "./lib/discovery-model";
 import {
   articleDate,
   categories,
@@ -114,11 +114,20 @@ export default function App() {
         ? setShelfSort(value)
         : setHomeSort(value);
   const [date, setDate] = useState("");
+  // News home: the day's topics (by day, for the last week) or current news.
+  const [yahooView, setYahooView] = useState<"topics" | "latest">("topics");
+  const [yahooDate, setYahooDate] = useState(() => japanDay());
   const [searchTerm, setSearchTerm] = useState("");
   const [searchScope, setSearchScope] = useState<SearchScope>("title");
   const [mySearchOpen, setMySearchOpen] = useState(false);
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
   const [searchUnreadOnly, setSearchUnreadOnly] = useState(false);
+  const [homeUnreadOnly, setHomeUnreadOnly] = useState(false);
+  // Search period, as in news search: empty means every date.
+  const [searchFrom, setSearchFrom] = useState("");
+  const [searchTo, setSearchTo] = useState("");
+  const searchPeriod = !!(searchFrom || searchTo);
+  const invalidSearchPeriod = !!(searchFrom && searchTo && searchFrom > searchTo);
   const [ngInput, setNgInput] = useState("");
   const [expanded, setExpanded] = useState<string[]>([]);
   const [selection, setSelection] = useState<ReaderSelection | null>(null);
@@ -334,10 +343,17 @@ export default function App() {
           ? discovery.data?.bookmarks || undefined
           : undefined,
     });
-    const visible =
-      tab === "search" && searchUnreadOnly
-        ? filtered.filter((a) => !prefs.read[a.id])
-        : filtered;
+    const inPeriod = (a: (typeof filtered)[number]) => {
+      if (!searchPeriod || invalidSearchPeriod) return true;
+      const day = a.publishedAt ? japanDay(a.publishedAt) : "";
+      return !!day && (!searchFrom || day >= searchFrom) && (!searchTo || day <= searchTo);
+    };
+    const visible = filtered.filter(
+      (a) =>
+        (tab === "search"
+          ? (!searchUnreadOnly || !prefs.read[a.id]) && inPeriod(a)
+          : tab !== "home" || !homeUnreadOnly || !prefs.read[a.id]),
+    );
     if (tab === "saved" && savedView === "saved" && shelfOrder === "saved") {
       const positions = new Map(prefs.saved.map((a, i) => [a.id, i]));
       return visible.sort(
@@ -366,6 +382,11 @@ export default function App() {
     discovery.data,
     pastSearch.data,
     searchUnreadOnly,
+    homeUnreadOnly,
+    searchFrom,
+    searchTo,
+    searchPeriod,
+    invalidSearchPeriod,
   ]);
   const savedTopics = useSavedTopics(listedArticles, tab === "saved" && savedView === "saved");
   const articles = savedTopics.articles;
@@ -599,7 +620,7 @@ export default function App() {
               <h1 ref={headingRef}>
                 {tab === "home"
                   ? yahooActive
-                    ? "Yahoo!ニュース"
+                    ? `${yahooView === "topics" ? dayName(yahooDate) : "今日"}のニュース`
                     : `${date ? dayName(date) : "今日"}の記事`
                   : tab === "search"
                     ? "記事を探す"
@@ -609,6 +630,32 @@ export default function App() {
                         ? "あなたの本棚"
                         : "設定"}
               </h1>
+              {tab === "home" && yahooActive && (
+                <div className="home-actions">
+                  <div
+                    className="segmented quick-sort"
+                    aria-label="ニュースの表示切替"
+                  >
+                    <button
+                      className={yahooView === "topics" ? "selected" : ""}
+                      aria-pressed={yahooView === "topics"}
+                      onClick={() => {
+                        setYahooView("topics");
+                        setYahooCategory("all");
+                      }}
+                    >
+                      トピックス
+                    </button>
+                    <button
+                      className={yahooView === "latest" ? "selected" : ""}
+                      aria-pressed={yahooView === "latest"}
+                      onClick={() => setYahooView("latest")}
+                    >
+                      新着
+                    </button>
+                  </div>
+                </div>
+              )}
               {tab === "home" && !yahooActive && (
                 <div className="home-actions">
                   <div
@@ -697,8 +744,18 @@ export default function App() {
                 </div>
               )}
 
+            {yahooActive && tab === "home" && yahooView === "topics" && (
+              <DayStepper
+                date={yahooDate}
+                onChange={setYahooDate}
+                min={shiftDay(japanDay(), -6)}
+              />
+            )}
             <YahooNews
               active={yahooActive}
+              homeView={yahooView}
+              onHomeView={setYahooView}
+              topicDate={yahooDate}
               mode={
                 tab === "search" ? "search" : tab === "saved" ? "saved" : "home"
               }
@@ -779,6 +836,48 @@ export default function App() {
                           </button>
                         }
                       />
+                      {/* The same period filter as news search. */}
+                      <fieldset className="yahoo-period search-period">
+                        <legend>期間（未指定は全期間）</legend>
+                        <label>
+                          開始日{" "}
+                          <input
+                            type="date"
+                            aria-label="期間の開始日"
+                            value={searchFrom}
+                            max={searchTo || japanDay()}
+                            onChange={(e) => setSearchFrom(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          終了日{" "}
+                          <input
+                            type="date"
+                            aria-label="期間の終了日"
+                            value={searchTo}
+                            min={searchFrom || undefined}
+                            max={japanDay()}
+                            onChange={(e) => setSearchTo(e.target.value)}
+                          />
+                        </label>
+                        {searchPeriod && (
+                          <button
+                            className="text-button"
+                            type="button"
+                            onClick={() => {
+                              setSearchFrom("");
+                              setSearchTo("");
+                            }}
+                          >
+                            全期間に戻す
+                          </button>
+                        )}
+                      </fieldset>
+                      {invalidSearchPeriod && (
+                        <p role="alert" className="yahoo-note">
+                          開始日は終了日以前にしてください。
+                        </p>
+                      )}
                       {mySearchOpen && (
                         <MySearch
                           onSearch={(term) => startSearch(term)}
@@ -840,7 +939,12 @@ export default function App() {
                           </p>
                         )}
                       <details>
-                        <summary>検索期間：全期間（日付の制限なし）</summary>
+                        <summary>
+                          検索期間：
+                          {searchPeriod && !invalidSearchPeriod
+                            ? `${searchFrom ? dayLabel(searchFrom) : "最初"} 〜 ${searchTo ? dayLabel(searchTo) : "今日"}（見つかった記事から絞り込み・日付不明の記事は除外）`
+                            : "全期間（日付の制限なし）"}
+                        </summary>
                       <p>
                         表示件数は見つかった記事の累計です。全期間の総ヒット数ではありません。
                       </p>
@@ -1015,12 +1119,16 @@ export default function App() {
                         </select>
                       </label>
                     )}
-                    {tab === "search" && (
+                    {(tab === "search" || tab === "home") && (
                       <label className="unread-only">
                         <input
                           type="checkbox"
-                          checked={searchUnreadOnly}
-                          onChange={(e) => setSearchUnreadOnly(e.target.checked)}
+                          checked={tab === "search" ? searchUnreadOnly : homeUnreadOnly}
+                          onChange={(e) =>
+                            (tab === "search" ? setSearchUnreadOnly : setHomeUnreadOnly)(
+                              e.target.checked,
+                            )
+                          }
                         />
                         未読のみ
                       </label>

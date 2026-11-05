@@ -14,7 +14,7 @@ for (const channel of ["ニュース", "まとめ"]) {
     }, { roundup, news, defaults });
     await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
     await page.route("**/api/yahoo", (r) => r.fulfill({ json: { articles: news, sources: [], generatedAt: new Date().toISOString() } }));
-    await page.route("**/api/yahoo-topics", (r) => r.fulfill({ json: { articles: [] } }));
+    await page.route("**/api/yahoo-topics**", (r) => r.fulfill({ json: { articles: [] } }));
     await page.goto("/");
     await page.getByRole("group", { name: "配信チャンネル" }).getByRole("button", { name: channel, exact: true }).click();
     await page.getByRole("navigation", { name: /メインナビゲーション|下部ナビゲーション/ }).filter({ visible: true }).getByRole("button", { name: "保存", exact: true }).click();

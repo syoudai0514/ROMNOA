@@ -102,7 +102,7 @@ test("linked three-page gallery starts at photo 2 and never includes recommendat
     .getByRole("group", { name: "配信チャンネル" })
     .getByRole("button", { name: "ニュース", exact: true })
     .click();
-  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "新着", exact: true }).click();
   await page
     .getByRole("button", {
       name: "ニュースを開く: 岡田紗佳の写真",

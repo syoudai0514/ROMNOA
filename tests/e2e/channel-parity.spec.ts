@@ -14,7 +14,7 @@ const articles: YahooArticle[] = [0, 1, 2].map((i) => ({
 }));
 async function setup(page: Page) {
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
-  await page.route("**/api/yahoo-topics", (r) => r.fulfill({ json: { articles } }));
+  await page.route("**/api/yahoo-topics**", (r) => r.fulfill({ json: { articles } }));
   await page.route("**/api/yahoo", (r) =>
     r.fulfill({ json: { articles, sources: yahooCategories.map((c) => ({ id: c.id, status: "ok", fetchedAt: "2026-10-29T10:00:00Z" })), generatedAt: new Date().toISOString() } }),
   );
@@ -36,7 +36,7 @@ const channel = (page: Page, name: string) =>
 test("news reader toggles read state and opened news appears in history", async ({ page }) => {
   await setup(page);
   await channel(page, "ニュース");
-  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "新着", exact: true }).click();
   await page.getByRole("button", { name: `ニュースを開く: ${articles[1].title}` }).click();
   const toggle = page.getByRole("button", { name: "未読に戻す" });
   await expect(toggle).toHaveAttribute("aria-pressed", "true");

@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Search,
   X,
+  ArrowDownUp,
 } from "lucide-react";
 import { z } from "zod";
 import { articleDate } from "../lib/model";
@@ -111,6 +112,9 @@ export function YahooNews({
   onCategory,
   refreshSignal = 0,
   onBusyChange,
+  homeView = "topics",
+  onHomeView,
+  topicDate,
 }: {
   active: boolean;
   mode: "home" | "search" | "saved";
@@ -123,6 +127,11 @@ export function YahooNews({
   /** Incremented by the header refresh button. */
   refreshSignal?: number;
   onBusyChange?: (busy: boolean) => void;
+  /** The home list: the day's topics or the current news. */
+  homeView?: "topics" | "latest";
+  onHomeView?: (view: "topics" | "latest") => void;
+  /** The Japan-time day whose topics are shown; today when omitted. */
+  topicDate?: string;
 }) {
   const [initial] = useState(readLibrary);
   const [library, setLibrary] = useState(initial.value);
@@ -135,14 +144,16 @@ export function YahooNews({
   const [refresh, setRefresh] = useState(0);
   const [query, setQuery] = useState("");
   const [term, setTerm] = useState("");
-  const [homeView, setHomeView] = useState<"topics" | "latest">("topics");
   const [topics, setTopics] = useState<YahooArticle[] | null>(null);
   const [topicsError, setTopicsError] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
+  // The home list's own "未読のみ", separate from the search option.
+  const [homeUnreadOnly, setHomeUnreadOnly] = useState(false);
   const [mySearchOpen, setMySearchOpen] = useState(false);
   const [searchSort, setSearchSort] = useState<"provider" | "newest" | "unread">("provider");
   useEffect(() => {
-    if (category !== "all" && mode === "home") setHomeView("latest");
+    if (category !== "all" && mode === "home") onHomeView?.("latest");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, mode]);
   const [resultLimit, setResultLimit] = useState(2000);
   const [dateFrom, setDateFrom] = useState("");
@@ -277,19 +288,28 @@ export function YahooNews({
     if (!active || mode !== "home") return;
     const controller = new AbortController();
     setTopicsError(false);
-    void fetch("/api/yahoo-topics", { signal: controller.signal })
+    setTopics(null);
+    void fetch(
+      `/api/yahoo-topics${topicDate ? `?date=${topicDate}` : ""}`,
+      { signal: controller.signal },
+    )
       .then(async (r) => {
         if (!r.ok) throw Error("unavailable");
         const data = z
-          .object({ articles: z.array(yahooArticleSchema).max(30) })
+          .object({
+            date: z.string().optional(),
+            articles: z.array(yahooArticleSchema).max(200),
+          })
           .parse(await r.json());
+        // Never show another day's topics as this day's.
+        if (data.date && data.date !== topicDate) throw Error("topics_mismatch");
         setTopics(data.articles);
       })
       .catch(() => {
         if (!controller.signal.aborted) setTopicsError(true);
       });
     return () => controller.abort();
-  }, [active, mode, refresh]);
+  }, [active, mode, refresh, topicDate]);
   function update(next: Library) {
     libraryRef.current = next;
     setLibrary(next);
@@ -360,7 +380,11 @@ export function YahooNews({
           (mode === "saved" && savedOrder === "saved"),
       )
         .filter(allowed)
-        .filter((a) => !searchActive || !unreadOnly || !library.read[a.id])
+        .filter((a) =>
+          searchActive
+            ? !unreadOnly || !library.read[a.id]
+            : mode !== "home" || !homeUnreadOnly || !library.read[a.id],
+        )
         .sort((a, b) => {
           if (!searchActive || searchSort === "provider") return 0;
           if (searchSort === "unread") {
@@ -375,6 +399,7 @@ export function YahooNews({
       historyView,
       library.read,
       unreadOnly,
+      homeUnreadOnly,
       searchSort,
       topics,
       homeView,
@@ -554,36 +579,14 @@ export function YahooNews({
           onClose={() => setMySearchOpen(false)}
         />
       )}
-      {mode === "home" && (
-        <div
-          className="category-chips"
-          role="group"
-          aria-label="ニュースの表示"
-        >
-          <button
-            className={homeView === "topics" ? "selected" : ""}
-            aria-pressed={homeView === "topics"}
-            onClick={() => setHomeView("topics")}
-          >
-            トピックス
-          </button>
-          <button
-            className={homeView === "latest" ? "selected" : ""}
-            aria-pressed={homeView === "latest"}
-            onClick={() => setHomeView("latest")}
-          >
-            新着ニュース
-          </button>
-        </div>
-      )}
       {mode === "home" && homeView === "topics" && topicsError && (
         <p className="status-banner warning" role="status">
-          トピックスを取得できませんでした。更新をお試しください。
+          この日のトピックスを取得できませんでした。更新をお試しください。
         </p>
       )}
       {mode === "saved" && !historyView && (
-        <label>
-          並び順{" "}
+        <label className="sort-control">
+          <ArrowDownUp size={14} aria-hidden="true" />
           <select
             aria-label="保存したニュースの並び順"
             value={savedOrder}
@@ -702,9 +705,19 @@ export function YahooNews({
         {(searchActive ? remote.searching : loading) && (
           <span>{searchActive ? "Yahooを検索中…" : "更新中…"}</span>
         )}
+        {mode === "home" && (
+          <label className="unread-only">
+            <input
+              type="checkbox"
+              checked={homeUnreadOnly}
+              onChange={(e) => setHomeUnreadOnly(e.target.checked)}
+            />
+            未読のみ
+          </label>
+        )}
         {searchActive && (
           <label className="sort-control">
-            並び順{" "}
+            <ArrowDownUp size={14} aria-hidden="true" />
             <select
               aria-label="ニュース検索結果の並び順"
               value={searchSort}

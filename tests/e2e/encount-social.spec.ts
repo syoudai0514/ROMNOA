@@ -7,7 +7,7 @@ test("ENCOUNT Instagram photo page displays both real post photos", async ({ pag
   const article = { id, url: id, title: "テスト記事", summary: "本文", image: null, category: "entertainment", publishedAt: null };
   await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
   await page.route("**/api/yahoo", (r) => r.fulfill({ json: { articles: [article], sources: [], generatedAt: new Date().toISOString() } }));
-  await page.route("**/api/yahoo-topics", (r) => r.fulfill({ json: { articles: [] } }));
+  await page.route("**/api/yahoo-topics**", (r) => r.fulfill({ json: { articles: [] } }));
   await page.route("**/api/yahoo-body?**", (r) => r.fulfill({ status: 502, json: {} }));
   await page.route("**/api/yahoo-photos?**", (r) => {
     const p = new URL(r.request().url()).searchParams;
@@ -18,7 +18,7 @@ test("ENCOUNT Instagram photo page displays both real post photos", async ({ pag
   await page.route("https://scontent.cdninstagram.com/**", (r) => r.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" />' }));
   await page.goto("/");
   await page.getByRole("group", { name: "配信チャンネル" }).getByRole("button", { name: "ニュース", exact: true }).click();
-  await page.getByRole("button", { name: "新着ニュース", exact: true }).click();
+  await page.getByRole("button", { name: "新着", exact: true }).click();
   await page.getByRole("button", { name: "ニュースを開く: テスト記事" }).click();
   const social = page.getByRole("region", { name: "リンク先の投稿" });
   await expect(social.getByText("投稿の本文")).toBeVisible();
