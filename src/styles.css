@@ -2722,3 +2722,10 @@ button {
 .discovery-note > summary::-webkit-details-marker { display: none; }
 .discovery-note > summary::before { content: "▸"; font-size: 10px; }
 .discovery-note[open] > summary::before { content: "▾"; }
+
+.day-title { display: flex; align-items: center; gap: 0; min-width: 0; }
+.day-title h1 { font-size: 19px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.day-title .icon-button { width: 34px; min-width: 34px; height: 40px; padding: 0; }
+.day-title .icon-button:first-child { margin-left: -8px; }
+.day-title-today { font-size: 12px; min-height: 40px; padding: 0 4px; }
+@media (max-width: 380px) { .day-title h1 { font-size: 17px; } }

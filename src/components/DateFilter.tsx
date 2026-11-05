@@ -307,3 +307,50 @@ export function DayStepper({
     </nav>
   );
 }
+
+// The page title with the day on either side: ‹ 今日の記事 › (and 今日 to
+// jump back from an older day). Takes no extra row above the list.
+export function DayTitle({
+  date,
+  onChange,
+  min = "2005-01-01",
+  suffix,
+  headingRef,
+}: {
+  date: string;
+  onChange: (day: string) => void;
+  min?: string;
+  suffix: string;
+  headingRef?: React.Ref<HTMLHeadingElement>;
+}) {
+  const today = japanDay();
+  return (
+    <div className="day-title">
+      <button
+        className="icon-button"
+        aria-label="前の日"
+        disabled={date <= min}
+        onClick={() => onChange(shiftDay(date, -1))}
+      >
+        <ChevronLeft size={20} aria-hidden="true" />
+      </button>
+      <h1 ref={headingRef} aria-live="polite">
+        {dayName(date, today)}
+        {suffix}
+      </h1>
+      <button
+        className="icon-button"
+        aria-label="次の日"
+        disabled={date >= today}
+        onClick={() => onChange(shiftDay(date, 1))}
+      >
+        <ChevronRight size={20} aria-hidden="true" />
+      </button>
+      {date < shiftDay(today, -1) && (
+        <button className="text-button day-title-today" onClick={() => onChange(today)}>
+          今日
+        </button>
+      )}
+    </div>
+  );
+}

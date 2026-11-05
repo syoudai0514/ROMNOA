@@ -29,7 +29,7 @@ import { Reader } from "./components/Reader";
 import { YahooNews } from "./components/YahooNews";
 import { yahooCategories } from "./lib/yahoo-model";
 import { HomeFilters, CategoryChips } from "./components/HomeFilters";
-import { DayStepper, dayLabel, dayName } from "./components/DateFilter";
+import { DayTitle, dayLabel } from "./components/DateFilter";
 import { SortControl } from "./components/SortControl";
 import { ArticleSearch } from "./components/ArticleSearch";
 import { MySearch } from "./components/MySearch";
@@ -155,7 +155,8 @@ export default function App() {
     tab === "home" && !yahooActive && !searchActive
       ? sort === "popular"
         ? "popular"
-        : date
+        : // Today is the live feed; a past day comes from the day's archive.
+          date && date !== japanDay()
           ? "date"
           : null
       : null;
@@ -166,6 +167,14 @@ export default function App() {
   useEffect(() => {
     if (popularHome && !date) setDate(japanDay());
   }, [popularHome, date]);
+  // The oldest day the current home view can show.
+  const homeMinDay = yahooActive
+    ? yahooView === "topics"
+      ? shiftDay(japanDay(), -6)
+      : newsFirstDay && newsFirstDay < japanDay()
+        ? newsFirstDay
+        : japanDay()
+    : "2005-01-01";
   const discovery = useDiscovery(
     discoveryMode,
     popularHome && !date ? japanDay() : date,
@@ -618,12 +627,18 @@ export default function App() {
             <div
               className={`page-heading ${tab === "home" ? "home-heading" : ""}`}
             >
+              {tab === "home" ? (
+                // The day bar lives in the title row: ‹ 今日の記事 ›
+                <DayTitle
+                  date={date || japanDay()}
+                  onChange={setDate}
+                  min={homeMinDay}
+                  headingRef={headingRef}
+                  suffix={yahooActive ? "のニュース" : "の記事"}
+                />
+              ) : (
               <h1 ref={headingRef}>
-                {tab === "home"
-                  ? yahooActive
-                    ? `${dayName(date || japanDay())}のニュース`
-                    : `${date ? dayName(date) : "今日"}の記事`
-                  : tab === "search"
+                {tab === "search"
                     ? "記事を探す"
                     : tab === "categories"
                       ? "カテゴリ"
@@ -631,6 +646,7 @@ export default function App() {
                         ? "あなたの本棚"
                         : "設定"}
               </h1>
+              )}
               {tab === "home" && yahooActive && (
                 <div className="home-actions">
                   <div
@@ -744,17 +760,6 @@ export default function App() {
 
             {yahooActive && tab === "home" && (
               <>
-                <DayStepper
-                  date={date || japanDay()}
-                  onChange={setDate}
-                  min={
-                    yahooView === "topics"
-                      ? shiftDay(japanDay(), -6)
-                      : newsFirstDay && newsFirstDay < japanDay()
-                        ? newsFirstDay
-                        : japanDay()
-                  }
-                />
                 {yahooView === "topics" && date && date < shiftDay(japanDay(), -6) && (
                   <p className="yahoo-note" role="status">
                     トピックスは過去7日分まで表示できます。
@@ -926,9 +931,6 @@ export default function App() {
                       )}
                     </div>
                   ) : null}
-                  {tab === "home" && (
-                    <DayStepper date={date || japanDay()} onChange={setDate} />
-                  )}
                   {tab === "home" ? (
                     <HomeFilters
                       category={category}
