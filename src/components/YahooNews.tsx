@@ -685,9 +685,13 @@ export function YahooNews({
         </p>
       )}
       {mode !== "search" && (
-        <p className="yahoo-note">
-          RSSの記事冒頭や、検索結果のサムネイル・抜粋を広告なしで表示します。本文の続きは元記事で読めます（広告が出る場合があります）。
-        </p>
+        <details className="discovery-note">
+          <summary>表示について</summary>
+          <p>
+            RSSの記事冒頭や、検索結果のサムネイル・抜粋を広告なしで表示します。本文の続きは元記事で読めます（広告が出る場合があります）。
+            {homeView === "topics" && mode === "home" && " トピックスは過去7日分を日付で切り替えられます。新着は配信中のニュースのみです。"}
+          </p>
+        </details>
       )}
       <div className="yahoo-result-heading" role="status">
         <strong>
