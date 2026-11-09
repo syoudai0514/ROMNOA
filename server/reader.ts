@@ -1,5 +1,5 @@
 import { fetchArticleHtml } from "./article-html.js";
-import { readerVideoUrl, socialPostUrl } from "../src/lib/reader-media.js";
+import { readerVideoUrl, socialPostUrl, youtubeVideo } from "../src/lib/reader-media.js";
 import { discoveryService } from "./discovery.js";
 import { searchService } from "./search.js";
 import { validCollection } from "../src/lib/discovery-model.js";
@@ -350,6 +350,8 @@ export function extractArticle(
           const raw = match[0].replace(/[)\]｝）、，。.,;!?]+$/, "");
           const image = readerImageUrl(raw, article.sourceId);
           const video = readerVideoUrl(raw, article.sourceId);
+          const youtube = youtubeVideo(raw);
+          if (youtube && links.size < 40) links.set(youtube.url, { url: youtube.url, title: "YouTubeの動画" });
           if (image) addImage(image);
           if ((image || video) && links.size < 40)
             links.set(raw, { url: raw, title: raw });
@@ -359,6 +361,11 @@ export function extractArticle(
     if (node.type !== "tag") return;
     const a = node.attribs;
     if (!hidden(node) && !advertisement(node) && !recommendation(node)) {
+      if (node.name === "iframe") {
+        const video = [a.src, a["data-src"], a["data-lazy-src"]]
+          .map(raw => { const url = raw && readerLinkUrl(raw, article.url); return url ? youtubeVideo(url) : null; }).find(Boolean);
+        if (video && links.size < 40) links.set(video.url, { url: video.url, title: "YouTubeの動画" });
+      }
       const post = socialPostUrl(
         a["data-instgrm-permalink"] ||
           a.cite ||
@@ -478,7 +485,7 @@ export function extractArticle(
   if (pageKind === "roundup") imageAudit.related += images.size;
   const linkedMedia = [...links.values()].some(
     (link) =>
-      readerVideoUrl(link.url, article.sourceId) || socialPostUrl(link.url),
+      readerVideoUrl(link.url, article.sourceId) || socialPostUrl(link.url) || youtubeVideo(link.url),
   );
   if (!blocks.length && linkedMedia)
     blocks.push({ type: "text", text: "記事内のメディアです。" });
@@ -535,7 +542,7 @@ export class MemoryReaderCache implements ReaderCache {
 }
 function runtimeCache(): ReaderCache {
   if (!process.env.VERCEL) return new MemoryReaderCache();
-  const cache = getCache({ namespace: "romnoa-personal-reader-v3" });
+  const cache = getCache({ namespace: "romnoa-personal-reader-v4" });
   return {
     async get(key) {
       const value = (await cache.get(key)) as ReaderEntry | undefined;

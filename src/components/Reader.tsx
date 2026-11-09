@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { articleDate, sourceInfo, type Article } from "../lib/model";
 import { readerPictures } from "../lib/reader-model";
-import { readerVideos, readerSocialPosts } from "../lib/reader-media";
+import { readerVideos, readerSocialPosts, readerYouTubeVideos } from "../lib/reader-media";
 import { ArticleVideos } from "./ArticleVideos";
 import { useReader } from "../lib/use-reader";
 import { ReaderText } from "./ReaderText";
@@ -72,6 +72,7 @@ export function Reader({
   const socialPosts = reading.document
     ? readerSocialPosts(reading.document)
     : [];
+  const youtubeVideos = reading.document ? readerYouTubeVideos(reading.document) : [];
   const videoElements = useRef<Record<string, HTMLVideoElement | null>>({});
   const [videoNotice, setVideoNotice] = useState<{
     id: string;
@@ -329,7 +330,7 @@ export function Reader({
                   <div className="image-classification">
                     <strong>
                       この記事の画像 {pictures.length}枚
-                      {videos.length > 0 ? `・動画 ${videos.length}本` : ""}
+                      {videos.length + youtubeVideos.length > 0 ? `・動画 ${videos.length + youtubeVideos.length}本` : ""}
                     </strong>
                     <details>
                       <summary>画像の判定について</summary>
@@ -354,6 +355,24 @@ export function Reader({
                       }}
                     />
                   )}
+                  {youtubeVideos.length > 0 && (
+                    <section className="youtube-videos" aria-label="YouTubeの動画">
+                      {youtubeVideos.map((video, i) => (
+                        <div key={video.id} className="youtube-video">
+                          <iframe
+                            src={video.embedUrl}
+                            title={`YouTube動画 ${i + 1}`}
+                            loading="lazy"
+                            referrerPolicy="strict-origin-when-cross-origin"
+                            allow="encrypted-media; picture-in-picture; fullscreen"
+                            allowFullScreen
+                            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+                          />
+                          <a href={video.url} target="_blank" rel="noopener noreferrer">YouTubeで開く <ExternalLink size={14} /></a>
+                        </div>
+                      ))}
+                    </section>
+                  )}
                   {videoNotice?.id === article.id && (
                     <p role="status" className="video-notice">
                       {videoNotice.text}
@@ -361,7 +380,7 @@ export function Reader({
                   )}
                   {pictures.length > 0 ? (
                     <ArticleImages key={article.id} pictures={pictures} />
-                  ) : videos.length === 0 && socialPosts.length === 0 ? (
+                  ) : videos.length === 0 && youtubeVideos.length === 0 && socialPosts.length === 0 ? (
                     <p className="reader-image-placeholder">
                       この記事で表示できる画像は見つかりませんでした。判定保留の画像は読み込んでいません。
                     </p>

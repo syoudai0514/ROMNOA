@@ -131,3 +131,32 @@ export function readerSocialPosts(document: ReaderDocument) {
   }
   return [...posts.values()];
 }
+
+export function youtubeVideo(raw: string) {
+  const u = target(raw);
+  if (!u) return null;
+  let id: string | undefined;
+  if (["youtu.be", "www.youtu.be"].includes(u.hostname)) id = u.pathname.match(/^\/([A-Za-z0-9_-]{11})\/?$/)?.[1];
+  else if (["youtube.com", "www.youtube.com", "m.youtube.com"].includes(u.hostname)) {
+    if (u.pathname === "/watch" && u.searchParams.getAll("v").length === 1) id = u.searchParams.get("v") || undefined;
+    else id = u.pathname.match(/^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{11})\/?$/)?.[1];
+  } else if (["youtube-nocookie.com", "www.youtube-nocookie.com"].includes(u.hostname)) id = u.pathname.match(/^\/embed\/([A-Za-z0-9_-]{11})\/?$/)?.[1];
+  if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
+  const rawStart = u.searchParams.get("start") || u.searchParams.get("t") || "";
+  const seconds = /^\d{1,6}s?$/.test(rawStart) ? Number(rawStart.replace(/s$/, "")) : 0;
+  const start = seconds > 0 && seconds <= 86400 ? seconds : 0;
+  return {
+    id,
+    url: `https://www.youtube.com/watch?v=${id}${start ? `&t=${start}s` : ""}`,
+    embedUrl: `https://www.youtube-nocookie.com/embed/${id}${start ? `?start=${start}` : ""}`,
+  };
+}
+
+export function readerYouTubeVideos(document: ReaderDocument) {
+  const videos = new Map<string, NonNullable<ReturnType<typeof youtubeVideo>>>();
+  for (const link of document.links) {
+    const video = youtubeVideo(link.url);
+    if (video && !videos.has(video.id) && videos.size < 8) videos.set(video.id, video);
+  }
+  return [...videos.values()];
+}
