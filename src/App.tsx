@@ -119,6 +119,7 @@ export default function App() {
   const [yahooView, setYahooView] = useState<"topics" | "latest">("topics");
   const [newsFirstDay, setNewsFirstDay] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchResultPage, setSearchResultPage] = useState(1);
   const [searchScope, setSearchScope] = useState<SearchScope>("title");
   const [mySearchOpen, setMySearchOpen] = useState(false);
   const [savedView, setSavedView] = useState<"saved" | "history">("saved");
@@ -150,7 +151,12 @@ export default function App() {
   const searchActive = tab === "search" && !yahooActive && !!searchTerm;
   const [yahooRefresh, setYahooRefresh] = useState(0);
   const [yahooBusy, setYahooBusy] = useState(false);
-  const pastSearch = useSearch(searchActive ? searchTerm : "", searchScope);
+  const pastSearch = useSearch(
+    searchActive && !invalidSearchPeriod ? searchTerm : "",
+    searchScope,
+    searchFrom,
+    searchTo,
+  );
   const discoveryMode =
     tab === "home" && !yahooActive && !searchActive
       ? sort === "popular"
@@ -404,6 +410,14 @@ export default function App() {
     () => groupArticles(articles, prefs.groupSimilar && sort !== "popular"),
     [articles, prefs.groupSimilar, sort],
   );
+  const searchResultPages = Math.max(1, Math.ceil(groups.length / 100));
+  const displayedResultPage = Math.min(searchResultPage, searchResultPages);
+  const displayedGroups = searchActive
+    ? groups.slice((displayedResultPage - 1) * 100, displayedResultPage * 100)
+    : groups;
+  useEffect(() => setSearchResultPage(1), [
+    searchTerm, searchScope, searchFrom, searchTo, category, searchUnreadOnly, sort,
+  ]);
   const savedIds = new Set(prefs.saved.map((a) => a.id));
   const selected = selection && selection.resolved?.index === selection.index
     ? selection.resolved.article
@@ -867,6 +881,7 @@ export default function App() {
                           <input
                             type="date"
                             aria-label="期間の開始日"
+                            min="2005-01-01"
                             value={searchFrom}
                             max={searchTo || japanDay()}
                             onChange={(e) => setSearchFrom(e.target.value)}
@@ -878,7 +893,7 @@ export default function App() {
                             type="date"
                             aria-label="期間の終了日"
                             value={searchTo}
-                            min={searchFrom || undefined}
+                            min={searchFrom || "2005-01-01"}
                             max={japanDay()}
                             onChange={(e) => setSearchTo(e.target.value)}
                           />
@@ -947,7 +962,7 @@ export default function App() {
                     <div className="search-results-note" role="status">
                       {pastSearch.searching && (
                         <p>
-                          過去の記事も確認中です。見つかり次第、この一覧に追加します。
+                          公開アーカイブも検索中です。見つかった記事を順次追加します。
                         </p>
                       )}
                       {!pastSearch.searching &&
@@ -955,20 +970,21 @@ export default function App() {
                         !searchArticles.length &&
                         !!pastSearch.data.nextSources.length && (
                           <p>
-                            ここまで一致する記事はありません。「さらに過去の記事」で検索を続けられます。
+                            ここまで一致する記事はありません。「検索を続ける」でアーカイブを確認できます。
                           </p>
                         )}
+                      {pastSearch.data?.archive && <p>{pastSearch.data.archive.complete ? "アーカイブ検索完了" : `${pastSearch.data.archive.month} ${pastSearch.searching ? "のアーカイブを確認中" : "まで検索・未完了"}`} · 確認済み {pastSearch.data.archive.pages}ページ</p>}
                       <details>
                         <summary>
                           検索期間：
                           {searchPeriod && !invalidSearchPeriod
-                            ? `${searchFrom ? dayLabel(searchFrom) : "最初"} 〜 ${searchTo ? dayLabel(searchTo) : "今日"}（見つかった記事から絞り込み・日付不明の記事は除外）`
-                            : "全期間（日付の制限なし）"}
+                            ? `${searchFrom ? dayLabel(searchFrom) : "最初"} 〜 ${searchTo ? dayLabel(searchTo) : "今日"}（指定期間のアーカイブを検索）`
+                            : "公開アーカイブ全期間（2005年以降）"}
                         </summary>
                       <p>
-                        表示件数は見つかった記事の累計です。全期間の総ヒット数ではありません。
+                        表示件数は確認済みの記事数です。検索完了までは増える場合があります。初回は過去記事の確認に時間がかかります。
                       </p>
-                      {pastSearch.data?.searchedRange.from && (
+                      {!pastSearch.data?.archive && pastSearch.data?.searchedRange.from && (
                         <p>
                           ここまで確認した記事の日付：
                           {searchDay(
@@ -979,10 +995,10 @@ export default function App() {
                       )}
                       {!pastSearch.searching &&
                         pastSearch.data &&
-                        !pastSearch.data.nextSources.length &&
+                        pastSearch.archiveDone &&
                         !error && (
                           <p>
-                            配信元が検索で提供する最後のページまで確認しました。未収録・削除済みの記事を含む全記事の網羅は保証できません。
+                            指定期間の公開アーカイブを最後まで確認しました。削除済み・非公開の記事は含みません。
                           </p>
                         )}
                       {!!localSearchCount && (
@@ -1122,7 +1138,7 @@ export default function App() {
                                   : category === "すべて"
                                     ? "新着記事"
                                     : category}
-                      <span>{groups.length}</span>
+                      <span>{searchActive ? articles.length : groups.length}</span>
                     </h2>
                     {tab === "saved" && savedView === "saved" && (
                       <label className="sort-control">
@@ -1236,7 +1252,7 @@ export default function App() {
                         )}
                       </div>
                     ) : (
-                      groups.map((group) => (
+                      displayedGroups.map((group) => (
                         <div className="article-group" key={group[0].id}>
                           <ArticleRow
                             article={group[0]}
@@ -1300,20 +1316,20 @@ export default function App() {
                       className="search-pagination"
                       aria-label="検索結果のページ移動"
                     >
+                      {searchResultPages > 1 && <div className="result-pages">
+                        <button className="button secondary" disabled={displayedResultPage <= 1} onClick={() => setSearchResultPage(n => Math.max(1,n-1))}>前の100件</button>
+                        <span>{displayedResultPage} / {searchResultPages}</span>
+                        <button className="button secondary" disabled={displayedResultPage >= searchResultPages} onClick={() => setSearchResultPage(n => n+1)}>次の100件</button>
+                      </div>}
                       <span>
-                        {pastSearch.searching
-                          ? "過去の記事を確認中…"
-                          : `${pastSearch.page}ページ分を検索済み`}
+                        {pastSearch.searching ? "過去の記事を確認中…" : pastSearch.archiveDone ? "公開アーカイブ検索完了" : "検索は途中です"}
                       </span>
                       <button
                         className="button secondary"
-                        onClick={pastSearch.next}
-                        disabled={
-                          pastSearch.searching ||
-                          !pastSearch.data?.nextSources.length
-                        }
+                        onClick={pastSearch.searching ? pastSearch.pause : pastSearch.next}
+                        disabled={pastSearch.archiveDone}
                       >
-                        さらに過去の記事
+                        {pastSearch.searching ? "一時停止" : "検索を続ける"}
                       </button>
                     </nav>
                   )}

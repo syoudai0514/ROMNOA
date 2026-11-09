@@ -2733,3 +2733,8 @@ button {
 .youtube-videos { display: grid; gap: 1rem; margin-block: 1rem; }
 .youtube-video iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: 0.6rem; background: #111; }
 .youtube-video > a { display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem; font-size: 0.85rem; }
+
+.list-heading h2 > span { flex-shrink: 0; white-space: nowrap; }
+
+.search-pagination { flex-wrap: wrap; }
+.result-pages { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }

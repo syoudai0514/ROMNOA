@@ -108,3 +108,23 @@ describe("cumulative historical search", () => {
     expect(searchDay(null)).toBe("不明");
   });
 });
+
+import { appendArchiveSearch } from "../src/lib/search-results";
+it("merges independent archive matches without losing native results or double-counting the same story", () => {
+  const old = page(1, [a]);
+  const next = {
+    ...page(1, [a, b]),
+    archive: {
+      cursor: null,
+      month: "2010-01",
+      complete: true,
+      failed: false,
+      from: "2005-01-01",
+      to: "2026-11-09",
+      pages: 2,
+    },
+  };
+  const result = appendArchiveSearch(old, next);
+  expect(result.articles.map((a) => a.id)).toEqual([a.id, b.id]);
+  expect(result.archive?.complete).toBe(true);
+});

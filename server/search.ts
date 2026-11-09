@@ -1,3 +1,5 @@
+import { roundupIndex, parseArchiveCursor } from "./roundup-index.js";
+import { validDay, japanDay } from "../src/lib/discovery-model.js";
 import { createHash } from "node:crypto";
 import { getCache } from "@vercel/functions";
 import { DomUtils } from "htmlparser2";
@@ -352,6 +354,49 @@ export class SearchService {
       generatedAt: new Date(this.now()).toISOString(),
     };
   }
+  async getArchive(
+    query: string,
+    scope: SearchScope,
+    cursor?: string,
+    from?: string,
+    to?: string,
+  ): Promise<SearchResponse> {
+    const data = await roundupIndex.search(
+      normalizeSearch(query),
+      scope,
+      cursor,
+      from,
+      to,
+    );
+    const now = this.now();
+    // Reader authorization uses exactly the verified archive matches, just as
+    // for provider-search pages; a client cursor is never an article permit.
+    for (const source of data.sources) {
+      await this.cache
+        .set(`${data.collection}:${source.id}`, {
+          articles: data.articles.filter((a) => a.sourceId === source.id),
+          hasNext: !!data.archive.cursor,
+          fetchedAt: now,
+          checkedAt: now,
+          failed: source.status === "error",
+        })
+        .catch(() => undefined);
+    }
+    return {
+      ...data,
+      page: 1,
+      nextSources: [],
+      bookmarks: await this.metrics(data.articles).catch(() => null),
+      searchedRange: {
+        from: data.articles.map((a) => a.publishedAt!).sort()[0] || null,
+        to:
+          data.articles
+            .map((a) => a.publishedAt!)
+            .sort()
+            .at(-1) || null,
+      },
+    };
+  }
   async findKnown(id: string, collection: string) {
     const target = readerArticleTarget(id);
     if (!target || !searchCollection.test(collection)) return;
@@ -370,7 +415,8 @@ export class SearchService {
 export const searchService = new SearchService(runtimeCache());
 export async function handleSearch(
   request: Request,
-  service: Pick<SearchService, "get"> = searchService,
+  service: Pick<SearchService, "get"> &
+    Partial<Pick<SearchService, "getArchive">> = searchService,
   enabled = true,
 ) {
   const headers = {
@@ -383,6 +429,25 @@ export async function handleSearch(
       { error: "GETのみ利用できます。" },
       { status: 405, headers: { ...headers, Allow: "GET" } },
     );
+  const params = new URL(request.url).searchParams;
+  if (params.get("index") === "1") {
+    if (
+      [...params.keys()].some((k) => k !== "index") ||
+      params.getAll("index").length !== 1
+    )
+      return Response.json(
+        { error: "invalid_index_request" },
+        { status: 400, headers },
+      );
+    try {
+      return Response.json(await roundupIndex.record(), { headers });
+    } catch {
+      return Response.json(
+        { error: "索引の更新を完了できませんでした。次回再試行します。" },
+        { status: 503, headers },
+      );
+    }
+  }
   const p = new URL(request.url).searchParams,
     query = p.get("q") || "",
     page = Number(p.get("page") || "1"),
@@ -400,8 +465,16 @@ export async function handleSearch(
     (p.has("page") && !/^[1-9]\d{0,3}$/.test(p.get("page")!)) ||
     [...p.keys()].some(
       (k) =>
-        !["q", "page", "sources", "scope"].includes(k) ||
-        p.getAll(k).length !== 1,
+        ![
+          "q",
+          "page",
+          "sources",
+          "scope",
+          "archive",
+          "cursor",
+          "from",
+          "to",
+        ].includes(k) || p.getAll(k).length !== 1,
     ) ||
     !ids.length ||
     ids.length > 2 ||
@@ -412,13 +485,49 @@ export async function handleSearch(
       { error: "検索語（80文字以内）またはページ指定を確認してください。" },
       { status: 400, headers },
     );
+  if (
+    (p.has("archive") && p.get("archive") !== "1") ||
+    (p.has("cursor") &&
+      (!p.has("archive") ||
+        !/^\d{4}-(?:0[1-9]|1[0-2]):(?:0|[1-9]\d{0,3}):(?:0|[1-9]\d{0,3})$/.test(
+          p.get("cursor")!,
+        ))) ||
+    ["from", "to"].some((k) => p.has(k) && !validDay(p.get(k)!)) ||
+    (p.get("from") || "2005-01-01") > (p.get("to") || japanDay())
+  )
+    return Response.json(
+      { error: "検索期間または継続位置を確認してください。" },
+      { status: 400, headers },
+    );
+  if (p.has("cursor"))
+    try {
+      parseArchiveCursor(
+        p.get("cursor")!,
+        (p.get("from") || "2005-01-01").slice(0, 7),
+        (p.get("to") || japanDay()).slice(0, 7),
+      );
+    } catch {
+      return Response.json(
+        { error: "検索期間の範囲外です。" },
+        { status: 400, headers },
+      );
+    }
   if (scope === "body" && !enabled)
     return Response.json(
       { error: "本文検索はこの機能は現在利用できません。" },
       { status: 403, headers },
     );
   try {
-    const data = await service.get(query, page, ids, scope as SearchScope);
+    const data =
+      p.has("archive") && service.getArchive
+        ? await service.getArchive(
+            query,
+            scope as SearchScope,
+            p.get("cursor") || undefined,
+            p.get("from") || undefined,
+            p.get("to") || undefined,
+          )
+        : await service.get(query, page, ids, scope as SearchScope);
     return Response.json(data, {
       status: data.sources.every((s) => s.status === "error") ? 503 : 200,
       headers,

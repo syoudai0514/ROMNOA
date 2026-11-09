@@ -69,3 +69,40 @@ export function searchDay(value: string | null) {
       }).format(new Date(value))
     : "不明";
 }
+
+export function appendArchiveSearch(
+  old: SearchResponse | null,
+  page: SearchResponse,
+): SearchResponse {
+  if (
+    !page.archive ||
+    (old && (old.query !== page.query || old.scope !== page.scope))
+  )
+    throw Error("search_page_mismatch");
+  if (!old) return page;
+  return {
+    ...page,
+    page: old.page,
+    articles: [
+      ...new Map(
+        [...old.articles, ...page.articles].map((a) => [a.id, a]),
+      ).values(),
+    ].sort(newest),
+    bookmarks:
+      old.bookmarks && page.bookmarks
+        ? { ...old.bookmarks, ...page.bookmarks }
+        : null,
+    sources: [
+      ...new Map(
+        [...old.sources, ...page.sources].map((s) => [s.id, s]),
+      ).values(),
+    ],
+    candidateCount: old.candidateCount + page.candidateCount,
+    excludedCount: old.excludedCount + page.excludedCount,
+    unverifiedCount: old.unverifiedCount + page.unverifiedCount,
+    archive: {
+      ...page.archive,
+      pages: (old.archive?.pages || 0) + page.archive.pages,
+    },
+  };
+}

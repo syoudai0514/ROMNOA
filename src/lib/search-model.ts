@@ -37,6 +37,17 @@ export const searchResponseSchema = feedResponseSchema.extend({
       to: z.iso.datetime().nullable(),
     })
     .default({ from: null, to: null }),
+  archive: z
+    .object({
+      cursor: z.string().nullable(),
+      month: z.string(),
+      complete: z.boolean(),
+      failed: z.boolean(),
+      from: z.string(),
+      to: z.string(),
+      pages: z.number().int().nonnegative(),
+    })
+    .optional(),
   query: z.string().min(1).max(80),
   page: z.number().int().min(1).max(MAX_SEARCH_PAGE),
   collection: z.string().regex(searchCollection),

@@ -8,7 +8,7 @@ import {
 import {
   appendSearchPage,
   SEARCH_BATCH_PAGES,
-  SEARCH_BATCH_MATCHES,
+  appendArchiveSearch,
 } from "./search-results";
 import type { Article } from "./model";
 
@@ -52,19 +52,35 @@ export function rememberArticleCollection(data: {
     /* Optional lookup hint; saving a favorite still uses the existing storage warning. */
   }
 }
-export function useSearch(query: string, scope: SearchScope = "title") {
+export function useSearch(
+  query: string,
+  scope: SearchScope = "title",
+  from = "",
+  to = "",
+) {
   const [attempt, setAttempt] = useState(0);
   const [more, setMore] = useState(0);
-  const key = `${query}\n${scope}\n${attempt}`;
+  const [pausedKey, setPausedKey] = useState("");
+  const key = `${query}\n${scope}\n${from}\n${to}\n${attempt}`;
   type Snapshot = {
     key: string;
     data: SearchResponse | null;
     collections: Record<string, string>;
+    nativeDone: boolean;
+    cursor: string | undefined;
+    archiveDone: boolean;
   };
-  const snapshot = useRef<Snapshot>({ key: "", data: null, collections: {} });
+  const snapshot = useRef<Snapshot>({
+    key: "",
+    data: null,
+    collections: {},
+    nativeDone: false,
+    cursor: undefined,
+    archiveDone: false,
+  });
   const [state, setState] = useState<
     Snapshot & { searching: boolean; error: string }
-  >({ key: "", data: null, collections: {}, searching: false, error: "" });
+  >({ ...snapshot.current, searching: false, error: "" });
   useEffect(() => {
     if (!query) return;
     let cancelled = false;
@@ -72,60 +88,96 @@ export function useSearch(query: string, scope: SearchScope = "title") {
     let saved: Snapshot =
       snapshot.current.key === key
         ? snapshot.current
-        : { key, data: null, collections: {} };
-    const initialCount = saved.data?.articles.length || 0;
+        : {
+            key,
+            data: null,
+            collections: {},
+            nativeDone: false,
+            cursor: undefined,
+            archiveDone: false,
+          };
+    if (pausedKey === key) {
+      setState({ ...saved, searching: false, error: "" });
+      return;
+    }
+    const publish = (data: SearchResponse, archive: boolean) => {
+      rememberArticleCollection(data);
+      const collections = { ...saved.collections };
+      for (const a of data.articles) collections[a.id] = data.collection;
+      saved = {
+        ...saved,
+        data: archive
+          ? appendArchiveSearch(saved.data, data)
+          : appendSearchPage(saved.data, data),
+        collections,
+      };
+      if (archive) {
+        saved.cursor = data.archive!.cursor || undefined;
+        saved.archiveDone = data.archive!.complete;
+      }
+      snapshot.current = saved;
+      setState({ ...saved, searching: true, error: "" });
+    };
+    const request = async (url: string) => {
+      const timer = setTimeout(() => abort.abort(), 55000);
+      try {
+        const response = await fetch(url, { signal: abort.signal });
+        if (!response.ok) throw Error("unavailable");
+        const data = searchResponseSchema.parse(await response.json());
+        if (data.query !== query || data.scope !== scope)
+          throw Error("mismatch");
+        return data;
+      } finally {
+        clearTimeout(timer);
+      }
+    };
     setState({ ...saved, searching: true, error: "" });
     void (async () => {
       let error = "";
       try {
-        for (let scanned = 0; scanned < SEARCH_BATCH_PAGES; scanned++) {
-          const page = (saved.data?.page || 0) + 1;
-          const sources = saved.data ? saved.data.nextSources : BOTH;
-          if (!sources.length) break;
-          const timeout = setTimeout(() => abort.abort(), 45000);
-          let data: SearchResponse;
+        if (!saved.nativeDone) {
+          // Fast first results, followed by the independent public archive scan.
           try {
-            const response = await fetch(
-              `/api/search?q=${encodeURIComponent(query)}&page=${page}&scope=${scope}&sources=${sources.join(",")}`,
-              { signal: abort.signal },
-            );
-            if (!response.ok) throw new Error("unavailable");
-            data = searchResponseSchema.parse(await response.json());
-            if (
-              data.query !== query ||
-              data.page !== page ||
-              data.scope !== scope
-            )
-              throw new Error("mismatch");
-          } finally {
-            clearTimeout(timeout);
+            for (let n = 0; n < SEARCH_BATCH_PAGES; n++) {
+              const page = (saved.data?.page || 0) + 1;
+              const sources = saved.data ? saved.data.nextSources : BOTH;
+              if (!sources.length) break;
+              const data = await request(
+                `/api/search?q=${encodeURIComponent(query)}&page=${page}&scope=${scope}&sources=${sources.join(",")}`,
+              );
+              if (cancelled) return;
+              if (data.page !== page) throw Error("mismatch");
+              publish(data, false);
+              if (data.sources.some((s) => s.status === "error")) break;
+            }
+          } catch {
+            if (abort.signal.aborted) throw Error("aborted");
           }
-          if (cancelled) return;
-          rememberArticleCollection(data);
-          const collections = { ...saved.collections };
-          for (const a of data.articles) collections[a.id] = data.collection;
-          saved = {
-            key,
-            data: appendSearchPage(saved.data, data),
-            collections,
-          };
+          saved = { ...saved, nativeDone: true };
           snapshot.current = saved;
-          setState({ ...saved, searching: true, error: "" });
-          if (data.sources.some((s) => s.status === "error")) {
+        }
+        while (!saved.archiveDone && !cancelled) {
+          const p = new URLSearchParams({ q: query, scope, archive: "1" });
+          if (saved.cursor) p.set("cursor", saved.cursor);
+          if (from) p.set("from", from);
+          if (to) p.set("to", to);
+          const data = await request(`/api/search?${p}`);
+          if (cancelled) return;
+          if (!data.archive) throw Error("missing_archive_status");
+          publish(data, true);
+          if (
+            data.archive.failed ||
+            data.sources.some((s) => s.status === "error")
+          ) {
             error =
-              "一部の配信元を確認できませんでした。更新すると再検索できます。";
+              "一部のアーカイブを取得できませんでした。確認済みの記事は残しています。「検索を続ける」で未取得分を再試行します。";
             break;
           }
-          if (
-            saved.data!.articles.length - initialCount >=
-            SEARCH_BATCH_MATCHES
-          )
-            break;
         }
       } catch {
         error = saved.data
-          ? "続きの検索を取得できませんでした。表示済みの記事は残しています。「さらに過去の記事」で再試行できます。"
-          : "過去記事を検索できませんでした。接続や配信元の状態を確認し、再検索してください。";
+          ? "検索を中断しました。確認済みの記事は残しています。「検索を続ける」で再試行できます。"
+          : "過去記事を検索できませんでした。接続を確認して再試行してください。";
       } finally {
         if (!cancelled) setState({ ...saved, searching: false, error });
       }
@@ -134,20 +186,36 @@ export function useSearch(query: string, scope: SearchScope = "title") {
       cancelled = true;
       abort.abort();
     };
-  }, [query, scope, key, more]);
+  }, [query, scope, key, more, pausedKey, from, to]);
   const current =
     state.key === key && query
       ? state
-      : { key, data: null, collections: {}, searching: !!query, error: "" };
+      : {
+          key,
+          data: null,
+          collections: {},
+          nativeDone: false,
+          cursor: undefined,
+          archiveDone: false,
+          searching: !!query,
+          error: "",
+        };
   return {
     ...current,
     loading: current.searching && !current.data,
     page: current.data?.page || 0,
     next: () => {
-      if (!current.searching && current.data?.nextSources.length)
-        setMore((n) => n + 1);
+      setPausedKey("");
+      setMore((n) => n + 1);
     },
-    refresh: () => setAttempt((n) => n + 1),
-    reset: () => setAttempt((n) => n + 1),
+    pause: () => setPausedKey(key),
+    refresh: () => {
+      setPausedKey("");
+      setAttempt((n) => n + 1);
+    },
+    reset: () => {
+      setPausedKey("");
+      setAttempt((n) => n + 1);
+    },
   };
 }

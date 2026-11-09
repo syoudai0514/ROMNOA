@@ -1,6 +1,6 @@
 # Keeps ROMNOA's day-by-day record of Yahoo! News 新着 up to date. The
-# endpoint only refreshes the public RSS feeds (each at most every 10
-# minutes); it needs no credentials.
+# endpoints refresh public RSS feeds and incrementally index the two roundup
+# sites' public monthly archives. The private Blob store is used server-side.
 name: Record news
 on:
   schedule:
@@ -10,7 +10,27 @@ permissions: {}
 jobs:
   record:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
       - name: Refresh feeds
         run: curl -fsS --max-time 60 "https://romnoa.vercel.app/api/yahoo?record=1"
+
+      - name: Build historical roundup index
+        run: curl -fsS --max-time 55 "https://romnoa.vercel.app/api/search?index=1"
+
+  backfill:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Continue historical roundup indexing
+        shell: bash
+        run: |
+          for batch in $(seq 1 800); do
+            result=$(curl -fsS --retry 2 --max-time 55 "https://romnoa.vercel.app/api/search?index=1") || exit 1
+            echo "$result"
+            if echo "$result" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("complete") else 1)'; then
+              break
+            fi
+            sleep 3
+          done

@@ -10,6 +10,21 @@ const older = article(802, {
   publishedAt: "2010-03-01T00:00:00.000Z",
 });
 const collection = (page = 1) => `search:${String(page).repeat(64)}`;
+function archiveEmpty(p: URLSearchParams) {
+  return {
+    ...result(p.get("q")!, 1, [], {}),
+    scope: p.get("scope") || "title",
+    archive: {
+      cursor: null,
+      month: "2005-01",
+      complete: true,
+      failed: false,
+      from: p.get("from") || "2005-01-01",
+      to: p.get("to") || "2026-11-09",
+      pages: 2,
+    },
+  };
+}
 function result(
   query: string,
   page = 1,
@@ -74,6 +89,13 @@ test("calendar chooses an older year; keyword search ignores dates and sorts by 
     });
   });
   await page.route("**/api/search**", (r) => {
+    const archiveParams = new URL(r.request().url()).searchParams;
+    if (archiveParams.has("archive"))
+      return r.fulfill(
+        archiveParams.get("q") === "失敗"
+          ? { status: 503, json: { error: "fail" } }
+          : { json: archiveEmpty(archiveParams) },
+      );
     const p = new URL(r.request().url()).searchParams;
     queries.push(p);
     return r.fulfill({
@@ -125,7 +147,7 @@ test("calendar chooses an older year; keyword search ignores dates and sorts by 
   );
   await expect(page.locator(".bookmark-metric").first()).toContainText("40件");
   await expect(page.locator(".search-results-note")).toContainText(
-    "全期間（日付の制限なし）",
+    "公開アーカイブ全期間（2005年以降）",
   );
   await submit(page, "指標なし");
   await expect(page.locator(".search-results-note")).toContainText(
@@ -143,6 +165,13 @@ test("My Search is visible normally, persists registered terms and searches all 
   await base(page);
   let sent = "";
   await page.route("**/api/search**", (r) => {
+    const archiveParams = new URL(r.request().url()).searchParams;
+    if (archiveParams.has("archive"))
+      return r.fulfill(
+        archiveParams.get("q") === "失敗"
+          ? { status: 503, json: { error: "fail" } }
+          : { json: archiveEmpty(archiveParams) },
+      );
     sent = new URL(r.request().url()).searchParams.get("q")!;
     return r.fulfill({ json: result(sent) });
   });
@@ -191,6 +220,13 @@ test("further search pages keep their authorization context when a story is save
   const requests: number[] = [];
   let from = "";
   await page.route("**/api/search**", (r) => {
+    const archiveParams = new URL(r.request().url()).searchParams;
+    if (archiveParams.has("archive"))
+      return r.fulfill(
+        archiveParams.get("q") === "失敗"
+          ? { status: 503, json: { error: "fail" } }
+          : { json: archiveEmpty(archiveParams) },
+      );
     const p = new URL(r.request().url()).searchParams;
     const n = Number(p.get("page"));
     requests.push(n);
@@ -243,6 +279,13 @@ test("slow or failed searches cannot replace a newer query, and the small screen
 }) => {
   await base(page);
   await page.route("**/api/search**", async (r) => {
+    const archiveParams = new URL(r.request().url()).searchParams;
+    if (archiveParams.has("archive"))
+      return r.fulfill(
+        archiveParams.get("q") === "失敗"
+          ? { status: 503, json: { error: "fail" } }
+          : { json: archiveEmpty(archiveParams) },
+      );
     const q = new URL(r.request().url()).searchParams.get("q")!;
     if (q === "遅い") {
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -281,6 +324,13 @@ test("search target defaults to titles, switches to clean body and keeps scope f
   await base(page);
   const sent: URLSearchParams[] = [];
   await page.route("**/api/search**", async (r) => {
+    const archiveParams = new URL(r.request().url()).searchParams;
+    if (archiveParams.has("archive"))
+      return r.fulfill(
+        archiveParams.get("q") === "失敗"
+          ? { status: 503, json: { error: "fail" } }
+          : { json: archiveEmpty(archiveParams) },
+      );
     const p = new URL(r.request().url()).searchParams;
     sent.push(p);
     const scope = p.get("scope")!,
@@ -325,7 +375,7 @@ test("search target defaults to titles, switches to clean body and keeps scope f
   await page.getByRole("radio", { name: "タイトルのみ", exact: true }).check();
   await expect(page.getByTestId("article-row")).toHaveCount(1);
   await expect(page.locator(".search-pagination")).toContainText(
-    "1ページ分を検索済み",
+    "公開アーカイブ検索完了",
   );
   expect(sent.at(-1)?.get("scope")).toBe("title");
   expect(sent.at(-1)?.has("date")).toBe(false);
@@ -336,200 +386,27 @@ test("search target defaults to titles, switches to clean body and keeps scope f
   ).toBe(false);
 });
 
-test("an empty title-filtered page still offers older results and late body responses cannot overwrite titles", async ({
+test("an empty provider search automatically finds an older archived story", async ({
   page,
 }) => {
   await base(page);
+  let archiveRequests = 0;
   await page.route("**/api/search**", async (r) => {
     const p = new URL(r.request().url()).searchParams;
-    const scope = p.get("scope")!,
-      n = Number(p.get("page"));
-    if (scope === "body")
-      await new Promise((resolve) => setTimeout(resolve, 600));
-    await r
-      .fulfill({
+    if (!p.has("archive"))
+      return r.fulfill({
         json: {
-          ...result(
-            p.get("q")!,
-            n,
-            n <= 5 ? [] : [older],
-            undefined,
-            n <= 5 ? ["hamusoku"] : [],
-          ),
-          scope,
+          ...result(p.get("q")!, Number(p.get("page") || 1), [], {}, []),
+          scope: p.get("scope"),
         },
-      })
-      .catch(() => {});
-  });
-  await page.goto("/");
-  await page
-    .getByRole("group", { name: "配信チャンネル" })
-    .getByRole("button", { name: "まとめ", exact: true })
-    .click();
-  await submit(page, "図書館");
-  await expect(page.locator(".search-results-note")).toContainText(
-    "ここまで一致する記事はありません",
-  );
-  await expect(
-    page.getByRole("button", { name: "さらに過去の記事", exact: true }),
-  ).toBeEnabled();
-  await page.getByRole("radio", { name: "本文を含む", exact: true }).check();
-  await page.getByRole("radio", { name: "タイトルのみ", exact: true }).check();
-  await expect(page.locator(".search-results-note")).toContainText(
-    "タイトルに検索語が含まれる",
-  );
-  await page
-    .getByRole("button", { name: "さらに過去の記事", exact: true })
-    .click();
-  await expect(page.getByTestId("article-row")).toContainText(older.title);
-  await expect(
-    page.getByRole("radio", { name: "タイトルのみ", exact: true }),
-  ).toBeChecked();
-});
-
-test("automatically searches past an empty first page, appends further batches, and keeps per-article reader authorization", async ({
-  page,
-}) => {
-  await base(page);
-  const requests: number[] = [],
-    readerScopes: string[] = [];
-  const later = article(803, {
-    title: "[テスト] さらに昔の記事",
-    publishedAt: "2008-03-01T00:00:00Z",
-  });
-  await page.route("**/api/search**", async (r) => {
-    const p = new URL(r.request().url()).searchParams,
-      n = Number(p.get("page"));
-    requests.push(n);
-    expect(p.has("date")).toBe(false);
-    if (n > 1) expect(p.get("sources")).toBe("hamusoku");
-    await r.fulfill({
+      });
+    archiveRequests++;
+    return r.fulfill({
       json: {
-        ...result(
-          p.get("q")!,
-          n,
-          n === 2 ? [older] : n === 3 ? [newer] : n === 6 ? [later] : [],
-          undefined,
-          n < 6 ? ["hamusoku"] : [],
-        ),
-        scope: p.get("scope"),
+        ...archiveEmpty(p),
+        articles: [older],
+        collection: collection(9),
       },
-    });
-  });
-  await page.route("**/api/reader**", (r) => {
-    const p = new URL(r.request().url()).searchParams;
-    readerScopes.push(p.get("collection")!);
-    return r.fulfill({
-      json: readerFixture(p.get("article") === newer.id ? newer : older),
-    });
-  });
-  await page.goto("/");
-  await page
-    .getByRole("group", { name: "配信チャンネル" })
-    .getByRole("button", { name: "まとめ", exact: true })
-    .click();
-  await submit(page, "図書館");
-  await expect(page.locator(".search-pagination")).toContainText(
-    "5ページ分を検索済み",
-  );
-  await expect(page.getByTestId("article-row")).toHaveCount(2);
-  expect(requests).toEqual([1, 2, 3, 4, 5]);
-  await expect(page.locator(".search-results-note")).toContainText(
-    "2010-03-01",
-  );
-  await page
-    .getByRole("button", { name: `記事を開く: ${newer.title}`, exact: true })
-    .click();
-  await expect(page.getByRole("region", { name: "記事本文" })).toBeVisible();
-  await page.getByRole("button", { name: "次の記事", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText(older.title);
-  await expect.poll(() => readerScopes.length).toBe(2);
-  expect(readerScopes).toEqual([collection(3), collection(2)]);
-  await page.getByRole("button", { name: "記事を閉じる", exact: true }).click();
-  await page
-    .getByRole("button", { name: "さらに過去の記事", exact: true })
-    .click();
-  await expect(page.getByTestId("article-row")).toHaveCount(3);
-  await expect(page.locator(".search-results-note")).toContainText(
-    "最後のページまで確認",
-  );
-  expect(requests).toEqual([1, 2, 3, 4, 5, 6]);
-});
-
-test("saved and history titles with unknown dates appear in both scopes and stay visible in popular order without fake counts", async ({
-  page,
-}) => {
-  await base(page);
-  const saved = article(810, {
-    title: "[テスト] 岡田紗佳さんの保存した記事",
-    publishedAt: null,
-  });
-  const history = article(811, {
-    title: "[テスト] 岡田紗佳さんの以前の記事",
-    publishedAt: null,
-  });
-  const unrelated = article(812, {
-    title: "[テスト] 関係ないおすすめ記事",
-    publishedAt: null,
-  });
-  await page.addInitScript(
-    ({ key, prefs }) => localStorage.setItem(key, JSON.stringify(prefs)),
-    {
-      key: STORAGE_KEY,
-      prefs: {
-        ...defaults,
-        saved: [saved, unrelated],
-        history: [{ article: history, at: Date.now() }],
-      },
-    },
-  );
-  await page.route("**/api/search**", (r) => {
-    const p = new URL(r.request().url()).searchParams;
-    return r.fulfill({
-      json: { ...result(p.get("q")!, 1, [], {}), scope: p.get("scope") },
-    });
-  });
-  await page.goto("/");
-  await page
-    .getByRole("group", { name: "配信チャンネル" })
-    .getByRole("button", { name: "まとめ", exact: true })
-    .click();
-  await submit(page, "岡田紗佳");
-  await expect(page.getByTestId("article-row")).toHaveCount(2);
-  await expect(page.locator(".search-results-note")).toContainText(
-    "保存・履歴のタイトルに一致した記事 2件",
-  );
-  await page.getByRole("radio", { name: "本文を含む", exact: true }).check();
-  await page
-    .getByRole("combobox", { name: "記事の並び順" })
-    .selectOption("popular");
-  await expect(page.getByTestId("article-row")).toHaveCount(2);
-  await expect(page.locator(".bookmark-metric")).toHaveCount(0);
-  await expect(page.locator(".local-search-label")).toHaveCount(2);
-});
-
-test("a later page failure keeps earlier results and retries the same cursor without gaps", async ({
-  page,
-}) => {
-  await base(page);
-  const requests: number[] = [];
-  let failed = false;
-  await page.route("**/api/search**", (r) => {
-    const p = new URL(r.request().url()).searchParams,
-      n = Number(p.get("page"));
-    requests.push(n);
-    if (n === 2 && !failed) {
-      failed = true;
-      return r.fulfill({ status: 503, json: { error: "down" } });
-    }
-    return r.fulfill({
-      json: result(
-        p.get("q")!,
-        n,
-        n === 1 ? [newer] : [older],
-        undefined,
-        n === 1 ? ["hamusoku"] : [],
-      ),
     });
   });
   await page.goto("/");
@@ -539,14 +416,65 @@ test("a later page failure keeps earlier results and retries the same cursor wit
     .click();
   await submit(page, "図書館");
   await expect(page.getByTestId("article-row")).toHaveCount(1);
+  await expect(page.getByTestId("article-row")).toContainText(older.title);
+  expect(archiveRequests).toBe(1);
   await expect(
-    page
-      .getByRole("status")
-      .filter({ hasText: "表示済みの記事は残しています" }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "検索を続ける", exact: true }),
+  ).toBeDisabled();
+});
+
+test("archive failure is unfinished and resumes from the failed cursor without dropping previous matches", async ({
+  page,
+}) => {
+  await base(page);
+  let calls = 0;
+  const cursors: string[] = [];
+  await page.route("**/api/search**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    if (!p.has("archive"))
+      return r.fulfill({ json: result(p.get("q")!, 1, [newer]) });
+    calls++;
+    cursors.push(p.get("cursor") || "start");
+    if (calls === 1)
+      return r.fulfill({
+        json: {
+          ...archiveEmpty(p),
+          archive: {
+            ...archiveEmpty(p).archive,
+            cursor: "2010-01:1:1",
+            month: "2010-01",
+            complete: false,
+            failed: true,
+          },
+          sources: [
+            { id: "hamusoku", status: "error", fetchedAt: null },
+            {
+              id: "alfalfa",
+              status: "ok",
+              fetchedAt: new Date().toISOString(),
+            },
+          ],
+        },
+      });
+    return r.fulfill({
+      json: {
+        ...archiveEmpty(p),
+        articles: [older],
+        collection: collection(9),
+      },
+    });
+  });
+  await page.goto("/");
   await page
-    .getByRole("button", { name: "さらに過去の記事", exact: true })
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
     .click();
+  await submit(page, "図書館");
+  await expect(
+    page.getByRole("button", { name: "検索を続ける", exact: true }),
+  ).toBeEnabled();
+  await expect(page.getByTestId("article-row")).toHaveCount(1);
+  await page.getByRole("button", { name: "検索を続ける", exact: true }).click();
   await expect(page.getByTestId("article-row")).toHaveCount(2);
-  expect(requests).toEqual([1, 2, 2]);
+  expect(cursors).toEqual(["start", "2010-01:1:1"]);
 });
