@@ -119,9 +119,15 @@ export function useSearch(
       setState({ ...saved, searching: true, error: "" });
     };
     const request = async (url: string) => {
-      const timer = setTimeout(() => abort.abort(), 55000);
+      const requestAbort = new AbortController();
+      const cancelRequest = () => requestAbort.abort();
+      if (abort.signal.aborted) cancelRequest();
+      abort.signal.addEventListener("abort", cancelRequest, { once: true });
+      // An optional provider-search timeout must not abort the independent
+      // archive scan; only leaving/pausing the search cancels the whole run.
+      const timer = setTimeout(cancelRequest, 55000);
       try {
-        const response = await fetch(url, { signal: abort.signal });
+        const response = await fetch(url, { signal: requestAbort.signal });
         if (!response.ok) throw Error("unavailable");
         const data = searchResponseSchema.parse(await response.json());
         if (data.query !== query || data.scope !== scope)
@@ -129,6 +135,7 @@ export function useSearch(
         return data;
       } finally {
         clearTimeout(timer);
+        abort.signal.removeEventListener("abort", cancelRequest);
       }
     };
     setState({ ...saved, searching: true, error: "" });

@@ -145,3 +145,57 @@ test("large archive results stay available in pages of 100", async ({
     page.getByRole("button", { name: "前の100件", exact: true }),
   ).toBeEnabled();
 });
+
+test("a timed-out publisher search still continues into the independent archive", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.route(/\/api\/yahoo(?:-topics)?(?:\?|$)/, (r) => r.abort());
+  await page.route("**/api/articles", (r) => r.fulfill({ json: feed }));
+  await page.route("**/api/search?**", (r) => {
+    const p = new URL(r.request().url()).searchParams;
+    if (!p.has("archive")) return new Promise<void>(() => {});
+    return r.fulfill({
+      json: {
+        ...response(p.get("q")!, [old]),
+        archive: {
+          cursor: null,
+          month: "2005-01",
+          complete: true,
+          failed: false,
+          from: "2005-01-01",
+          to: "2026-11-09",
+          pages: 2,
+        },
+      },
+    });
+  });
+  await page.goto("/");
+  await page
+    .getByRole("group", { name: "配信チャンネル" })
+    .getByRole("button", { name: "まとめ", exact: true })
+    .click();
+  await page
+    .getByRole("navigation", {
+      name: /メインナビゲーション|下部ナビゲーション/,
+    })
+    .filter({ visible: true })
+    .getByRole("button", { name: "検索", exact: true })
+    .click();
+  await page.getByRole("searchbox", { name: "記事を検索" }).fill("美脚");
+  const firstRequest = page.waitForRequest(
+    (r) => r.url().includes("/api/search?") && !r.url().includes("archive=1"),
+  );
+  await page
+    .getByRole("region", { name: "記事を探す", exact: true })
+    .getByRole("button", { name: "検索", exact: true })
+    .click();
+  await firstRequest;
+  await page.clock.fastForward(55001);
+  await expect(
+    page.getByRole("button", { name: `記事を開く: ${old.title}` }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "検索を続ける", exact: true }),
+  ).toBeDisabled();
+});
