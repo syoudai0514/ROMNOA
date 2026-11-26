@@ -1,3 +1,4 @@
+import { smartFlashGallery, smartFlashPosition } from "./smartflash-gallery.js";
 import { encountSocial } from "./encount-social.js";
 import { mdprSocial } from "./mdpr-social.js";
 import { realSoundGallery, realSoundImageKey } from "./realsound-gallery.js";
@@ -481,6 +482,7 @@ async function resolveAt(html: string, url: string, load: typeof fetchPhotoHtml)
     ["entame", () => entameGallery(html, url)],
     ["mdpr", () => mdprGallery(html, url)],
     ["arena", () => bunshunGallery(html, url)],
+    ["smartflash", () => smartFlashGallery(html, url)],
     ["vertical", () => verticalGallery(html, url, load)],
     ["slider", () => sliderGallery(html, url)],
     ["sibling", () => siblingGallery(html, url)],
@@ -568,13 +570,15 @@ export class MemoryPhotoCache implements PhotoCache {
 function cacheAdapter(): PhotoCache {
   if (!process.env.VERCEL) return new MemoryPhotoCache();
   const cache = getCache({ namespace: "romnoa-yahoo-photos-v35" });
+  // Refresh galleries previously cached as a single SmartFLASH preview.
+  const key = (url: string) => smartFlashPosition(new URL(url)) ? `smartflash-slides:${url}` : url;
   return {
     async get(k) {
-      const p = entrySchema.safeParse(await cache.get(k));
+      const p = entrySchema.safeParse(await cache.get(key(k)));
       return p.success ? p.data : undefined;
     },
     async set(k, e) {
-      await cache.set(k, e, {
+      await cache.set(key(k), e, {
         ttl: 86400,
         name: "ROMNOA article photo metadata",
       });
